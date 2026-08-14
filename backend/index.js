@@ -34,12 +34,16 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 
-//Crear la carpetaa 'uploads' si no existe en nuestro server
-const uploadDir = path.join(process-cwd(), 'uploads');
+// Creamos la ruta usando process.cwd() para que no dé error en Railway
+const uploadDir = path.join(process.cwd(), 'uploads');
+
+// Si no existe la carpeta 'uploads', la crea automáticamente
 if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true});
-  console.log('Exito')
+  fs.mkdirSync(uploadDir, { recursive: true });
 }
+
+// Servimos la carpeta para poder ver los PDF/archivos
+app.use('/uploads', express.static(uploadDir));
 
 const upload = multer({ 
   storage: storage,
