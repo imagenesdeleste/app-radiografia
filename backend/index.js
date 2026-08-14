@@ -286,12 +286,17 @@ app.get('/api/descargar/:id', async (req, res) => {
 
 //para enviar correo electronico
 const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST || 'smtp.gmail.com',
-  port: Number(process.env.EMAIL_PORT) || 465,
-  secure: true,
+  host: 'smtp.gmail.com',
+  port: 587,
+  secure: false, // false para puerto 587 (usa STARTTLS)
+  requireTLS: true,
+  family: 4, // 🟢 OBLIGATORIO: Forzar el uso de IPv4 (evita el error ENETUNREACH de IPv6)
   auth: {
     user: 'sistemaimagenesdeleste@gmail.com',
-    pass: 'uffg fssf lyfn hspl' // Clave de app de Google
+    pass: 'uffg fssf lyfn hspl'
+  },
+  tls: {
+    rejectUnauthorized: false
   }
 });
 
