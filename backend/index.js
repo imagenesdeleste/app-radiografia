@@ -5,6 +5,7 @@ import multer from 'multer';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import fs from 'fs';
 
 dotenv.config();
 
@@ -41,6 +42,13 @@ const storage = multer.diskStorage({
     cb(null, file.originalname);
   }
 });
+
+//Crear la carpetaa 'uploads' si no existe en nuestro server
+const uploadDir = path.join(process-cwd(), 'uploads');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true});
+  console.log('Exito')
+}
 
 const upload = multer({ 
   storage: storage,
@@ -93,8 +101,20 @@ app.post('/api/pacientes', async (req, res) => {
   }
 });
 
-// Servir la carpeta de uploads para poder ver/descargar los archivos
-app.use('/uploads', express.static('uploads'));
+//Formatear nombres
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/');
+  },
+  filename: (req, file, cb) => {
+    // Reemplaza espacios por guiones bajos y agrega un timestamp único
+    const nombreLimpio = file.originalname.replace(/\s+/g, '_');
+    cb(null, `${Date.now()}-${nombreLimpio}`);
+  }
+});
+
+// Servir la carpeta de archivos estáticos
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 // RUTA 3: Obtener la lista de todos los pacientes (Para mostrarlos en un dropdown)
 app.get('/api/pacientes', async (req, res) => {
@@ -224,6 +244,7 @@ app.get('/api/descargar/:id', async (req, res) => {
 });
 
 import nodemailer from 'nodemailer';
+import { cwd } from 'process';
 
 // EMISOR DE CORREO ELECTRONICO 
 const transporter = nodemailer.createTransport({
