@@ -62,7 +62,7 @@ export default function PanelPersonal() {
     e.preventDefault();
     setErrorLogin('');
     try {
-      const res = await fetch('https://app-radiografia-production.up.railway.app/admin/login', {
+      const res = await fetch('https://app-radiografia-production.up.railway.app/api/admin/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ cedula: adminCedula, clave: adminClave })
