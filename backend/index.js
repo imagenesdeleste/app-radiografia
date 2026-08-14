@@ -33,15 +33,6 @@ export default pool;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Configuración de almacenamiento conservando extensión original
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'uploads/');
-  },
-  filename: function (req, file, cb) {
-    cb(null, file.originalname);
-  }
-});
 
 //Crear la carpetaa 'uploads' si no existe en nuestro server
 const uploadDir = path.join(process-cwd(), 'uploads');
