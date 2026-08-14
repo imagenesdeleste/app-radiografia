@@ -247,7 +247,9 @@ import { cwd } from 'process';
 
 // EMISOR DE CORREO ELECTRONICO 
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: process.env.EMAIL_HOST || 'smtp.gmail.com',
+  port: Number(process.env.EMAIL_PORT) || 465,
+  secure: true, // true para puerto 465, false para puerto 587
   auth: {
     user: 'sistemaimagenesdeleste@gmail.com',
     pass: 'uffg fssf lyfn hspl' // Generada en la seguridad de Google
@@ -255,8 +257,9 @@ const transporter = nodemailer.createTransport({
 });
 
 // Función para enviar la notificación por correo
-const enviarCorreoNotificacion = async (emailPaciente, nombrePaciente, tipoExamen, tituloEstudio) => {
-  const mailOptions = {
+export const enviarCorreoPaciente = async (correoPaciente, nombrePaciente) => {
+  try {
+    const info = await transporter.sendMail({
     from: '"Unidad de Imágenes Del Este" <tu_correo_clinica@gmail.com>',
     to: emailPaciente,
     subject: `¡Tus resultados de ${tipoExamen} están listos!`,
@@ -271,13 +274,13 @@ const enviarCorreoNotificacion = async (emailPaciente, nombrePaciente, tipoExame
         <p style="font-size: 12px; color: #64748b; text-align: center;">Ingresa con tu número de cédula para ver y descargar tus archivos.</p>
       </div>
     `
-  };
+  });
 
-  try {
-    await transporter.sendMail(mailOptions);
-    console.log('✅ Correo de notificación enviado exitosamente');
+  console.log('✅ Correo enviado con éxito:', info.messageId);
+    return true;
   } catch (error) {
-    console.error('❌ Error al enviar correo:', error);
+    console.error('❌ Error al enviar el correo desde Nodemailer:', error.message);
+    return false;
   }
 };
 
