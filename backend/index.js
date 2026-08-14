@@ -126,21 +126,60 @@ app.get('/api/pacientes', async (req, res) => {
 });
 
 // RUTA 4: Subir Estudio / Resultado Médico
+// No olvides importar la función al inicio de tu archivo:
+// import { enviarCorreoPaciente } from './emailService.js'; (ajusta la ruta según tu proyecto)
+
 app.post('/api/estudios', upload.single('archivo'), async (req, res) => {
   const { paciente_id, tipo_examen, titulo } = req.body;
-  const archivo_path = req.file ? req.file.path : null;
+  
+  // Guardamos solo el nombre del archivo para evitar problemas de rutas locales
+  const archivo_filename = req.file ? req.file.filename : null;
 
-  if (!archivo_path) {
+  if (!archivo_filename) {
     return res.status(400).json({ error: 'Debes adjuntar un archivo' });
   }
 
   try {
+    // 1. Insertar el estudio en la base de datos
     const result = await pool.query(
       'INSERT INTO estudios (paciente_id, tipo_examen, titulo, archivo_path) VALUES ($1, $2, $3, $4) RETURNING *',
-      [paciente_id, tipo_examen, titulo, archivo_path]
+      [paciente_id, tipo_examen, titulo, archivo_filename]
     );
-    res.json(result.rows[0]);
+
+    const nuevoEstudio = result.rows[0];
+
+    // 2. Buscar los datos del paciente para enviarle el correo
+    const pacienteQuery = await pool.query(
+      'SELECT nombre_completo, correo FROM pacientes WHERE id = $1',
+      [paciente_id]
+    );
+
+    // 3. Enviar correo de notificación (aislado en try/catch para evitar caídas de servidor)
+    if (pacienteQuery.rows.length > 0) {
+      const paciente = pacienteQuery.rows[0];
+
+      if (paciente.correo) {
+        try {
+          await enviarCorreoPaciente(
+            paciente.correo,
+            paciente.nombre_completo,
+            tipo_examen || 'Radiografía',
+            titulo || 'Estudio de Imagen'
+          );
+          console.log(`✅ Notificación enviada exitosamente a: ${paciente.correo}`);
+        } catch (emailErr) {
+          console.error(`⚠️ No se pudo enviar el correo, pero el estudio sí se guardó: ${emailErr.message}`);
+        }
+      } else {
+        console.log('ℹ️ El paciente no posee correo electrónico registrado.');
+      }
+    }
+
+    // 4. Responder al cliente con el estudio creado
+    res.json(nuevoEstudio);
+
   } catch (err) {
+    console.error('🔥 Error al registrar estudio:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
@@ -245,38 +284,41 @@ app.get('/api/descargar/:id', async (req, res) => {
 import nodemailer from 'nodemailer';
 import { cwd } from 'process';
 
-// EMISOR DE CORREO ELECTRONICO 
+//para enviar correo electronico
+
+import nodemailer from 'nodemailer';
+
 const transporter = nodemailer.createTransport({
   host: process.env.EMAIL_HOST || 'smtp.gmail.com',
   port: Number(process.env.EMAIL_PORT) || 465,
-  secure: true, // true para puerto 465, false para puerto 587
+  secure: true,
   auth: {
     user: 'sistemaimagenesdeleste@gmail.com',
-    pass: 'uffg fssf lyfn hspl' // Generada en la seguridad de Google
+    pass: 'uffg fssf lyfn hspl' // Clave de app de Google
   }
 });
 
-// Función para enviar la notificación por correo
-export const enviarCorreoPaciente = async (correoPaciente, nombrePaciente) => {
+// 🟢 Agregamos tipoExamen y tituloEstudio a los parámetros para que no dé error
+export const enviarCorreoPaciente = async (correoPaciente, nombrePaciente, tipoExamen = 'Estudio', tituloEstudio = 'Radiografía') => {
   try {
     const info = await transporter.sendMail({
-    from: '"Unidad de Imágenes Del Este" <tu_correo_clinica@gmail.com>',
-    to: emailPaciente,
-    subject: `¡Tus resultados de ${tipoExamen} están listos!`,
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 500px; margin: auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px;">
-        <h2 style="color: #0284c7; text-align: center;">Unidad de Imágenes Del Este</h2>
-        <p>Hola <strong>${nombrePaciente}</strong>,</p>
-        <p>Te informamos que tu estudio <strong>"${tituloEstudio}"</strong> (${tipoExamen}) ya se encuentra disponible en nuestro portal digital.</p>
-        <div style="text-align: center; margin: 25px 0;">
-          <a href="http://tu-dominio-clinica.com" style="background-color: #0f172a; color: white; padding: 12px 20px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 14px;">Consultar mis Resultados</a>
+      from: '"Unidad de Imágenes Del Este" <sistemaimagenesdeleste@gmail.com>', // 🟢 Mismo correo de auth
+      to: correoPaciente, // 🟢 Corregido: usaba emailPaciente
+      subject: `¡Tus resultados de ${tipoExamen} están listos!`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 500px; margin: auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px;">
+          <h2 style="color: #0284c7; text-align: center;">Unidad de Imágenes Del Este</h2>
+          <p>Hola <strong>${nombrePaciente}</strong>,</p>
+          <p>Te informamos que tu estudio <strong>"${tituloEstudio}"</strong> (${tipoExamen}) ya se encuentra disponible en nuestro portal digital.</p>
+          <div style="text-align: center; margin: 25px 0;">
+            <a href="https://fronted-production-a731.up.railway.app" style="background-color: #0f172a; color: white; padding: 12px 20px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 14px;">Consultar mis Resultados</a>
+          </div>
+          <p style="font-size: 12px; color: #64748b; text-align: center;">Ingresa con tu número de cédula para ver y descargar tus archivos.</p>
         </div>
-        <p style="font-size: 12px; color: #64748b; text-align: center;">Ingresa con tu número de cédula para ver y descargar tus archivos.</p>
-      </div>
-    `
-  });
+      `
+    });
 
-  console.log('✅ Correo enviado con éxito:', info.messageId);
+    console.log('✅ Correo enviado con éxito:', info.messageId);
     return true;
   } catch (error) {
     console.error('❌ Error al enviar el correo desde Nodemailer:', error.message);
