@@ -286,14 +286,13 @@ app.get('/api/descargar/:id', async (req, res) => {
 
 //para enviar correo electronico
 const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 587,
-  secure: false, // false para puerto 587 (usa STARTTLS)
-  requireTLS: true,
-  family: 4, // 🟢 OBLIGATORIO: Forzar el uso de IPv4 (evita el error ENETUNREACH de IPv6)
+  host: process.env.EMAIL_HOST || 'smtp.gmail.com',
+  port: Number(process.env.EMAIL_PORT) || 587,
+  secure: false, // 🟢 'false' para el puerto 587 (usa STARTTLS)
+  family: 4,     // 🟢 OBLIGATORIO: Fuerza IPv4 y quita el error ENETUNREACH de Railway
   auth: {
-    user: 'sistemaimagenesdeleste@gmail.com',
-    pass: 'uffg fssf lyfn hspl'
+    user: process.env.EMAIL_USER || 'sistemaimagenesdeleste@gmail.com',
+    pass: process.env.EMAIL_PASS || 'uffg fssf lyfn hspl',
   },
   tls: {
     rejectUnauthorized: false
