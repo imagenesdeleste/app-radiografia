@@ -8,7 +8,6 @@ import { fileURLToPath } from 'url';
 import fs from 'fs';
 import nodemailer from 'nodemailer';
 import { cwd } from 'process';
-import nodemailer from 'nodemailer';
 
 dotenv.config();
 
