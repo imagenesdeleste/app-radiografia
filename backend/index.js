@@ -111,17 +111,6 @@ app.post('/api/pacientes', async (req, res) => {
   }
 });
 
-//Formatear nombres
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/');
-  },
-  filename: (req, file, cb) => {
-    // Reemplaza espacios por guiones bajos y agrega un timestamp único
-    const nombreLimpio = file.originalname.replace(/\s+/g, '_');
-    cb(null, `${Date.now()}-${nombreLimpio}`);
-  }
-});
 
 // Servir la carpeta de archivos estáticos
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
