@@ -45,9 +45,24 @@ if (!fs.existsSync(uploadDir)) {
 // Servimos la carpeta para poder ver los PDF/archivos
 app.use('/uploads', express.static(uploadDir));
 
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/');
+  },
+  filename: (req, file, cb) => {
+    const nombreLimpio = file.originalname.replace(/\s+/g, '_');
+    cb(null, `${Date.now()}-${nombreLimpio}`);
+  }
+});
+
+
 const upload = multer({ 
   storage: storage,
   limits: { fileSize: 200 * 1024 * 1024 } // 200MB
+});
+
+app.post('/api/estudios/upload', upload.single('archivo'), async (req, res) => {
+  // Tu lógica para subir el archivo...
 });
 
 // RUTA 1: Crear la tabla automáticamente si no existe
