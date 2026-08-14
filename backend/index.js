@@ -6,6 +6,9 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
+import nodemailer from 'nodemailer';
+import { cwd } from 'process';
+import nodemailer from 'nodemailer';
 
 dotenv.config();
 
@@ -281,13 +284,8 @@ app.get('/api/descargar/:id', async (req, res) => {
   }
 });
 
-import nodemailer from 'nodemailer';
-import { cwd } from 'process';
 
 //para enviar correo electronico
-
-import nodemailer from 'nodemailer';
-
 const transporter = nodemailer.createTransport({
   host: process.env.EMAIL_HOST || 'smtp.gmail.com',
   port: Number(process.env.EMAIL_PORT) || 465,
