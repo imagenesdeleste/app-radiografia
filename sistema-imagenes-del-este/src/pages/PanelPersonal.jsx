@@ -45,7 +45,7 @@ export default function PanelPersonal() {
 
   const cargarPacientes = async () => {
     try {
-      const res = await fetch('http://localhost:3001/api/pacientes');
+      const res = await fetch('https://app-radiografia-production.up.railway.app/api/pacientes');
       const data = await res.json();
       if (Array.isArray(data)) setPacientes(data);
     } catch (e) {
