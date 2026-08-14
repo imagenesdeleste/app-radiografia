@@ -173,23 +173,26 @@ app.get('/api/pacientes/:id/estudios', async (req, res) => {
 app.post('/api/admin/login', async (req, res) => {
   const { cedula, clave } = req.body;
 
+  // Limpiamos espacios en blanco accidentales
+  const cedulaLimpia = String(cedula).trim();
+  const claveLimpia = String(clave).trim();
+
   try {
     const result = await pool.query(
-      'SELECT id, cedula, nombre_completo, rol FROM personal WHERE cedula = $1 AND clave = $2',
-      [cedula, clave]
+      'SELECT id, cedula, nombre_completo, rol FROM personal WHERE TRIM(cedula) = $1 AND TRIM(clave) = $2',
+      [cedulaLimpia, claveLimpia]
     );
 
     if (result.rows.length === 0) {
       return res.status(401).json({ error: 'Credenciales inválidas' });
     }
 
-    // Retornamos el objeto con su rol incluido
     res.json({ mensaje: 'Login exitoso', usuario: result.rows[0] });
   } catch (err) {
+    console.error("Error en login:", err);
     res.status(500).json({ error: err.message });
   }
 });
-
 // RUTA 8: Descarga de archivos conservando extensión original
 app.get('/api/descargar/:id', async (req, res) => {
   const { id } = req.params;
