@@ -23,7 +23,10 @@ app.use(express.json());
 // Conexión a la base de datos PostgreSQL de Railway
 const pool = new pg.Pool({
   connectionString: process.env.DATABASE_URL,
+  ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
 });
+
+export default pool;
 
 
 const __filename = fileURLToPath(import.meta.url);
