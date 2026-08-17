@@ -128,14 +128,8 @@ app.get('/api/pacientes', async (req, res) => {
   }
 });
 
-// RUTA 4: Subir Estudio / Resultado Médico
-// No olvides importar la función al inicio de tu archivo:
-// import { enviarCorreoPaciente } from './emailService.js'; (ajusta la ruta según tu proyecto)
-
 app.post('/api/estudios', upload.single('archivo'), async (req, res) => {
   const { paciente_id, tipo_examen, titulo } = req.body;
-  
-  // Guardamos solo el nombre del archivo para evitar problemas de rutas locales
   const archivo_filename = req.file ? req.file.filename : null;
 
   if (!archivo_filename) {
@@ -143,7 +137,7 @@ app.post('/api/estudios', upload.single('archivo'), async (req, res) => {
   }
 
   try {
-    // 1. Insertar el estudio en la base de datos
+    // 1. Guardar en PostgreSQL
     const result = await pool.query(
       'INSERT INTO estudios (paciente_id, tipo_examen, titulo, archivo_path) VALUES ($1, $2, $3, $4) RETURNING *',
       [paciente_id, tipo_examen, titulo, archivo_filename]
@@ -151,35 +145,27 @@ app.post('/api/estudios', upload.single('archivo'), async (req, res) => {
 
     const nuevoEstudio = result.rows[0];
 
-    // 2. Buscar los datos del paciente para enviarle el correo
+    // 2. Buscar datos del paciente
     const pacienteQuery = await pool.query(
       'SELECT nombre_completo, correo FROM pacientes WHERE id = $1',
       [paciente_id]
     );
 
-    // 3. Enviar correo de notificación (aislado en try/catch para evitar caídas de servidor)
-    if (pacienteQuery.rows.length > 0) {
-      const paciente = pacienteQuery.rows[0];
-
-      if (paciente.correo) {
-        try {
-          await enviarCorreoPaciente(
-            paciente.correo,
-            paciente.nombre_completo,
-            tipo_examen || 'Radiografía',
-            titulo || 'Estudio de Imagen'
-          );
-          console.log(`✅ Notificación enviada exitosamente a: ${paciente.correo}`);
-        } catch (emailErr) {
-          console.error(`⚠️ No se pudo enviar el correo, pero el estudio sí se guardó: ${emailErr.message}`);
-        }
-      } else {
-        console.log('ℹ️ El paciente no posee correo electrónico registrado.');
-      }
-    }
-
-    // 4. Responder al cliente con el estudio creado
+    // 3. Responder de una vez al cliente (¡Para que la web responda en menos de 1 segundo!)
     res.json(nuevoEstudio);
+
+    // 4. Disparar el envío de correo en segundo plano con Resend
+    if (pacienteQuery.rows.length > 0 && pacienteQuery.rows[0].correo) {
+      const paciente = pacienteQuery.rows[0];
+      
+      // Llamamos a la función sin el 'await' para que no frene la respuesta al usuario
+      enviarCorreoPaciente(
+        paciente.correo,
+        paciente.nombre_completo,
+        tipo_examen || 'Radiografía',
+        titulo || 'Estudio de Imagen'
+      ).catch(err => console.error('Error enviando correo en background:', err));
+    }
 
   } catch (err) {
     console.error('🔥 Error al registrar estudio:', err.message);
@@ -225,11 +211,12 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 export const enviarCorreoPaciente = async (correoPaciente, nombrePaciente, tipoExamen = 'Estudio', tituloEstudio = 'Radiografía') => {
   try {
-    const response = await resend.emails.send({
-      from: 'Unidad de Imágenes <sistemaimagenesdeleste@gmail.com>', // Correo de prueba de Resend
-      to: correoPaciente,
-      subject: `¡Tus resultados de ${tipoExamen} están listos!`,
-      html: `
+      const data = await resend.emails.send({
+    from: 'Unidad de Imágenes Del Este <onboarding@resend.dev>', // Obligatorio mientras estés en modo prueba
+    reply_to: 'sistemaunidaddeimagenes@gmail.com',              // 💡 Las respuestas te llegarán aquí
+    to: [correoPaciente],
+    subject: `¡Tus resultados de ${tipoExamen} están listos!`,
+    html: `
         <div style="font-family: Arial, sans-serif; max-width: 500px; margin: auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px;">
           <h2 style="color: #0284c7; text-align: center;">Unidad de Imágenes Del Este</h2>
           <p>Hola <strong>${nombrePaciente}</strong>,</p>
