@@ -209,12 +209,18 @@ app.post('/api/paciente/login', async (req, res) => {
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-export const enviarCorreoPaciente = async (correoPaciente, nombrePaciente, tipoExamen = 'Estudio', tituloEstudio = 'Radiografía') => {
+export const enviarCorreoPaciente = async (
+  correoPaciente,
+  nombrePaciente,
+  tipoExamen = 'Estudio',
+  tituloEstudio = 'Radiografía'
+) => {
   try {
-    // 🟢 Guardamos el resultado en la variable 'data'
     const { data, error } = await resend.emails.send({
-      from: 'Unidad de Imágenes Del Este <onboarding@resend.dev>',
-      to: [correoPaciente],
+      // 🟢 Reemplazas 'onboarding@resend.dev' por tu dominio de GoDaddy verificado
+      from: 'Unidad de Imágenes Del Este <unidaddeimagenesdeleste.com>',
+      to: [correoPaciente], // 💡 Ahora le enviará a CUALQUIER correo de paciente
+      reply_to: 'sistemaunidaddeimagenes@gmail.com',
       subject: `¡Tus resultados de ${tipoExamen} están listos!`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 500px; margin: auto; padding: 25px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
@@ -237,12 +243,11 @@ export const enviarCorreoPaciente = async (correoPaciente, nombrePaciente, tipoE
     });
 
     if (error) {
-      console.error('❌ Error devuelto por la API de Resend:', error.message);
+      console.error('❌ Error devuelto por Resend:', error.message);
       return false;
     }
 
-    // 🟢 Imprimimos 'data.id' de forma segura
-    console.log('✅ Correo enviado con Resend. ID:', data?.id);
+    console.log('✅ Correo enviado exitosamente. ID:', data?.id);
     return true;
   } catch (error) {
     console.error('❌ Error con Resend:', error.message);
