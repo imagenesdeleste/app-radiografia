@@ -211,41 +211,44 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 export const enviarCorreoPaciente = async (correoPaciente, nombrePaciente, tipoExamen = 'Estudio', tituloEstudio = 'Radiografía') => {
   try {
-      const data = await resend.emails.send({
-    from: 'Unidad de Imágenes Del Este <onboarding@resend.dev>', // Obligatorio mientras estés en modo prueba
-    reply_to: 'sistemaunidaddeimagenes@gmail.com',              // 💡 Las respuestas te llegarán aquí
-    to: [correoPaciente],
-    subject: `¡Tus resultados de ${tipoExamen} están listos!`,
-    html: `
-        <div style="font-family: Arial, sans-serif; max-width: 500px; margin: auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px;">
-          <h2 style="color: #0284c7; text-align: center;">Unidad de Imágenes Del Este</h2>
-          <p>Hola <strong>${nombrePaciente}</strong>,</p>
-          <p>Te informamos que tu estudio <strong>"${tituloEstudio}"</strong> (${tipoExamen}) ya está disponible en nuestro portal digital.</p>
+    // 🟢 Guardamos el resultado en la variable 'data'
+    const { data, error } = await resend.emails.send({
+      from: 'Unidad de Imágenes Del Este <onboarding@resend.dev>',
+      to: [correoPaciente],
+      subject: `¡Tus resultados de ${tipoExamen} están listos!`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 500px; margin: auto; padding: 25px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
+          <h2 style="color: #0284c7; text-align: center; margin-bottom: 20px;">Unidad de Imágenes Del Este</h2>
+          <p style="font-size: 16px; color: #334155;">Hola <strong>${nombrePaciente}</strong>,</p>
+          <p style="font-size: 14px; color: #475569; line-height: 1.5;">
+            Te informamos que tu estudio <strong>"${tituloEstudio}"</strong> (${tipoExamen}) ya se encuentra disponible en nuestro portal digital.
+          </p>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="https://fronted-production-a731.up.railway.app" style="background-color: #0f172a; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 14px; display: inline-block;">
+              Consultar Resultados
+            </a>
+          </div>
+          <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
+          <p style="font-size: 12px; color: #94a3b8; text-align: center;">
+            Ingresa con tu número de cédula para descargar tus archivos.
+          </p>
         </div>
       `
     });
 
-    console.log('✅ Correo enviado exitosamente vía API:', response.id);
+    if (error) {
+      console.error('❌ Error devuelto por la API de Resend:', error.message);
+      return false;
+    }
+
+    // 🟢 Imprimimos 'data.id' de forma segura
+    console.log('✅ Correo enviado con Resend. ID:', data?.id);
     return true;
   } catch (error) {
     console.error('❌ Error con Resend:', error.message);
     return false;
   }
 };
-
-// RUTA 6: Obtener estudios directamente por ID de Paciente (Para el área de Personal)
-app.get('/api/pacientes/:id/estudios', async (req, res) => {
-  const { id } = req.params;
-  try {
-    const result = await pool.query(
-      'SELECT id, tipo_examen, titulo, archivo_path, fecha_estudio FROM estudios WHERE paciente_id = $1 ORDER BY fecha_estudio DESC',
-      [id]
-    );
-    res.json(result.rows);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
 
 // RUTA: Login de Personal
 app.post('/api/admin/login', async (req, res) => {
