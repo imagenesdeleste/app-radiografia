@@ -8,6 +8,7 @@ import { fileURLToPath } from 'url';
 import fs from 'fs';
 import nodemailer from 'nodemailer';
 import { cwd } from 'process';
+import { Resend } from 'resend';
 
 dotenv.config();
 
@@ -218,6 +219,33 @@ app.post('/api/paciente/login', async (req, res) => {
   }
 });
 
+// API PARA AENVIAR CORREOS ELECTRONICOS DE NOTIFICACIÓN
+
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+export const enviarCorreoPaciente = async (correoPaciente, nombrePaciente, tipoExamen = 'Estudio', tituloEstudio = 'Radiografía') => {
+  try {
+    const response = await resend.emails.send({
+      from: 'Unidad de Imágenes <onboarding@resend.dev>', // Correo de prueba de Resend
+      to: correoPaciente,
+      subject: `¡Tus resultados de ${tipoExamen} están listos!`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 500px; margin: auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px;">
+          <h2 style="color: #0284c7; text-align: center;">Unidad de Imágenes Del Este</h2>
+          <p>Hola <strong>${nombrePaciente}</strong>,</p>
+          <p>Te informamos que tu estudio <strong>"${tituloEstudio}"</strong> (${tipoExamen}) ya está disponible en nuestro portal digital.</p>
+        </div>
+      `
+    });
+
+    console.log('✅ Correo enviado exitosamente vía API:', response.id);
+    return true;
+  } catch (error) {
+    console.error('❌ Error con Resend:', error.message);
+    return false;
+  }
+};
+
 // RUTA 6: Obtener estudios directamente por ID de Paciente (Para el área de Personal)
 app.get('/api/pacientes/:id/estudios', async (req, res) => {
   const { id } = req.params;
@@ -282,50 +310,6 @@ app.get('/api/descargar/:id', async (req, res) => {
     res.status(500).send(err.message);
   }
 });
-
-
-//para enviar correo electronico
-const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST || 'smtp.gmail.com',
-  port: Number(process.env.EMAIL_PORT) || 587,
-  secure: false, // 🟢 'false' para el puerto 587 (usa STARTTLS)
-  family: 4,     // 🟢 OBLIGATORIO: Fuerza IPv4 y quita el error ENETUNREACH de Railway
-  auth: {
-    user: process.env.EMAIL_USER || 'sistemaimagenesdeleste@gmail.com',
-    pass: process.env.EMAIL_PASS || 'uffg fssf lyfn hspl',
-  },
-  tls: {
-    rejectUnauthorized: false
-  }
-});
-
-// 🟢 Agregamos tipoExamen y tituloEstudio a los parámetros para que no dé error
-export const enviarCorreoPaciente = async (correoPaciente, nombrePaciente, tipoExamen = 'Estudio', tituloEstudio = 'Radiografía') => {
-  try {
-    const info = await transporter.sendMail({
-      from: '"Unidad de Imágenes Del Este" <sistemaimagenesdeleste@gmail.com>', // 🟢 Mismo correo de auth
-      to: correoPaciente, // 🟢 Corregido: usaba emailPaciente
-      subject: `¡Tus resultados de ${tipoExamen} están listos!`,
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 500px; margin: auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px;">
-          <h2 style="color: #0284c7; text-align: center;">Unidad de Imágenes Del Este</h2>
-          <p>Hola <strong>${nombrePaciente}</strong>,</p>
-          <p>Te informamos que tu estudio <strong>"${tituloEstudio}"</strong> (${tipoExamen}) ya se encuentra disponible en nuestro portal digital.</p>
-          <div style="text-align: center; margin: 25px 0;">
-            <a href="https://fronted-production-a731.up.railway.app" style="background-color: #0f172a; color: white; padding: 12px 20px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 14px;">Consultar mis Resultados</a>
-          </div>
-          <p style="font-size: 12px; color: #64748b; text-align: center;">Ingresa con tu número de cédula para ver y descargar tus archivos.</p>
-        </div>
-      `
-    });
-
-    console.log('✅ Correo enviado con éxito:', info.messageId);
-    return true;
-  } catch (error) {
-    console.error('❌ Error al enviar el correo desde Nodemailer:', error.message);
-    return false;
-  }
-};
 
 // RUTA 2: Crear un nuevo paciente (Con correo incluido)
 app.post('/api/pacientes', async (req, res) => {
