@@ -226,7 +226,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 export const enviarCorreoPaciente = async (correoPaciente, nombrePaciente, tipoExamen = 'Estudio', tituloEstudio = 'Radiografía') => {
   try {
     const response = await resend.emails.send({
-      from: 'Unidad de Imágenes <onboarding@resend.dev>', // Correo de prueba de Resend
+      from: 'Unidad de Imágenes <sistemaimagenesdeleste@gmail.com>', // Correo de prueba de Resend
       to: correoPaciente,
       subject: `¡Tus resultados de ${tipoExamen} están listos!`,
       html: `
