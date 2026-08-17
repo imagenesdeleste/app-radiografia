@@ -218,7 +218,7 @@ export const enviarCorreoPaciente = async (
   try {
     const { data, error } = await resend.emails.send({
       // 🟢 Reemplazas 'onboarding@resend.dev' por tu dominio de GoDaddy verificado
-      from: 'Unidad de Imágenes Del Este <unidaddeimagenesdeleste.com>',
+      from: 'Unidad de Imágenes Del Este <notificaciones@unidaddeimagenesdeleste.com>',
       to: [correoPaciente], // 💡 Ahora le enviará a CUALQUIER correo de paciente
       reply_to: 'sistemaunidaddeimagenes@gmail.com',
       subject: `¡Tus resultados de ${tipoExamen} están listos!`,
