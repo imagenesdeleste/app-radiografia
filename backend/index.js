@@ -213,7 +213,7 @@ export const enviarCorreoPaciente = async (correoPaciente, nombrePaciente, tipoE
   try {
     // 🟢 Guardamos el resultado en la variable 'data'
     const { data, error } = await resend.emails.send({
-      from: 'Unidad de Imágenes Del Este <unidaddeimagenesdeleste.com>',
+      from: 'Unidad de Imágenes Del Este <onboarding@resend.dev>',
       to: [correoPaciente],
       subject: `¡Tus resultados de ${tipoExamen} están listos!`,
       html: `
