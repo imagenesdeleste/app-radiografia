@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
 
-export default function LandingPage() {
+// 🟢 Le pasas { navegar } como propiedad a la función:
+export default function LandingPage({ navegar }) {
   const [faqOpen, setFaqOpen] = useState(null);
 
   const toggleFaq = (index) => {
@@ -69,18 +69,21 @@ export default function LandingPage() {
           </div>
 
           <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200 text-center space-y-4">
-            <div className="w-14 h-14 bg-rose-900/10 text-rose-900 rounded-full flex items-center justify-center mx-auto text-2xl">
-              <i className="fa-solid fa-file-medical"></i>
-            </div>
-            <h3 className="text-xl font-bold text-slate-800">¿Tienes un examen pendiente?</h3>
-            <p className="text-sm text-slate-500">Ingresa a nuestra plataforma en un solo clic.</p>
-            <Link 
-              to="/pacientes" 
-              className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-rose-900 to-red-800 hover:from-rose-800 hover:to-red-700 text-white font-bold px-8 py-4 rounded-xl shadow-md transition duration-200 w-full"
-            >
-              Ir al Portal de Pacientes <i className="fa-solid fa-arrow-right"></i>
-            </Link>
-          </div>
+  <div className="w-14 h-14 bg-rose-900/10 text-rose-900 rounded-full flex items-center justify-center mx-auto text-2xl">
+    <i className="fa-solid fa-file-medical"></i>
+  </div>
+  <h3 className="text-xl font-bold text-slate-800">¿Tienes un examen pendiente?</h3>
+  <p className="text-sm text-slate-500">Ingresa a nuestra plataforma en un solo clic.</p>
+  
+  {/* 🟢 Botón con la función navegar */}
+  <button 
+    type="button"
+    onClick={() => navegar('/pacientes')} 
+    className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-rose-900 to-red-800 hover:from-rose-800 hover:to-red-700 text-white font-bold px-8 py-4 rounded-xl shadow-md transition duration-200 w-full cursor-pointer"
+  >
+    Ir al Portal de Pacientes <i className="fa-solid fa-arrow-right"></i>
+  </button>
+</div>
         </div>
       </section>
 
