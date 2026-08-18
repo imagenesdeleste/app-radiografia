@@ -45,7 +45,7 @@ export default function PanelPersonal() {
 
   const cargarPacientes = async () => {
     try {
-      const res = await fetch('https://www.unidaddeimagenesdeleste.com/api/pacientes');
+      const res = await fetch('https://app-radiografia-production.up.railway.app/api/pacientes');
       const data = await res.json();
       if (Array.isArray(data)) setPacientes(data);
     } catch (e) {
@@ -62,7 +62,7 @@ export default function PanelPersonal() {
     e.preventDefault();
     setErrorLogin('');
     try {
-      const res = await fetch('https://www.unidaddeimagenesdeleste.com/api/admin/login', {
+      const res = await fetch('https://app-radiografia-production.up.railway.app/api/admin/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ cedula: adminCedula, clave: adminClave })
@@ -102,7 +102,7 @@ export default function PanelPersonal() {
   const handleActualizarPaciente = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch(`https://www.unidaddeimagenesdeleste.com/api/pacientes/${pacienteAEditar.id}`, {
+      const res = await fetch(`https://app-radiografia-production.up.railway.app/api/pacientes/${pacienteAEditar.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formEditPaciente)
@@ -125,7 +125,7 @@ export default function PanelPersonal() {
     setPacienteSeleccionado(paciente);
     setCargandoEstudios(true);
     try {
-      const res = await fetch(`https://www.unidaddeimagenesdeleste.com/api/pacientes/${paciente.id}/estudios`);
+      const res = await fetch(`https://app-radiografia-production.up.railway.app/api/pacientes/${paciente.id}/estudios`);
       const data = await res.json();
       if (res.ok) setEstudiosPaciente(data);
     } catch (e) {
@@ -138,7 +138,7 @@ export default function PanelPersonal() {
   // Crear Paciente
   const handleGuardarPaciente = async (e) => {
     e.preventDefault();
-    const res = await fetch('https://www.unidaddeimagenesdeleste.com/api/pacientes', {
+    const res = await fetch('https://app-radiografia-production.up.railway.app/api/pacientes', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(formPaciente)
@@ -165,7 +165,7 @@ export default function PanelPersonal() {
     formData.append('titulo', titulo);
     formData.append('archivo', archivo);
 
-    const res = await fetch('https://www.unidaddeimagenesdeleste.com/api/estudios', {
+    const res = await fetch('https://app-radiografia-production.up.railway.app/api/estudios', {
       method: 'POST',
       body: formData
     });
