@@ -12,7 +12,7 @@ export default function PortalPaciente() {
     setError('');
 
     try {
-      const res = await fetch('https://app-radiografia-production.up.railway.app/api/paciente/login', {
+      const res = await fetch('https://www.unidaddeimagenesdeleste.com/api/paciente/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ cedula, clave })
@@ -139,7 +139,7 @@ export default function PortalPaciente() {
                     </div>
 
                     <a 
-                    href={`https://app-radiografia-production.up.railway.app/api/descargar/${e.id}`} 
+                    href={`https://www.unidaddeimagenesdeleste.com/api/descargar/${e.id}`} 
                     download
                     className="px-3.5 py-2 bg-slate-900 hover:bg-sky-600 text-white text-xs font-semibold rounded-xl transition-colors flex items-center space-x-1 cursor-pointer"
                   >
