@@ -18,17 +18,19 @@ function App() {
     setRuta(nuevaRuta);
   };
 
-  // 1. Panel Administrativo
-  if (ruta === '/Personal') {
+  const rutaLimpia = ruta.toLowerCase();
+
+  // 1. Panel de Personal (Acepta /personal o /admin)
+  if (rutaLimpia === '/personal' || rutaLimpia === '/admin') {
     return <PanelPersonal navegar={navegar} />;
   }
 
-  // 2. Portal Privado de Pacientes (Login y Resultados)
-  if (ruta === '/pacientes') {
+  // 2. Portal de Pacientes (Acepta /pacientes o /portal)
+  if (rutaLimpia === '/pacientes' || rutaLimpia === '/portal') {
     return <PortalPaciente navegar={navegar} />;
   }
 
-  // 3. Por defecto (Ruta /): Página Web Principal (Landing Page)
+  // 3. Ruta principal por defecto ( / )
   return <LandingPage navegar={navegar} />;
 }
 
