@@ -782,38 +782,41 @@ export default function LandingPage({ navegar }) {
       </footer>
 
       {/* ========================================== */}
-      {/* BOTONES FLOTANTES (CASHEA + WHATSAPP)     */}
+      {/* BOTÓN FLOTANTE CASHEA (IZQUIERDA)          */}
       {/* ========================================== */}
-      <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
-        
-        {/* Botón Flotante Cashea */}
-        <a 
-          href="https://wa.me/584245715351?text=Hola,%20quisiera%20pagar%20mi%20estudio%20con%20Cashea" 
-          target="_blank" 
-          rel="noreferrer"
-          className="bg-black hover:bg-zinc-900 text-white font-bold py-2.5 px-4 rounded-full shadow-2xl flex items-center gap-2.5 border border-zinc-700 transition hover:scale-105 active:scale-95 cursor-pointer group"
-        >
-          <span className="w-6 h-6 bg-[#DFFF00] text-black font-black rounded-full flex items-center justify-center text-xs shadow-sm">
-            c
-          </span>
-          <span className="text-xs font-bold pr-1">Pagar con Cashea</span>
-        </a>
+      <a 
+        href="https://wa.me/584245715351?text=Hola,%20quisiera%20pagar%20mi%20estudio%20con%20Cashea" 
+        target="_blank" 
+        rel="noreferrer"
+        className="fixed bottom-6 left-6 z-50 bg-black hover:bg-zinc-900 text-white font-bold py-2.5 px-4 rounded-full shadow-2xl flex items-center gap-2.5 border border-zinc-700 transition hover:scale-105 active:scale-95 cursor-pointer group"
+      >
+        {/* Logo Oficial de Cashea */}
+        <div className="w-6 h-6 rounded-full bg-[#DFFF00] flex items-center justify-center overflow-hidden p-0.5">
+          <img 
+            src="https://www.cashea.app/favicon.ico" 
+            alt="Cashea Logo" 
+            className="w-full h-full object-contain"
+          />
+        </div>
+        <span className="text-xs font-bold pr-1">Pagar con Cashea</span>
+      </a>
 
-        {/* Botón Flotante WhatsApp */}
-        <a 
-          href="https://wa.me/584245715351" 
-          target="_blank" 
-          rel="noreferrer"
-          className="bg-emerald-500 hover:bg-emerald-600 text-white w-14 h-14 rounded-full shadow-2xl flex items-center justify-center text-2xl transition hover:scale-110 active:scale-95 cursor-pointer"
-          aria-label="Contactar por WhatsApp"
-        >
-          <i className="fa-brands fa-whatsapp"></i>
-        </a>
-
-      </div>
+      {/* ========================================== */}
+      {/* BOTÓN FLOTANTE WHATSAPP (DERECHA)          */}
+      {/* ========================================== */}
+      <a 
+        href="https://wa.me/584245715351" 
+        target="_blank" 
+        rel="noreferrer"
+        className="fixed bottom-6 right-6 z-50 bg-emerald-500 hover:bg-emerald-600 text-white w-14 h-14 rounded-full shadow-2xl flex items-center justify-center text-2xl transition hover:scale-110 active:scale-95 cursor-pointer"
+        aria-label="Contactar por WhatsApp"
+      >
+        <i className="fa-brands fa-whatsapp"></i>
+      </a>
 
     </div>
   );
 }
 
+     
   
