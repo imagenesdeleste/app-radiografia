@@ -5,3 +5,17 @@ acceso a la base de datos:
 
 Sistema2026**
 
+*------------------------*
+*------------------------*
+
+Usuarios de personal:
+
+Usuario | Nombre        | Clave  | Rol
+
+médico1 | Dr.Médico1    | 123456 | médico
+médico2 | Dr.Médico2    | 123456 | médico
+tec1    | Técnico1      | 123456 | técnico
+tec2    | Técnico2      | 123456 | técnico
+sec1    | Secretaria1   | 12345  | secretaria
+sec1    | Secretaria2   | 123456 | secretaria
+Admin	| Administrador1| Admin  |
