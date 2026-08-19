@@ -2,225 +2,446 @@ import React, { useState } from 'react';
 
 export default function LandingPage({ navegar }) {
   const [faqOpen, setFaqOpen] = useState(null);
+  const [menuMovil, setMenuMovil] = useState(false);
 
   const toggleFaq = (index) => {
     setFaqOpen(faqOpen === index ? null : index);
   };
 
   return (
-    <div className="min-h-screen bg-brand-50 text-brand-900 font-sans">
+    <div className="min-h-screen bg-brand-50 text-brand-900 font-sans flex flex-col justify-between">
       
-      {/* 1. HERO SECTION (Encabezado principal en Vino Oscuro) */}
-      <section className="relative bg-brand-800 text-white py-20 px-6 lg:px-12 overflow-hidden shadow-xl">
-        <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center relative z-10">
-          <div className="space-y-6">
-            <span className="inline-block bg-brand-400 text-white text-xs font-bold uppercase tracking-widest px-4 py-1.5 rounded-full shadow-sm">
-              Tecnología de Punta
+      {/* ========================================== */}
+      /* 1. HEADER / NAVBAR PEGAJOSO (STICKY)       */
+      {/* ========================================== */}
+      <header className="sticky top-0 z-50 bg-brand-50/90 backdrop-blur-md border-b border-brand-200 shadow-sm transition-all">
+        <div className="max-w-6xl mx-auto px-6 py-3.5 flex items-center justify-between">
+          
+          {/* Logo y Nombre Marca */}
+          <a href="#inicio" className="flex items-center gap-3 group">
+            <img 
+              src="/logo.png" 
+              alt="Logo Unidad de Imágenes" 
+              className="h-10 w-auto object-contain transition-transform group-hover:scale-105" 
+            />
+            <span className="hidden sm:inline-block font-black text-sm tracking-tight text-brand-900 uppercase">
+              Unidad de Imágenes <span className="text-brand-600">Del Este</span>
             </span>
-            <h1 className="text-4xl lg:text-5xl font-black leading-tight tracking-tight text-white">
-              Radiología Digital de <span className="text-brand-300">Alta Resolución</span>
-            </h1>
-            <p className="text-brand-100/90 text-lg leading-relaxed">
-              Resultados precisos con hasta un 80% menos de radiación. Atención rápida e informes digitales al instante.
-            </p>
-            <div className="flex flex-wrap gap-4 pt-2">
-              <a 
-                href="#servicios" 
-                className="bg-brand-600 hover:bg-brand-700 text-white font-bold px-6 py-3.5 rounded-xl shadow-md transition duration-200 flex items-center gap-2"
-              >
-                Ver Estudios <i className="fa-solid fa-arrow-down text-sm"></i>
-              </a>
-              <a 
-                href="#contacto" 
-                className="bg-brand-900/40 hover:bg-brand-900/70 text-brand-50 border border-brand-400/40 font-semibold px-6 py-3.5 rounded-xl transition duration-200"
-              >
-                Agendar Cita
-              </a>
-            </div>
-          </div>
+          </a>
 
-          <div className="hidden lg:block">
-            <div className="w-full h-80 bg-brand-900/50 rounded-3xl border border-brand-400/30 p-4 flex items-center justify-center shadow-2xl">
-              <img 
-                src="assets/portal-preview.jpeg" 
-                alt="Radiología Digital" 
-                className="rounded-2xl object-cover h-full w-full shadow-md"
-              />
-            </div>
-          </div>
-        </div>
-      </section>
+          {/* Menú de Navegación Desktop */}
+          <nav className="hidden md:flex items-center gap-8 text-xs font-bold uppercase tracking-wider text-brand-800">
+            <a href="#inicio" className="hover:text-brand-600 transition-colors">Inicio</a>
+            <a href="#servicios" className="hover:text-brand-600 transition-colors">Servicios</a>
+            <a href="#faq" className="hover:text-brand-600 transition-colors">Preguntas</a>
+            <a href="#contacto" className="hover:text-brand-600 transition-colors">Contacto</a>
+          </nav>
 
-      {/* 2. PORTAL DE PACIENTES (Tarjeta Beige Claro estilo Post) */}
-      <section className="py-16 px-6 lg:px-12 max-w-6xl mx-auto">
-        <div className="bg-brand-100 border border-brand-200 rounded-3xl p-8 lg:p-12 shadow-sm grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-          <div className="space-y-4">
-            <span className="text-xs font-bold uppercase tracking-wider text-white bg-brand-400 px-3 py-1 rounded-md shadow-sm">
-              ¡Reserva o Consulta Hoy!
-            </span>
-            <h2 className="text-3xl lg:text-4xl font-extrabold text-brand-600 tracking-tight">
-              Consulta los resultados de tus <span className="text-brand-900">estudios</span>
-            </h2>
-            <p className="text-brand-900/80 leading-relaxed font-medium">
-              Accede a tus imágenes e informes médicos desde cualquier dispositivo ingresando con tu número de cédula.
-            </p>
-          </div>
-
-          <div className="bg-brand-50 p-6 rounded-2xl border border-brand-200 text-center space-y-4 shadow-sm">
-            <div className="w-14 h-14 bg-brand-100 text-brand-600 rounded-full flex items-center justify-center mx-auto text-2xl border border-brand-200">
-              <i className="fa-solid fa-file-medical"></i>
-            </div>
-            <h3 className="text-xl font-bold text-brand-900">¿Tienes un examen pendiente?</h3>
-            <p className="text-sm text-brand-900/70">Ingresa a nuestra plataforma en un solo clic.</p>
-            
-            <button 
+          {/* Botón CTA Header */}
+          <div className="hidden md:flex items-center gap-3">
+            <button
               type="button"
-              onClick={() => navegar('/pacientes')} 
-              className="inline-flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 text-white font-bold px-8 py-4 rounded-xl shadow-md transition duration-200 w-full cursor-pointer"
+              onClick={() => navegar('/pacientes')}
+              className="bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold px-5 py-2.5 rounded-xl shadow-md transition duration-200 cursor-pointer flex items-center gap-2"
             >
-              Ir al Portal de Pacientes <i className="fa-solid fa-arrow-right"></i>
+              <i className="fa-solid fa-user-check text-xs"></i>
+              Portal Pacientes
             </button>
           </div>
-        </div>
-      </section>
 
-      {/* 3. SERVICIOS (Tarjetas Blancas sobre fondo Beige Hueso) */}
-      <section id="servicios" className="py-16 px-6 lg:px-12 bg-brand-100/60 border-y border-brand-200">
-        <div className="max-w-6xl mx-auto space-y-12">
-          <div className="text-center space-y-3 max-w-2xl mx-auto">
-            <span className="text-xs font-bold uppercase tracking-widest text-white bg-brand-600 px-3 py-1 rounded-full shadow-sm">
-              Servicios Especializados
-            </span>
-            <h2 className="text-3xl lg:text-4xl font-extrabold text-brand-900">Diagnóstico de Alta Precisión</h2>
-            <p className="text-brand-900/70 font-medium">Equipos de vanguardia operados por especialistas capacitados.</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Radiografía Digital */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-brand-200 hover:shadow-md transition duration-300 flex flex-col justify-between">
-              <div className="space-y-4">
-                <div className="w-12 h-12 bg-brand-600 text-white rounded-xl flex items-center justify-center text-xl shadow-sm">
-                  <i className="fa-solid fa-x-ray"></i>
-                </div>
-                <h3 className="text-xl font-bold text-brand-900">Radiografía Digital</h3>
-                <p className="text-sm text-brand-900/75 leading-relaxed">Imágenes nítidas con mínima exposición a radiación. Proceso instantáneo y ecológico.</p>
-              </div>
-              <a 
-                href="https://wa.me/584245715351?text=Hola,%20deseo%20agendar%20una%20Radiografia" 
-                target="_blank" 
-                rel="noreferrer"
-                className="mt-6 inline-flex items-center gap-2 text-brand-600 hover:text-brand-700 font-bold text-sm transition"
-              >
-                Agendar Radiografía <i className="fa-solid fa-arrow-right text-xs"></i>
-              </a>
-            </div>
-
-            {/* Ecografías */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-brand-200 hover:shadow-md transition duration-300 flex flex-col justify-between">
-              <div className="space-y-4">
-                <div className="w-12 h-12 bg-brand-600 text-white rounded-xl flex items-center justify-center text-xl shadow-sm">
-                  <i className="fa-solid fa-wave-square"></i>
-                </div>
-                <h3 className="text-xl font-bold text-brand-900">Ecografías (Ultrasonido)</h3>
-                <p className="text-sm text-brand-900/75 leading-relaxed">Evaluación anatómica en tiempo real no invasiva y totalmente libre de radiación.</p>
-              </div>
-              <a 
-                href="https://wa.me/584245715351?text=Hola,%20deseo%20agendar%20una%20Ecografia" 
-                target="_blank" 
-                rel="noreferrer"
-                className="mt-6 inline-flex items-center gap-2 text-brand-600 hover:text-brand-700 font-bold text-sm transition"
-              >
-                Agendar Ecografía <i className="fa-solid fa-arrow-right text-xs"></i>
-              </a>
-            </div>
-
-            {/* Rayos X Especializados */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-brand-200 hover:shadow-md transition duration-300 flex flex-col justify-between">
-              <div className="space-y-4">
-                <div className="w-12 h-12 bg-brand-600 text-white rounded-xl flex items-center justify-center text-xl shadow-sm">
-                  <i className="fa-solid fa-bone"></i>
-                </div>
-                <h3 className="text-xl font-bold text-brand-900">Rayos X Especializados</h3>
-                <p className="text-sm text-brand-900/75 leading-relaxed">Exámenes focalizados para la detección rápida de afecciones articulares o preoperatorias.</p>
-              </div>
-              <a 
-                href="https://wa.me/584245715351?text=Hola,%20deseo%20agendar%20Rayos%20X" 
-                target="_blank" 
-                rel="noreferrer"
-                className="mt-6 inline-flex items-center gap-2 text-brand-600 hover:text-brand-700 font-bold text-sm transition"
-              >
-                Agendar Rayos X <i className="fa-solid fa-arrow-right text-xs"></i>
-              </a>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 4. PREGUNTAS FRECUENTES */}
-      <section className="py-16 px-6 lg:px-12 max-w-4xl mx-auto space-y-8">
-        <div className="text-center space-y-2">
-          <span className="text-xs font-bold uppercase tracking-widest text-brand-600 bg-brand-100 px-3 py-1 rounded-full border border-brand-200">
-            Dudas Frecuentes
-          </span>
-          <h2 className="text-3xl font-extrabold text-brand-900">Información para Pacientes</h2>
+          {/* Botón Hamburguesa Móvil */}
+          <button 
+            onClick={() => setMenuMovil(!menuMovil)} 
+            className="md:hidden text-brand-900 text-xl p-2 rounded-lg hover:bg-brand-100 focus:outline-none"
+            aria-label="Abrir menú"
+          >
+            <i className={`fa-solid ${menuMovil ? 'fa-xmark' : 'fa-bars'}`}></i>
+          </button>
         </div>
 
-        <div className="space-y-4">
-          {[
-            { q: "¿Cómo descargo mis estudios?", a: "Solo debes ingresar al Portal de Pacientes con tu número de cédula y clave registrada para obtener tu reporte e imágenes." },
-            { q: "¿Cuánto tardan en entregar los resultados?", a: "Las imágenes digitales están disponibles de inmediato en la plataforma. El informe firmado por el especialista tarda entre 24 a 48 horas." },
-            { q: "¿Necesito cita previa para una radiografía?", a: "Atendemos por orden de llegada para estudios simples, y con cita previa asignada para tomografías o ecografías especializadas." }
-          ].map((item, index) => (
-            <div key={index} className="bg-white rounded-xl border border-brand-200 overflow-hidden shadow-sm">
-              <button 
-                onClick={() => toggleFaq(index)}
-                className="w-full text-left p-5 font-bold text-brand-900 flex justify-between items-center hover:bg-brand-50 transition"
-              >
-                <span>{item.q}</span>
-                <i className={`fa-solid fa-chevron-down text-brand-600 transition-transform ${faqOpen === index ? 'rotate-180' : ''}`}></i>
-              </button>
-              {faqOpen === index && (
-                <div className="p-5 pt-0 text-sm text-brand-900/80 border-t border-brand-100 bg-brand-50/50 leading-relaxed">
-                  {item.a}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* 5. FOOTER & UBICACIÓN (Fondo Oscuro de Contraste) */}
-      <section id="contacto" className="py-16 px-6 lg:px-12 bg-brand-900 text-white">
-        <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12">
-          <div className="space-y-6">
-            <span className="text-xs font-bold uppercase tracking-widest text-brand-100 bg-brand-800 px-3 py-1 rounded-full border border-brand-600/50">
-              Ubicación & Contacto
-            </span>
-            <h2 className="text-3xl font-bold">Unidad de Imágenes Del Este</h2>
-            <p className="text-brand-100/80 text-sm leading-relaxed">Estamos a tu disposición para ofrecerte diagnósticos oportunos y confiables.</p>
-            
-            <ul className="space-y-4 text-sm text-brand-100/90">
-              <li className="flex items-center gap-3"><i className="fa-solid fa-location-dot text-brand-400"></i> Este de Barquisimeto, Estado Lara</li>
-              <li className="flex items-center gap-3"><i className="fa-solid fa-phone text-brand-400"></i> +58 424-571.53.51</li>
-              <li className="flex items-center gap-3"><i className="fa-solid fa-envelope text-brand-400"></i> unidaddeimagenesdeleste@gmail.com</li>
-              <li className="flex items-center gap-3"><i className="fa-solid fa-clock text-brand-400"></i> Lunes a Viernes: 8:00 AM - 6:00 PM, Sábados y domingos se atienden emergencias</li>
-            </ul>
-          </div>
-
-          <div className="bg-brand-800 p-8 rounded-2xl border border-brand-700 flex flex-col justify-center text-center space-y-4 shadow-lg">
-            <h3 className="text-xl font-bold text-white">Agenda tu Cita Directa</h3>
-            <p className="text-brand-200 text-sm">Comunícate por WhatsApp con nuestro personal médico.</p>
+        {/* Menú Desplegable Móvil */}
+        {menuMovil && (
+          <div className="md:hidden bg-brand-100 border-b border-brand-200 px-6 py-4 space-y-3 animate-fade-in">
             <a 
-              href="https://wa.me/584245715351" 
-              target="_blank" 
-              rel="noreferrer"
-              className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3.5 px-6 rounded-xl transition flex items-center justify-center gap-2 shadow-md"
+              href="#inicio" 
+              onClick={() => setMenuMovil(false)}
+              className="block text-xs font-bold uppercase text-brand-900 py-1 hover:text-brand-600"
             >
-              <i className="fa-brands fa-whatsapp text-lg"></i> Chatear por WhatsApp
+              Inicio
             </a>
+            <a 
+              href="#servicios" 
+              onClick={() => setMenuMovil(false)}
+              className="block text-xs font-bold uppercase text-brand-900 py-1 hover:text-brand-600"
+            >
+              Servicios
+            </a>
+            <a 
+              href="#faq" 
+              onClick={() => setMenuMovil(false)}
+              className="block text-xs font-bold uppercase text-brand-900 py-1 hover:text-brand-600"
+            >
+              Preguntas Frecuentes
+            </a>
+            <a 
+              href="#contacto" 
+              onClick={() => setMenuMovil(false)}
+              className="block text-xs font-bold uppercase text-brand-900 py-1 hover:text-brand-600"
+            >
+              Ubicación y Citas
+            </a>
+            <button
+              type="button"
+              onClick={() => { setMenuMovil(false); navegar('/pacientes'); }}
+              className="w-full mt-2 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold py-3 rounded-xl shadow-md transition flex items-center justify-center gap-2"
+            >
+              <i className="fa-solid fa-user-check"></i>
+              Ingresar al Portal de Pacientes
+            </button>
           </div>
+        )}
+      </header>
+
+      {/* CONTENIDO PRINCIPAL */}
+      <main>
+        
+        {/* HERO SECTION */}
+        <section id="inicio" className="relative bg-brand-800 text-white py-20 px-6 lg:px-12 overflow-hidden shadow-xl">
+          <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center relative z-10">
+            <div className="space-y-6">
+              <span className="inline-block bg-brand-400 text-white text-xs font-bold uppercase tracking-widest px-4 py-1.5 rounded-full shadow-sm">
+                Tecnología de Punta
+              </span>
+              <h1 className="text-4xl lg:text-5xl font-black leading-tight tracking-tight text-white">
+                Radiología Digital de <span className="text-brand-300">Alta Resolución</span>
+              </h1>
+              <p className="text-brand-100/90 text-lg leading-relaxed">
+                Resultados precisos con hasta un 80% menos de radiación. Atención rápida e informes digitales al instante.
+              </p>
+              <div className="flex flex-wrap gap-4 pt-2">
+                <a 
+                  href="#servicios" 
+                  className="bg-brand-600 hover:bg-brand-700 text-white font-bold px-6 py-3.5 rounded-xl shadow-md transition duration-200 flex items-center gap-2"
+                >
+                  Ver Estudios <i className="fa-solid fa-arrow-down text-sm"></i>
+                </a>
+                <a 
+                  href="#contacto" 
+                  className="bg-brand-900/40 hover:bg-brand-900/70 text-brand-50 border border-brand-400/40 font-semibold px-6 py-3.5 rounded-xl transition duration-200"
+                >
+                  Agendar Cita
+                </a>
+              </div>
+            </div>
+
+            <div className="hidden lg:block">
+              <div className="w-full h-80 bg-brand-900/50 rounded-3xl border border-brand-400/30 p-4 flex items-center justify-center shadow-2xl">
+                <img 
+                  src="assets/portal-preview.jpeg" 
+                  alt="Radiología Digital" 
+                  className="rounded-2xl object-cover h-full w-full shadow-md"
+                />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* PORTAL DE PACIENTES */}
+        <section className="py-16 px-6 lg:px-12 max-w-6xl mx-auto">
+          <div className="bg-brand-100 border border-brand-200 rounded-3xl p-8 lg:p-12 shadow-sm grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+            <div className="space-y-4">
+              <span className="text-xs font-bold uppercase tracking-wider text-white bg-brand-400 px-3 py-1 rounded-md shadow-sm">
+                ¡Reserva o Consulta Hoy!
+              </span>
+              <h2 className="text-3xl lg:text-4xl font-extrabold text-brand-600 tracking-tight">
+                Consulta los resultados de tus <span className="text-brand-900">estudios</span>
+              </h2>
+              <p className="text-brand-900/80 leading-relaxed font-medium">
+                Accede a tus imágenes e informes médicos desde cualquier dispositivo ingresando con tu número de cédula.
+              </p>
+            </div>
+
+            <div className="bg-brand-50 p-6 rounded-2xl border border-brand-200 text-center space-y-4 shadow-sm">
+              <div className="w-14 h-14 bg-brand-100 text-brand-600 rounded-full flex items-center justify-center mx-auto text-2xl border border-brand-200">
+                <i className="fa-solid fa-file-medical"></i>
+              </div>
+              <h3 className="text-xl font-bold text-brand-900">¿Tienes un examen pendiente?</h3>
+              <p className="text-sm text-brand-900/70">Ingresa a nuestra plataforma en un solo clic.</p>
+              
+              <button 
+                type="button"
+                onClick={() => navegar('/pacientes')} 
+                className="inline-flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 text-white font-bold px-8 py-4 rounded-xl shadow-md transition duration-200 w-full cursor-pointer"
+              >
+                Ir al Portal de Pacientes <i className="fa-solid fa-arrow-right"></i>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {/* SERVICIOS */}
+        <section id="servicios" className="py-16 px-6 lg:px-12 bg-brand-100/60 border-y border-brand-200">
+          <div className="max-w-6xl mx-auto space-y-12">
+            <div className="text-center space-y-3 max-w-2xl mx-auto">
+              <span className="text-xs font-bold uppercase tracking-widest text-white bg-brand-600 px-3 py-1 rounded-full shadow-sm">
+                Servicios Especializados
+              </span>
+              <h2 className="text-3xl lg:text-4xl font-extrabold text-brand-900">Diagnóstico de Alta Precisión</h2>
+              <p className="text-brand-900/70 font-medium">Equipos de vanguardia operados por especialistas capacitados.</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {/* Radiografía Digital */}
+              <div className="bg-white rounded-2xl p-6 shadow-sm border border-brand-200 hover:shadow-md transition duration-300 flex flex-col justify-between">
+                <div className="space-y-4">
+                  <div className="w-12 h-12 bg-brand-600 text-white rounded-xl flex items-center justify-center text-xl shadow-sm">
+                    <i className="fa-solid fa-x-ray"></i>
+                  </div>
+                  <h3 className="text-xl font-bold text-brand-900">Radiografía Digital</h3>
+                  <p className="text-sm text-brand-900/75 leading-relaxed">Imágenes nítidas con mínima exposición a radiación. Proceso instantáneo y ecológico.</p>
+                </div>
+                <a 
+                  href="https://wa.me/584245715351?text=Hola,%20deseo%20agendar%20una%20Radiografia" 
+                  target="_blank" 
+                  rel="noreferrer"
+                  className="mt-6 inline-flex items-center gap-2 text-brand-600 hover:text-brand-700 font-bold text-sm transition"
+                >
+                  Agendar Radiografía <i className="fa-solid fa-arrow-right text-xs"></i>
+                </a>
+              </div>
+
+              {/* Ecografías */}
+              <div className="bg-white rounded-2xl p-6 shadow-sm border border-brand-200 hover:shadow-md transition duration-300 flex flex-col justify-between">
+                <div className="space-y-4">
+                  <div className="w-12 h-12 bg-brand-600 text-white rounded-xl flex items-center justify-center text-xl shadow-sm">
+                    <i className="fa-solid fa-wave-square"></i>
+                  </div>
+                  <h3 className="text-xl font-bold text-brand-900">Ecografías (Ultrasonido)</h3>
+                  <p className="text-sm text-brand-900/75 leading-relaxed">Evaluación anatómica en tiempo real no invasiva y totalmente libre de radiación.</p>
+                </div>
+                <a 
+                  href="https://wa.me/584245715351?text=Hola,%20deseo%20agendar%20una%20Ecografia" 
+                  target="_blank" 
+                  rel="noreferrer"
+                  className="mt-6 inline-flex items-center gap-2 text-brand-600 hover:text-brand-700 font-bold text-sm transition"
+                >
+                  Agendar Ecografía <i className="fa-solid fa-arrow-right text-xs"></i>
+                </a>
+              </div>
+
+              {/* Rayos X Especializados */}
+              <div className="bg-white rounded-2xl p-6 shadow-sm border border-brand-200 hover:shadow-md transition duration-300 flex flex-col justify-between">
+                <div className="space-y-4">
+                  <div className="w-12 h-12 bg-brand-600 text-white rounded-xl flex items-center justify-center text-xl shadow-sm">
+                    <i className="fa-solid fa-bone"></i>
+                  </div>
+                  <h3 className="text-xl font-bold text-brand-900">Rayos X Especializados</h3>
+                  <p className="text-sm text-brand-900/75 leading-relaxed">Exámenes focalizados para la detección rápida de afecciones articulares o preoperatorias.</p>
+                </div>
+                <a 
+                  href="https://wa.me/584245715351?text=Hola,%20deseo%20agendar%20Rayos%20X" 
+                  target="_blank" 
+                  rel="noreferrer"
+                  className="mt-6 inline-flex items-center gap-2 text-brand-600 hover:text-brand-700 font-bold text-sm transition"
+                >
+                  Agendar Rayos X <i className="fa-solid fa-arrow-right text-xs"></i>
+                </a>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* PREGUNTAS FRECUENTES */}
+        <section id="faq" className="py-16 px-6 lg:px-12 max-w-4xl mx-auto space-y-8">
+          <div className="text-center space-y-2">
+            <span className="text-xs font-bold uppercase tracking-widest text-brand-600 bg-brand-100 px-3 py-1 rounded-full border border-brand-200">
+              Dudas Frecuentes
+            </span>
+            <h2 className="text-3xl font-extrabold text-brand-900">Información para Pacientes</h2>
+          </div>
+
+          <div className="space-y-4">
+            {[
+              { q: "¿Cómo descargo mis estudios?", a: "Solo debes ingresar al Portal de Pacientes con tu número de cédula y clave registrada para obtener tu reporte e imágenes." },
+              { q: "¿Cuánto tardan en entregar los resultados?", a: "Las imágenes digitales están disponibles de inmediato en la plataforma. El informe firmado por el especialista tarda entre 24 a 48 horas." },
+              { q: "¿Necesito cita previa para una radiografía?", a: "Atendemos por orden de llegada para estudios simples, y con cita previa asignada para tomografías o ecografías especializadas." }
+            ].map((item, index) => (
+              <div key={index} className="bg-white rounded-xl border border-brand-200 overflow-hidden shadow-sm">
+                <button 
+                  onClick={() => toggleFaq(index)}
+                  className="w-full text-left p-5 font-bold text-brand-900 flex justify-between items-center hover:bg-brand-50 transition"
+                >
+                  <span>{item.q}</span>
+                  <i className={`fa-solid fa-chevron-down text-brand-600 transition-transform ${faqOpen === index ? 'rotate-180' : ''}`}></i>
+                </button>
+                {faqOpen === index && (
+                  <div className="p-5 pt-0 text-sm text-brand-900/80 border-t border-brand-100 bg-brand-50/50 leading-relaxed">
+                    {item.a}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* CONTACTO Y UBICACIÓN */}
+        <section id="contacto" className="py-16 px-6 lg:px-12 bg-brand-900 text-white">
+          <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12">
+            <div className="space-y-6">
+              <span className="text-xs font-bold uppercase tracking-widest text-brand-100 bg-brand-800 px-3 py-1 rounded-full border border-brand-600/50">
+                Ubicación & Contacto
+              </span>
+              <h2 className="text-3xl font-bold">Unidad de Imágenes Del Este</h2>
+              <p className="text-brand-100/80 text-sm leading-relaxed">Estamos a tu disposición para ofrecerte diagnósticos oportunos y confiables.</p>
+              
+              <ul className="space-y-4 text-sm text-brand-100/90">
+                <li className="flex items-center gap-3"><i className="fa-solid fa-location-dot text-brand-400"></i> Este de Barquisimeto, Estado Lara</li>
+                <li className="flex items-center gap-3"><i className="fa-solid fa-phone text-brand-400"></i> +58 424-571.53.51</li>
+                <li className="flex items-center gap-3"><i className="fa-solid fa-envelope text-brand-400"></i> centrodeimagenesdeleste@gmail.com</li>
+                <li className="flex items-center gap-3"><i className="fa-solid fa-clock text-brand-400"></i> Lunes a Sábado: 8:00 AM - 6:00 PM</li>
+              </ul>
+            </div>
+
+            <div className="bg-brand-800 p-8 rounded-2xl border border-brand-700 flex flex-col justify-center text-center space-y-4 shadow-lg">
+              <h3 className="text-xl font-bold text-white">Agenda tu Cita Directa</h3>
+              <p className="text-brand-200 text-sm">Comunícate por WhatsApp con nuestro personal médico.</p>
+              <a 
+                href="https://wa.me/584245715351" 
+                target="_blank" 
+                rel="noreferrer"
+                className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3.5 px-6 rounded-xl transition flex items-center justify-center gap-2 shadow-md"
+              >
+                <i className="fa-brands fa-whatsapp text-lg"></i> Chatear por WhatsApp
+              </a>
+            </div>
+          </div>
+        </section>
+
+      </main>
+
+            {/* ========================================== */}
+        {/* FOOTER ESTILO LABORATORIO ONG              */}
+        {/* ========================================== */}
+        <footer className="bg-brand-600 text-white pt-14 pb-6 border-t border-brand-700 shadow-inner">
+        <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-10 text-center md:text-left items-start pb-12">
+            
+            {/* COLUMNA 1: LOGO, SLOGAN Y CONTACTO */}
+            <div className="flex flex-col items-center md:items-start space-y-6">
+            {/* Logo */}
+            <div className="w-48 h-auto flex justify-center md:justify-start">
+                <img 
+                src="/logo.png" 
+                alt="Unidad de Imágenes Del Este" 
+                className="w-full h-full object-contain brightness-0 invert drop-shadow-sm" 
+                />
+            </div>
+
+            {/* Slogan entre comillas */}
+            <p className="text-sm font-bold tracking-tight text-brand-100 italic">
+                "El Centro de Imágenes de los Barquisimetanos"
+            </p>
+
+            {/* Contacto */}
+            <div className="space-y-2.5 pt-2 text-xs font-medium text-brand-100/90">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-white mb-2">Contacto</h4>
+                
+                <p className="flex items-center justify-center md:justify-start gap-2">
+                <i className="fa-solid fa-location-dot text-brand-400"></i>
+                Barquisimeto, Venezuela
+                </p>
+                
+                <p className="flex items-center justify-center md:justify-start gap-2">
+                <i className="fa-solid fa-phone text-brand-400"></i>
+                +58 424-5715351
+                </p>
+                
+                <p className="flex items-center justify-center md:justify-start gap-2">
+                <i className="fa-solid fa-envelope text-brand-400"></i>
+                centrodeimagenesdeleste@gmail.com
+                </p>
+            </div>
+            </div>
+
+            {/* COLUMNA 2: SÍGUENOS (REDES SOCIALES) */}
+            <div className="flex flex-col items-center space-y-4 md:pt-4">
+            <h4 className="text-sm font-bold uppercase tracking-wider text-white">Síguenos</h4>
+            
+            <div className="flex items-center justify-center gap-3">
+                {/* Instagram */}
+                <a 
+                href="https://instagram.com/imagenesdeleste_bqto" 
+                target="_blank" 
+                rel="noreferrer"
+                className="w-10 h-10 rounded-full bg-white/20 hover:bg-white hover:text-brand-600 text-white flex items-center justify-center text-lg transition-all duration-200 shadow-sm"
+                aria-label="Instagram"
+                >
+                <i className="fa-brands fa-instagram"></i>
+                </a>
+
+                {/* Facebook */}
+                <a 
+                href="#facebook" 
+                className="w-10 h-10 rounded-full bg-white/20 hover:bg-white hover:text-brand-600 text-white flex items-center justify-center text-lg transition-all duration-200 shadow-sm"
+                aria-label="Facebook"
+                >
+                <i className="fa-brands fa-facebook-f"></i>
+                </a>
+
+                {/* WhatsApp */}
+                <a 
+                href="https://wa.me/584245715351" 
+                target="_blank" 
+                rel="noreferrer"
+                className="w-10 h-10 rounded-full bg-white/20 hover:bg-white hover:text-brand-600 text-white flex items-center justify-center text-lg transition-all duration-200 shadow-sm"
+                aria-label="WhatsApp"
+                >
+                <i className="fa-brands fa-whatsapp"></i>
+                </a>
+            </div>
+            </div>
+
+            {/* COLUMNA 3: SERVICIOS / LINKS */}
+            <div className="flex flex-col items-center md:items-end space-y-3 md:pt-4 text-xs font-semibold text-brand-100/90">
+            <h4 className="text-sm font-bold uppercase tracking-wider text-white mb-1">Servicios</h4>
+            
+            <a href="#servicios" className="hover:text-white transition">Exámenes y Estudios</a>
+            <button onClick={() => navegar('/pacientes')} className="hover:text-white transition cursor-pointer">
+                Portal de Pacientes
+            </button>
+            <button onClick={() => navegar('/personal')} className="hover:text-white transition cursor-pointer">
+                Acceso Administrativo
+            </button>
+            <a href="https://wa.me/584245715351" target="_blank" rel="noreferrer" className="hover:text-white transition">
+                Atención Corporativa
+            </a>
+            </div>
+
         </div>
-      </section>
+
+        {/* BARRA INFERIOR: BOTÓN CASHEA Y COPYRIGHT */}
+        <div className="border-t border-brand-700/60 pt-6 px-6 max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-xs">
+            
+            {/* Botón Estilo Cashea */}
+            <a 
+            href="https://wa.me/584245715351?text=Hola,%20deseo%20pagar%20mi%20estudio%20con%20Cashea" 
+            target="_blank" 
+            rel="noreferrer"
+            className="bg-black hover:bg-zinc-900 text-white font-bold py-2.5 px-5 rounded-full flex items-center gap-2.5 shadow-lg transition transform active:scale-95"
+            >
+            <span className="w-5 h-5 bg-[#DFFF00] text-black font-black rounded-full flex items-center justify-center text-[10px]">
+                c
+            </span>
+            <span>Pagar con Cashea</span>
+            </a>
+
+            {/* Copyright & Firma */}
+            <div className="text-center md:text-right text-[11px] text-brand-200/80 leading-relaxed">
+            <p>© 2026 Unidad de Imágenes Del Este, C.A. J-50000000-0</p>
+            <p className="font-semibold text-white">Powered by Axell Peraza</p>
+            </div>
+
+        </div>
+        </footer>
 
       {/* BOTÓN FLOTANTE DE WHATSAPP */}
       <a 
