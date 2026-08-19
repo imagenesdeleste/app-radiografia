@@ -377,6 +377,23 @@ app.get('/api/descargar/:id', async (req, res) => {
   }
 });
 
+// RUTA: Obtener los estudios de un paciente específico (Para el PanelPersonal)
+app.get('/api/estudios/paciente/:paciente_id', async (req, res) => {
+  const { paciente_id } = req.params;
+
+  try {
+    const result = await pool.query(
+      'SELECT id, tipo_examen, titulo, archivo_path, fecha_estudio FROM estudios WHERE paciente_id = $1 ORDER BY fecha_estudio DESC',
+      [paciente_id]
+    );
+
+    res.json(result.rows);
+  } catch (err) {
+    console.error('🔥 Error al consultar expediente del paciente:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // =============================================================
 // 5. INICIAR SERVIDOR
 // =============================================================

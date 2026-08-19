@@ -125,7 +125,7 @@ export default function PanelPersonal() {
     setPacienteSeleccionado(paciente);
     setCargandoEstudios(true);
     try {
-      const res = await fetch(`https://app-radiografia-production.up.railway.app/api/pacientes/${paciente.id}/estudios`);
+      const res = await fetch(`https://app-radiografia-production.up.railway.app/api/paciente/${paciente.id}/estudios`);
       const data = await res.json();
       if (res.ok) setEstudiosPaciente(data);
     } catch (e) {
