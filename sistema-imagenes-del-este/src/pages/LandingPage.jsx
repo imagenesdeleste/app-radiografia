@@ -133,71 +133,79 @@ export default function LandingPage({ navegar }) {
     <div className="min-h-screen bg-brand-50 text-brand-900 font-sans flex flex-col justify-between selection:bg-brand-400 selection:text-white">
       
       {/* ========================================== */}
-      {/* 1. HEADER DINÁMICO                         */}
-      {/* ========================================== */}
-      <header 
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          scrolled 
-            ? 'bg-brand-900/95 backdrop-blur-md shadow-lg border-b border-brand-800 py-3' 
-            : 'bg-transparent py-5'
-        }`}
+{/* 1. HEADER DINÁMICO EN VINO TINTO OFICIAL   */}
+{/* ========================================== */}
+<header 
+  className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+    scrolled 
+      ? 'bg-brand-900/95 backdrop-blur-md shadow-xl border-b border-brand-700/50 py-3' 
+      : 'bg-transparent py-5'
+  }`}
+>
+  <div className="max-w-6xl mx-auto px-6 flex items-center justify-between">
+    
+    {/* Logo y Marca */}
+    <a href="#inicio" className="flex items-center gap-3 group">
+      <img 
+        src="/logo.png" 
+        alt="Logo Unidad de Imágenes Del Este" 
+        className="h-10 w-auto object-contain transition-transform group-hover:scale-105 brightness-0 invert drop-shadow" 
+      />
+      <span className="hidden sm:inline-block font-black text-sm tracking-tight text-white uppercase">
+        Unidad de Imágenes <span className="text-brand-200">Del Este</span>
+      </span>
+    </a>
+
+    {/* Menú Desktop */}
+    <nav className="hidden md:flex items-center gap-7 text-xs font-bold uppercase tracking-wider text-brand-100">
+      <a href="#inicio" className="hover:text-brand-200 transition-colors">Inicio</a>
+      <a href="#equipos" className="hover:text-brand-200 transition-colors">Tecnología</a>
+      <a href="#personal" className="hover:text-brand-200 transition-colors">Personal</a>
+      <a href="#instagram" className="hover:text-brand-200 transition-colors">Instagram</a>
+      <a href="#contacto" className="hover:text-brand-200 transition-colors">Ubicación</a>
+    </nav>
+
+    {/* Botón CTA Header */}
+    <div className="hidden md:flex items-center gap-3">
+      <button
+        type="button"
+        onClick={() => navegar('/pacientes')}
+        className="bg-brand-600 hover:bg-brand-500 active:scale-95 text-white text-xs font-bold px-5 py-2.5 rounded-xl shadow-md transition duration-200 cursor-pointer flex items-center gap-2 border border-brand-400/30"
       >
-        <div className="max-w-6xl mx-auto px-6 flex items-center justify-between">
-          
-          <a href="#inicio" className="flex items-center gap-3 group">
-            <img 
-              src="/logo.png" 
-              alt="Logo" 
-              className="h-10 w-auto object-contain transition-transform group-hover:scale-105 " 
-            />
-          </a>
+        <i className="fa-solid fa-file-medical text-xs"></i>
+        Portal Pacientes
+      </button>
+    </div>
 
-          <nav className="hidden md:flex items-center gap-7 text-xs font-bold uppercase tracking-wider text-brand-100">
-            <a href="#inicio" className="hover:text-brand-300 transition-colors">Inicio</a>
-            <a href="#equipos" className="hover:text-brand-300 transition-colors">Tecnología</a>
-            <a href="#personal" className="hover:text-brand-300 transition-colors">Personal</a>
-            <a href="#instagram" className="hover:text-brand-300 transition-colors">Instagram</a>
-            <a href="#contacto" className="hover:text-brand-300 transition-colors">Ubicación</a>
-          </nav>
+    {/* Hamburguesa Móvil */}
+    <button 
+      onClick={() => setMenuMovil(!menuMovil)} 
+      className="md:hidden text-white text-xl p-2 rounded-lg focus:outline-none hover:bg-brand-800/50 transition"
+      aria-label="Abrir menú"
+    >
+      <i className={`fa-solid ${menuMovil ? 'fa-xmark' : 'fa-bars'}`}></i>
+    </button>
+  </div>
 
-          <div className="hidden md:flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => navegar('/pacientes')}
-              className="bg-brand-600 hover:bg-brand-700 active:scale-95 text-white text-xs font-bold px-5 py-2.5 rounded-xl shadow-md transition duration-200 cursor-pointer flex items-center gap-2 border border-brand-400/30"
-            >
-              <i className="fa-solid fa-file-medical text-xs"></i>
-              Portal Pacientes
-            </button>
-          </div>
-
-          <button 
-            onClick={() => setMenuMovil(!menuMovil)} 
-            className="md:hidden text-white text-xl p-2 rounded-lg focus:outline-none"
-            aria-label="Abrir menú"
-          >
-            <i className={`fa-solid ${menuMovil ? 'fa-xmark' : 'fa-bars'}`}></i>
-          </button>
-        </div>
-
-        {menuMovil && (
-          <div className="md:hidden bg-brand-900 border-b border-brand-800 px-6 py-4 space-y-3 mt-3">
-            <a href="#inicio" onClick={() => setMenuMovil(false)} className="block text-xs font-bold uppercase text-white py-1">Inicio</a>
-            <a href="#equipos" onClick={() => setMenuMovil(false)} className="block text-xs font-bold uppercase text-white py-1">Tecnología</a>
-            <a href="#personal" onClick={() => setMenuMovil(false)} className="block text-xs font-bold uppercase text-white py-1">Personal</a>
-            <a href="#instagram" onClick={() => setMenuMovil(false)} className="block text-xs font-bold uppercase text-white py-1">Instagram</a>
-            <a href="#contacto" onClick={() => setMenuMovil(false)} className="block text-xs font-bold uppercase text-white py-1">Ubicación y Contacto</a>
-            <button
-              type="button"
-              onClick={() => { setMenuMovil(false); navegar('/pacientes'); }}
-              className="w-full mt-2 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold py-3 rounded-xl shadow-md transition flex items-center justify-center gap-2"
-            >
-              <i className="fa-solid fa-file-medical"></i>
-              Consultar Resultados
-            </button>
-          </div>
-        )}
-      </header>
+  {/* Menú Desplegable Móvil en Vino Tinto */}
+  {menuMovil && (
+    <div className="md:hidden bg-brand-900/98 backdrop-blur-lg border-b border-brand-700 px-6 py-5 space-y-3.5 shadow-2xl animate-fade-in mt-2">
+      <a href="#inicio" onClick={() => setMenuMovil(false)} className="block text-xs font-bold uppercase text-white hover:text-brand-200 py-1">Inicio</a>
+      <a href="#equipos" onClick={() => setMenuMovil(false)} className="block text-xs font-bold uppercase text-white hover:text-brand-200 py-1">Tecnología</a>
+      <a href="#personal" onClick={() => setMenuMovil(false)} className="block text-xs font-bold uppercase text-white hover:text-brand-200 py-1">Personal</a>
+      <a href="#instagram" onClick={() => setMenuMovil(false)} className="block text-xs font-bold uppercase text-white hover:text-brand-200 py-1">Instagram</a>
+      <a href="#contacto" onClick={() => setMenuMovil(false)} className="block text-xs font-bold uppercase text-white hover:text-brand-200 py-1">Ubicación y Contacto</a>
+      <button
+        type="button"
+        onClick={() => { setMenuMovil(false); navegar('/pacientes'); }}
+        className="w-full mt-2 bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold py-3 rounded-xl shadow-md transition flex items-center justify-center gap-2 border border-brand-400/30"
+      >
+        <i className="fa-solid fa-file-medical"></i>
+        Consultar Resultados
+      </button>
+    </div>
+  )}
+</header>
 
       <main>
         
