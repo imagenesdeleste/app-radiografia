@@ -230,7 +230,7 @@ export const enviarCorreoPaciente = async (
             Te informamos que tu estudio <strong>"${tituloEstudio}"</strong> (${tipoExamen}) ya se encuentra disponible en nuestro portal digital.
           </p>
           <div style="text-align: center; margin: 30px 0;">
-            <a href="https://www.unidaddeimagenesdeleste.com" style="background-color: #0f172a; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 14px; display: inline-block;">
+            <a href="https://www.unidaddeimagenesdeleste.com/pacientes" style="background-color: #0f172a; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 14px; display: inline-block;">
               Consultar Resultados
             </a>
           </div>
