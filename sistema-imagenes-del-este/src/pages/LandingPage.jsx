@@ -1,8 +1,63 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 export default function LandingPage({ navegar }) {
   const [faqOpen, setFaqOpen] = useState(null);
   const [menuMovil, setMenuMovil] = useState(false);
+
+  // 1. Estado para el Header Transparente -> Sólido al hacer Scroll
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 40);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // 2. Diapositivas para el Hero Carousel (3 Presentaciones)
+  const slides = [
+    {
+      badge: "Tecnología de Punta",
+      title: "Radiología Digital de ",
+      highlight: "Alta Resolución",
+      desc: "Imágenes de máxima precisión con hasta un 80% menos de radiación. Diagnósticos eficientes e informes digitales en minutos.",
+      btnText: "Ver Servicios",
+      btnLink: "#servicios",
+      icon: "fa-x-ray",
+      img: "assets/portal-preview.jpeg"
+    },
+    {
+      badge: "Diagnóstico Inocuo",
+      title: "Ecografías y Doppler ",
+      highlight: "en Tiempo Real",
+      desc: "Evaluación anatómica completa, no invasiva y totalmente libre de radiación. Atendido por personal médico calificado.",
+      btnText: "Agendar Cita",
+      btnLink: "https://wa.me/584245715351?text=Hola,%20deseo%20agendar%20una%20ecografia",
+      icon: "fa-wave-square",
+      img: "assets/portal-preview.jpeg"
+    },
+    {
+      badge: "Plataforma Digital 24/7",
+      title: "Resultados Médicos a un ",
+      highlight: "Solo Clic",
+      desc: "Ingresa con tu número de cédula para consultar, ver e imprimir tus informes y estudios desde la comodidad de tu hogar.",
+      btnText: "Ir al Portal",
+      isPortalBtn: true,
+      icon: "fa-file-medical",
+      img: "assets/portal-preview.jpeg"
+    }
+  ];
+
+  const [currentSlide, setCurrentSlide] = useState(0);
+
+  // Auto-play del Carousel cada 6 segundos
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % slides.length);
+    }, 6000);
+    return () => clearInterval(timer);
+  }, [slides.length]);
 
   const toggleFaq = (index) => {
     setFaqOpen(faqOpen === index ? null : index);
@@ -12,45 +67,54 @@ export default function LandingPage({ navegar }) {
     <div className="min-h-screen bg-brand-50 text-brand-900 font-sans flex flex-col justify-between selection:bg-brand-400 selection:text-white">
       
       {/* ========================================== */}
-      {/* 1. HEADER / NAVBAR STICKY                 */}
+      {/* 1. HEADER DINÁMICO (TRANSPARENTE / SÓLIDO) */}
       {/* ========================================== */}
-      <header className="sticky top-0 z-50 bg-brand-50/90 backdrop-blur-md border-b border-brand-200 shadow-sm transition-all">
-        <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
+      <header 
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+          scrolled 
+            ? 'bg-brand-900/95 backdrop-blur-md shadow-lg border-b border-brand-800 py-3' 
+            : 'bg-transparent py-5'
+        }`}
+      >
+        <div className="max-w-6xl mx-auto px-6 flex items-center justify-between">
           
-          {/* Logo y Nombre Marca */}
+          {/* Logo */}
           <a href="#inicio" className="flex items-center gap-3 group">
             <img 
               src="/logo.png" 
-              alt="Logo Unidad de Imágenes" 
-              className="h-11 w-auto object-contain transition-transform group-hover:scale-105" 
+              alt="Logo" 
+              className="h-10 w-auto object-contain transition-transform group-hover:scale-105 brightness-0 invert" 
             />
+            <span className="hidden sm:inline-block font-black text-sm tracking-tight text-white uppercase">
+              Unidad de Imágenes <span className="text-brand-300">Del Este</span>
+            </span>
           </a>
 
           {/* Menú Desktop */}
-          <nav className="hidden md:flex items-center gap-8 text-xs font-bold uppercase tracking-wider text-brand-800">
-            <a href="#inicio" className="hover:text-brand-600 transition-colors">Inicio</a>
-            <a href="#servicios" className="hover:text-brand-600 transition-colors">Exámenes</a>
-            <a href="#nosotros" className="hover:text-brand-600 transition-colors">Nosotros</a>
-            <a href="#faq" className="hover:text-brand-600 transition-colors">Preguntas</a>
-            <a href="#contacto" className="hover:text-brand-600 transition-colors">Contacto</a>
+          <nav className="hidden md:flex items-center gap-8 text-xs font-bold uppercase tracking-wider text-brand-100">
+            <a href="#inicio" className="hover:text-brand-300 transition-colors">Inicio</a>
+            <a href="#servicios" className="hover:text-brand-300 transition-colors">Exámenes</a>
+            <a href="#nosotros" className="hover:text-brand-300 transition-colors">Nosotros</a>
+            <a href="#faq" className="hover:text-brand-300 transition-colors">Preguntas</a>
+            <a href="#contacto" className="hover:text-brand-300 transition-colors">Contacto</a>
           </nav>
 
-          {/* Botón CTA Directo al Portal */}
+          {/* Botón CTA Header */}
           <div className="hidden md:flex items-center gap-3">
             <button
               type="button"
               onClick={() => navegar('/pacientes')}
-              className="bg-brand-600 hover:bg-brand-700 active:scale-95 text-white text-xs font-bold px-5 py-2.5 rounded-xl shadow-md transition duration-200 cursor-pointer flex items-center gap-2"
+              className="bg-brand-600 hover:bg-brand-700 active:scale-95 text-white text-xs font-bold px-5 py-2.5 rounded-xl shadow-md transition duration-200 cursor-pointer flex items-center gap-2 border border-brand-400/30"
             >
               <i className="fa-solid fa-file-medical text-xs"></i>
               Portal Pacientes
             </button>
           </div>
 
-          {/* Botón Menú Móvil */}
+          {/* Hamburguesa Móvil */}
           <button 
             onClick={() => setMenuMovil(!menuMovil)} 
-            className="md:hidden text-brand-900 text-xl p-2 rounded-lg hover:bg-brand-100 focus:outline-none"
+            className="md:hidden text-white text-xl p-2 rounded-lg focus:outline-none"
             aria-label="Abrir menú"
           >
             <i className={`fa-solid ${menuMovil ? 'fa-xmark' : 'fa-bars'}`}></i>
@@ -59,42 +123,12 @@ export default function LandingPage({ navegar }) {
 
         {/* Desplegable Móvil */}
         {menuMovil && (
-          <div className="md:hidden bg-brand-100 border-b border-brand-200 px-6 py-4 space-y-3">
-            <a 
-              href="#inicio" 
-              onClick={() => setMenuMovil(false)}
-              className="block text-xs font-bold uppercase text-brand-900 py-1 hover:text-brand-600"
-            >
-              Inicio
-            </a>
-            <a 
-              href="#servicios" 
-              onClick={() => setMenuMovil(false)}
-              className="block text-xs font-bold uppercase text-brand-900 py-1 hover:text-brand-600"
-            >
-              Exámenes y Estudios
-            </a>
-            <a 
-              href="#nosotros" 
-              onClick={() => setMenuMovil(false)}
-              className="block text-xs font-bold uppercase text-brand-900 py-1 hover:text-brand-600"
-            >
-              Por Qué Elegirnos
-            </a>
-            <a 
-              href="#faq" 
-              onClick={() => setMenuMovil(false)}
-              className="block text-xs font-bold uppercase text-brand-900 py-1 hover:text-brand-600"
-            >
-              Preguntas Frecuentes
-            </a>
-            <a 
-              href="#contacto" 
-              onClick={() => setMenuMovil(false)}
-              className="block text-xs font-bold uppercase text-brand-900 py-1 hover:text-brand-600"
-            >
-              Ubicación y Citas
-            </a>
+          <div className="md:hidden bg-brand-900 border-b border-brand-800 px-6 py-4 space-y-3 mt-3">
+            <a href="#inicio" onClick={() => setMenuMovil(false)} className="block text-xs font-bold uppercase text-white py-1">Inicio</a>
+            <a href="#servicios" onClick={() => setMenuMovil(false)} className="block text-xs font-bold uppercase text-white py-1">Exámenes</a>
+            <a href="#nosotros" onClick={() => setMenuMovil(false)} className="block text-xs font-bold uppercase text-white py-1">Nosotros</a>
+            <a href="#faq" onClick={() => setMenuMovil(false)} className="block text-xs font-bold uppercase text-white py-1">Preguntas</a>
+            <a href="#contacto" onClick={() => setMenuMovil(false)} className="block text-xs font-bold uppercase text-white py-1">Contacto</a>
             <button
               type="button"
               onClick={() => { setMenuMovil(false); navegar('/pacientes'); }}
@@ -110,98 +144,110 @@ export default function LandingPage({ navegar }) {
       <main>
         
         {/* ========================================== */}
-        {/* 2. HERO PRINCIPAL ESTILO CLINICO           */}
+        {/* 2. HERO FULL SCREEN CAROUSEL (3 SLIDES)     */}
         {/* ========================================== */}
-        <section id="inicio" className="relative bg-brand-800 text-white py-16 lg:py-24 px-6 lg:px-12 overflow-hidden shadow-xl">
-          <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center relative z-10">
-            <div className="space-y-6 text-center lg:text-left">
-              <span className="inline-block bg-brand-400 text-white text-xs font-extrabold uppercase tracking-widest px-4 py-1.5 rounded-full shadow-sm">
-                Diagnósticos Médicos Confiables
+        <section id="inicio" className="relative min-h-screen bg-brand-900 text-white flex items-center pt-24 pb-16 px-6 lg:px-12 overflow-hidden shadow-2xl">
+          
+          {/* Fondo Decorativo de Oscuridad */}
+          <div className="absolute inset-0 bg-gradient-to-r from-brand-950 via-brand-900 to-brand-950 opacity-90 z-0"></div>
+
+          <div className="max-w-6xl mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-12 items-center relative z-10 min-h-[500px]">
+            
+            {/* Contenido de la Diapositiva */}
+            <div className="space-y-6 text-center lg:text-left transition-all duration-500 transform">
+              <span className="inline-block bg-brand-400 text-white text-xs font-extrabold uppercase tracking-widest px-4 py-1.5 rounded-full shadow-md animate-fade-in">
+                {slides[currentSlide].badge}
               </span>
-              <h1 className="text-4xl lg:text-5xl font-black leading-tight tracking-tight text-white">
-                Imágenes Médicas de <span className="text-brand-300">Alta Resolución</span>
+              
+              <h1 className="text-4xl lg:text-6xl font-black leading-tight tracking-tight text-white">
+                {slides[currentSlide].title}
+                <span className="text-brand-300 block sm:inline">{slides[currentSlide].highlight}</span>
               </h1>
+              
               <p className="text-brand-100/90 text-base lg:text-lg leading-relaxed max-w-xl mx-auto lg:mx-0">
-                Tecnología digital avanzada con máxima nitidez y hasta 80% menos radiación. Obtén tus resultados e informes en línea de manera rápida y segura.
+                {slides[currentSlide].desc}
               </p>
 
-              {/* Botones de Acción */}
-              <div className="flex flex-col sm:flex-row gap-4 pt-2 justify-center lg:justify-start">
-                <button 
-                  onClick={() => navegar('/pacientes')} 
-                  className="bg-brand-600 hover:bg-brand-700 active:scale-95 text-white font-bold px-7 py-3.5 rounded-xl shadow-lg transition flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  <i className="fa-solid fa-download text-sm"></i> Descargar Resultados
-                </button>
+              {/* Botones Interactivos */}
+              <div className="flex flex-col sm:flex-row gap-4 pt-4 justify-center lg:justify-start">
+                {slides[currentSlide].isPortalBtn ? (
+                  <button 
+                    onClick={() => navegar('/pacientes')} 
+                    className="bg-brand-600 hover:bg-brand-700 active:scale-95 text-white font-bold px-8 py-4 rounded-xl shadow-lg transition flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <i className="fa-solid fa-user-check"></i> {slides[currentSlide].btnText}
+                  </button>
+                ) : (
+                  <a 
+                    href={slides[currentSlide].btnLink} 
+                    className="bg-brand-600 hover:bg-brand-700 active:scale-95 text-white font-bold px-8 py-4 rounded-xl shadow-lg transition flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    {slides[currentSlide].btnText} <i className="fa-solid fa-arrow-right text-sm"></i>
+                  </a>
+                )}
+
                 <a 
-                  href="https://wa.me/584245715351?text=Hola,%20quisiera%20agendar%20una%20cita%20para%20un%20estudio" 
+                  href="https://wa.me/584245715351" 
                   target="_blank" 
                   rel="noreferrer"
-                  className="bg-brand-900/60 hover:bg-brand-900 text-brand-50 border border-brand-400/40 font-bold px-6 py-3.5 rounded-xl transition flex items-center justify-center gap-2"
+                  className="bg-white/10 hover:bg-white/20 text-white border border-white/20 font-bold px-6 py-4 rounded-xl transition flex items-center justify-center gap-2"
                 >
-                  <i className="fa-brands fa-whatsapp text-emerald-400 text-base"></i> Agendar por WhatsApp
+                  <i className="fa-brands fa-whatsapp text-emerald-400 text-lg"></i> Contactar Asesor
                 </a>
               </div>
+            </div>
 
-              {/* Badges de Confianza */}
-              <div className="pt-6 border-t border-brand-700/60 grid grid-cols-3 gap-4 text-center">
-                <div>
-                  <h4 className="text-xl font-black text-white">80%</h4>
-                  <p className="text-[11px] text-brand-200">Menos Radiación</p>
+            {/* Vista Previa / Tarjeta Ilustrativa */}
+            <div className="hidden lg:flex justify-center items-center">
+              <div className="relative w-full max-w-md bg-brand-950/80 p-6 rounded-3xl border border-brand-700/60 shadow-2xl backdrop-blur-sm">
+                <div className="w-16 h-16 bg-brand-600 text-white rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4 shadow-md">
+                  <i className={`fa-solid ${slides[currentSlide].icon}`}></i>
                 </div>
-                <div>
-                  <h4 className="text-xl font-black text-white">100%</h4>
-                  <p className="text-[11px] text-brand-200">Entrega Digital</p>
-                </div>
-                <div>
-                  <h4 className="text-xl font-black text-white">24/7</h4>
-                  <p className="text-[11px] text-brand-200">Acceso en Web</p>
+                <div className="text-center space-y-2">
+                  <h3 className="text-xl font-bold text-white uppercase tracking-wide">Unidad de Imágenes</h3>
+                  <p className="text-xs text-brand-200">Barquisimeto, Estado Lara</p>
+                  <div className="pt-4 border-t border-brand-800/80">
+                    <span className="text-[11px] font-semibold text-brand-300 bg-brand-900 px-3 py-1 rounded-full border border-brand-700">
+                      Servicio Rápido y Garantizado
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Vista Previa de la Plataforma */}
-            <div className="hidden lg:block">
-              <div className="relative mx-auto max-w-md bg-brand-900/80 p-4 rounded-3xl border border-brand-700/60 shadow-2xl">
-                <div className="bg-brand-100 rounded-2xl p-6 text-brand-900 space-y-4 shadow-inner">
-                  <div className="flex items-center gap-3 pb-3 border-b border-brand-200">
-                    <div className="w-10 h-10 rounded-full bg-brand-600 text-white font-bold flex items-center justify-center">
-                      <i className="fa-solid fa-x-ray"></i>
-                    </div>
-                    <div>
-                      <h4 className="text-xs font-bold uppercase">Portal Digital Activo</h4>
-                      <p className="text-[10px] text-brand-800/70">Unidad de Imágenes Del Este</p>
-                    </div>
-                  </div>
-                  <p className="text-xs text-brand-900/80 leading-normal">
-                    Ingresa con tu cédula para consultar o descargar ecografías, radiografías e informes médicos firmados.
-                  </p>
-                  <button 
-                    onClick={() => navegar('/pacientes')}
-                    className="w-full py-3 bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs rounded-xl shadow transition cursor-pointer"
-                  >
-                    Ingresar al Sistema
-                  </button>
-                </div>
-              </div>
+          </div>
+
+          {/* Controles e Indicadores del Carousel */}
+          <div className="absolute bottom-8 left-0 right-0 z-20 flex flex-col items-center gap-3">
+            <div className="flex items-center gap-3">
+              {slides.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setCurrentSlide(idx)}
+                  className={`h-2.5 rounded-full transition-all duration-300 ${
+                    currentSlide === idx ? 'w-8 bg-brand-300' : 'w-2.5 bg-white/30 hover:bg-white/60'
+                  }`}
+                  aria-label={`Diapositiva ${idx + 1}`}
+                />
+              ))}
             </div>
           </div>
         </section>
 
         {/* ========================================== */}
-        {/* 3. BANNER DESTACADO PORTAL PACIENTES       */}
+        {/* 3. BANNER CONSULTA POR CÉDULA              */}
         {/* ========================================== */}
-        <section className="py-12 px-6 lg:px-12 max-w-6xl mx-auto -mt-8 relative z-20">
-          <div className="bg-brand-100 border border-brand-200 rounded-3xl p-6 lg:p-10 shadow-lg grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+        <section className="py-12 px-6 lg:px-12 max-w-6xl mx-auto -mt-10 relative z-30">
+          <div className="bg-brand-100 border border-brand-200 rounded-3xl p-6 lg:p-10 shadow-xl grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
             <div className="md:col-span-2 space-y-2 text-center md:text-left">
               <span className="text-[10px] font-black uppercase tracking-widest text-white bg-brand-400 px-3 py-1 rounded-md shadow-sm">
-                Servicio Online
+                Servicio en Línea
               </span>
               <h2 className="text-2xl lg:text-3xl font-black text-brand-900 tracking-tight">
-                ¿Te realizaste un estudio recientemente?
+                ¿Consultar o descargar tus exámenes?
               </h2>
               <p className="text-xs lg:text-sm text-brand-800 font-medium">
-                Consulta y descarga tus resultados directamente desde la comodidad de tu hogar.
+                Accede a la plataforma web ingresando con tu número de cédula.
               </p>
             </div>
 
@@ -218,21 +264,21 @@ export default function LandingPage({ navegar }) {
         </section>
 
         {/* ========================================== */}
-        {/* 4. SECCIÓN DE SERVICIOS / EXÁMENES          */}
+        {/* 4. SECCIÓN DE EXÁMENES Y SERVICIOS          */}
         {/* ========================================== */}
         <section id="servicios" className="py-16 px-6 lg:px-12 bg-brand-100/50 border-y border-brand-200">
           <div className="max-w-6xl mx-auto space-y-12">
             
             <div className="text-center space-y-3 max-w-2xl mx-auto">
               <span className="text-xs font-extrabold uppercase tracking-widest text-white bg-brand-600 px-3 py-1 rounded-full shadow-sm">
-                Catálogo de Servicios
+                Nuestras Especialidades
               </span>
-              <h2 className="text-3xl lg:text-4xl font-black text-brand-900">Estudios Radiológicos Especializados</h2>
-              <p className="text-brand-800 font-medium text-sm">Contamos con personal médico calificado para diagnósticos precisos.</p>
+              <h2 className="text-3xl lg:text-4xl font-black text-brand-900">Estudios de Alta Precisión</h2>
+              <p className="text-brand-800 font-medium text-sm">Equipos digitales operados por especialistas capacitados.</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {/* Radiografía Digital */}
+              {/* Radiografía */}
               <div className="bg-white rounded-2xl p-7 shadow-sm border border-brand-200 hover:shadow-md transition duration-300 flex flex-col justify-between">
                 <div className="space-y-4">
                   <div className="w-12 h-12 bg-brand-600 text-white rounded-xl flex items-center justify-center text-xl shadow-sm">
@@ -240,7 +286,7 @@ export default function LandingPage({ navegar }) {
                   </div>
                   <h3 className="text-lg font-bold text-brand-900">Radiografía Digital</h3>
                   <p className="text-xs text-brand-800/80 leading-relaxed">
-                    Captura instantánea de alta resolución. Proceso ecológico sin químicos y menor exposición radiológica.
+                    Captura instantánea de alta resolución con dosis de radiación reducidas. Entrega digital inmediata.
                   </p>
                 </div>
                 <a 
@@ -253,7 +299,7 @@ export default function LandingPage({ navegar }) {
                 </a>
               </div>
 
-              {/* Ecografía */}
+              {/* Ecografías */}
               <div className="bg-white rounded-2xl p-7 shadow-sm border border-brand-200 hover:shadow-md transition duration-300 flex flex-col justify-between">
                 <div className="space-y-4">
                   <div className="w-12 h-12 bg-brand-600 text-white rounded-xl flex items-center justify-center text-xl shadow-sm">
@@ -261,7 +307,7 @@ export default function LandingPage({ navegar }) {
                   </div>
                   <h3 className="text-lg font-bold text-brand-900">Ecografías (Ultrasonido)</h3>
                   <p className="text-xs text-brand-800/80 leading-relaxed">
-                    Evaluaciones abdominales, pélvicas, partes blandas y Doppler en tiempo real, totalmente inocuas.
+                    Evaluaciones abdominales, pélvicas, renales y Doppler en tiempo real, totalmente inocuas.
                   </p>
                 </div>
                 <a 
@@ -274,7 +320,7 @@ export default function LandingPage({ navegar }) {
                 </a>
               </div>
 
-              {/* Rayos X Especializados */}
+              {/* Rayos X Especiales */}
               <div className="bg-white rounded-2xl p-7 shadow-sm border border-brand-200 hover:shadow-md transition duration-300 flex flex-col justify-between">
                 <div className="space-y-4">
                   <div className="w-12 h-12 bg-brand-600 text-white rounded-xl flex items-center justify-center text-xl shadow-sm">
@@ -282,7 +328,7 @@ export default function LandingPage({ navegar }) {
                   </div>
                   <h3 className="text-lg font-bold text-brand-900">Rayos X Especializados</h3>
                   <p className="text-xs text-brand-800/80 leading-relaxed">
-                    Estudios preoperatorios, óseos y articulares con procesamiento de imagen digitalizado.
+                    Estudios articulares, traumatológicos y preoperatorios con nitidez quirúrgica.
                   </p>
                 </div>
                 <a 
@@ -300,7 +346,7 @@ export default function LandingPage({ navegar }) {
         </section>
 
         {/* ========================================== */}
-        {/* 5. SECCIÓN POR QUÉ ELEGIRNOS               */}
+        {/* 5. NOSOTROS / POR QUÉ ELEGIRNOS            */}
         {/* ========================================== */}
         <section id="nosotros" className="py-16 px-6 lg:px-12 max-w-6xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
@@ -312,7 +358,7 @@ export default function LandingPage({ navegar }) {
                 Atención médica humana con respuesta inmediata
               </h2>
               <p className="text-xs lg:text-sm text-brand-800/90 leading-relaxed">
-                Nos enfocamos en brindar un servicio cálido y eficiente. Eliminamos los tiempos de espera innecesarios entregando tus estudios directamente a tu teléfono o computadora.
+                Nos enfocamos en ofrecer un servicio rápido y confiable. Eliminamos las demoras entregando tus informes directamente a tu dispositivo móvil o computadora.
               </p>
 
               <div className="space-y-4 pt-2">
@@ -321,8 +367,8 @@ export default function LandingPage({ navegar }) {
                     ✓
                   </div>
                   <div>
-                    <h4 className="text-xs font-bold text-brand-900">Entrega de Informe Firmado</h4>
-                    <p className="text-[11px] text-brand-800/70">Avalado por médicos radiólogos especialistas.</p>
+                    <h4 className="text-xs font-bold text-brand-900">Informes Médicos Firmados</h4>
+                    <p className="text-[11px] text-brand-800/70">Avalados por especialistas en radiodiagnóstico.</p>
                   </div>
                 </div>
 
@@ -331,17 +377,17 @@ export default function LandingPage({ navegar }) {
                     ✓
                   </div>
                   <div>
-                    <h4 className="text-xs font-bold text-brand-900">Ubicación Céntrica en Barquisimeto</h4>
-                    <p className="text-[11px] text-brand-800/70">Fácil acceso y estacionamiento seguro.</p>
+                    <h4 className="text-xs font-bold text-brand-900">Ubicación Céntrica</h4>
+                    <p className="text-[11px] text-brand-800/70">Barquisimeto - Fácil acceso y estacionamiento.</p>
                   </div>
                 </div>
               </div>
             </div>
 
             <div className="bg-brand-100 border border-brand-200 p-8 rounded-3xl text-center space-y-4 shadow-sm">
-              <h3 className="text-xl font-black text-brand-900">¿Atención Corporativa o Convenios?</h3>
+              <h3 className="text-xl font-black text-brand-900">¿Atención Corporativa?</h3>
               <p className="text-xs text-brand-800 leading-relaxed">
-                Ofrecemos planes de evaluaciones médicas e imágenes para empresas y centros de salud aliados.
+                Planes de evaluaciones médicas masivas para empresas y centros de salud aliados.
               </p>
               <a 
                 href="https://wa.me/584245715351?text=Hola,%20quisiera%20informacion%20sobre%20servicio%20corporativo" 
@@ -363,14 +409,14 @@ export default function LandingPage({ navegar }) {
             <span className="text-xs font-bold uppercase tracking-widest text-brand-600 bg-brand-100 px-3 py-1 rounded-full border border-brand-200">
               Resuelve tus Dudas
             </span>
-            <h2 className="text-3xl font-black text-brand-900">Información al Paciente</h2>
+            <h2 className="text-3xl font-black text-brand-900">Preguntas Frecuentes</h2>
           </div>
 
           <div className="space-y-4">
             {[
-              { q: "¿Cómo descargo mis estudios en la página web?", a: "Haz clic en el botón 'Portal Pacientes', ingresa tu número de cédula y la contraseña asignada en recepción para ver tus archivos." },
-              { q: "¿Cuánto tiempo tardan en estar listos los resultados?", a: "Las imágenes digitales están disponibles casi de inmediato en la plataforma. El informe firmado tarda entre 24 a 48 horas hábiles." },
-              { q: "¿Atienden por orden de llegada o cita previa?", a: "Para radiografías simples atendemos por orden de llegada. Para ecografías recomendemos coordinar hora previa vía WhatsApp." }
+              { q: "¿Cómo descargo mis estudios en la página web?", a: "Ingresa al 'Portal Pacientes', coloca tu número de cédula y la clave asignada en recepción para visualizar o descargar tus archivos." },
+              { q: "¿Cuánto tardan en estar listos los resultados?", a: "Las imágenes digitales están disponibles casi de inmediato. El informe firmado por el médico especialista tarda entre 24 a 48 horas." },
+              { q: "¿Atienden por orden de llegada o cita previa?", a: "Para radiografías atendemos por orden de llegada. Para ecografías recomendamos agendar previamente vía WhatsApp." }
             ].map((item, index) => (
               <div key={index} className="bg-white rounded-xl border border-brand-200 overflow-hidden shadow-sm">
                 <button 
@@ -393,86 +439,71 @@ export default function LandingPage({ navegar }) {
       </main>
 
       {/* ========================================== */}
-      {/* 7. FOOTER EXACTO ESTILO LABORATORIO ONG    */}
+      {/* 7. FOOTER ESTILO LABORATORIO ONG           */}
       {/* ========================================== */}
       <footer id="contacto" className="bg-brand-600 text-white pt-14 pb-6 border-t border-brand-700 shadow-inner">
         <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-10 text-center md:text-left items-start pb-12">
           
-          {/* COLUMNA 1: LOGO, SLOGAN Y CONTACTO */}
+          {/* COLUMNA 1 */}
           <div className="flex flex-col items-center md:items-start space-y-5">
-            {/* Logo */}
             <div className="w-48 h-auto flex justify-center md:justify-start">
               <img 
                 src="/logo.png" 
                 alt="Unidad de Imágenes Del Este" 
+                className="w-full h-full object-contain brightness-0 invert drop-shadow-sm" 
               />
             </div>
 
-            {/* Slogan */}
             <p className="text-xs font-bold tracking-tight text-brand-100 italic">
-              "Imagenes del Este"
+              "El Centro de Imágenes de los Barquisimetanos"
             </p>
 
-            {/* Datos de Contacto */}
             <div className="space-y-2 pt-2 text-xs font-medium text-brand-100/90">
               <h4 className="text-xs font-bold uppercase tracking-wider text-white mb-2">Contacto</h4>
-              
               <p className="flex items-center justify-center md:justify-start gap-2">
-                <i className="fa-solid fa-location-dot text-brand-300"></i>
-                Barquisimeto, Venezuela
+                <i className="fa-solid fa-location-dot text-brand-300"></i> Barquisimeto, Venezuela
               </p>
-              
               <p className="flex items-center justify-center md:justify-start gap-2">
-                <i className="fa-solid fa-phone text-brand-300"></i>
-                +58 424-5715351
+                <i className="fa-solid fa-phone text-brand-300"></i> +58 424-5715351
               </p>
-              
               <p className="flex items-center justify-center md:justify-start gap-2">
-                <i className="fa-solid fa-envelope text-brand-300"></i>
-                centrodeimagenesdeleste@gmail.com
+                <i className="fa-solid fa-envelope text-brand-300"></i> centrodeimagenesdeleste@gmail.com
               </p>
             </div>
           </div>
 
-          {/* COLUMNA 2: REDES SOCIALES */}
+          {/* COLUMNA 2 */}
           <div className="flex flex-col items-center space-y-4 md:pt-4">
             <h4 className="text-xs font-bold uppercase tracking-wider text-white">Síguenos</h4>
-            
             <div className="flex items-center justify-center gap-3">
               <a 
                 href="https://instagram.com/imagenesdeleste_bqto" 
                 target="_blank" 
                 rel="noreferrer"
-                className="w-10 h-10 rounded-full bg-white/20 hover:bg-white hover:text-brand-600 text-white flex items-center justify-center text-lg transition-all duration-200 shadow-sm"
-                aria-label="Instagram"
+                className="w-10 h-10 rounded-full bg-white/20 hover:bg-white hover:text-brand-600 text-white flex items-center justify-center text-lg transition-all shadow-sm"
               >
                 <i className="fa-brands fa-instagram"></i>
               </a>
-
               <a 
                 href="#facebook" 
-                className="w-10 h-10 rounded-full bg-white/20 hover:bg-white hover:text-brand-600 text-white flex items-center justify-center text-lg transition-all duration-200 shadow-sm"
-                aria-label="Facebook"
+                className="w-10 h-10 rounded-full bg-white/20 hover:bg-white hover:text-brand-600 text-white flex items-center justify-center text-lg transition-all shadow-sm"
               >
                 <i className="fa-brands fa-facebook-f"></i>
               </a>
-
               <a 
                 href="https://wa.me/584245715351" 
                 target="_blank" 
                 rel="noreferrer"
-                className="w-10 h-10 rounded-full bg-white/20 hover:bg-white hover:text-brand-600 text-white flex items-center justify-center text-lg transition-all duration-200 shadow-sm"
-                aria-label="WhatsApp"
+                className="w-10 h-10 rounded-full bg-white/20 hover:bg-white hover:text-brand-600 text-white flex items-center justify-center text-lg transition-all shadow-sm"
               >
                 <i className="fa-brands fa-whatsapp"></i>
               </a>
             </div>
           </div>
 
-          {/* COLUMNA 3: SERVICIOS */}
+          {/* COLUMNA 3 */}
           <div className="flex flex-col items-center md:items-end space-y-2.5 md:pt-4 text-xs font-semibold text-brand-100/90">
             <h4 className="text-xs font-bold uppercase tracking-wider text-white mb-1">Servicios</h4>
-            
             <a href="#servicios" className="hover:text-white transition">Exámenes</a>
             <button onClick={() => navegar('/pacientes')} className="hover:text-white transition cursor-pointer">
               Registrarse / Consultar
@@ -487,19 +518,28 @@ export default function LandingPage({ navegar }) {
 
         </div>
 
-        {/* BARRA INFERIOR CON CASHEA Y COPYRIGHT */}
+        {/* PIE DE PÁGINA */}
         <div className="border-t border-brand-700/60 pt-6 px-6 max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-xs">
+          <a 
+            href="https://wa.me/584245715351?text=Hola,%20deseo%20pagar%20mi%20estudio%20con%20Cashea" 
+            target="_blank" 
+            rel="noreferrer"
+            className="bg-black hover:bg-zinc-900 text-white font-bold py-2.5 px-5 rounded-full flex items-center gap-2.5 shadow-lg transition transform active:scale-95"
+          >
+            <span className="w-5 h-5 bg-[#DFFF00] text-black font-black rounded-full flex items-center justify-center text-[10px]">
+              c
+            </span>
+            <span>Pagar con Cashea</span>
+          </a>
 
-          {/* Firma */}
           <div className="text-center md:text-right text-[11px] text-brand-200/90 leading-relaxed">
             <p>© 2026 Unidad de Imágenes Del Este, C.A.</p>
             <p className="font-bold text-white">Powered by Axell Peraza</p>
           </div>
-
         </div>
       </footer>
 
-      {/* BOTÓN FLOTANTE WHATSAPP */}
+      {/* BOTÓN WHATSAPP */}
       <a 
         href="https://wa.me/584245715351" 
         target="_blank" 
