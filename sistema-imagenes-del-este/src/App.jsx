@@ -25,13 +25,13 @@ function App() {
     return <PanelPersonal navegar={navegar} />;
   }
 
-  // 2. Portal de Pacientes (Acepta /pacientes o /portal)
-  if (rutaLimpia === '/pacientes' || rutaLimpia === '/portal') {
-    return <PortalPaciente navegar={navegar} />;
+  // 2. Vista oculta para que sigas editando la Landing Page cuando quieras
+  if (rutaLimpia === '/landing') {
+    return <LandingPage navegar={navegar} />;
   }
 
-  // 3. Ruta principal por defecto ( / )
-  return <LandingPage navegar={navegar} />;
+  // 3. Por defecto: Todo el que entre a la raíz ( / ), /pacientes o /portal verá el Portal de Pacientes
+  return <PortalPaciente navegar={navegar} />;
 }
 
 export default App;
