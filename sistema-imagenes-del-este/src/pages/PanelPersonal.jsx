@@ -195,544 +195,531 @@ export default function PanelPersonal() {
   /* ------------------------------------------------------------- */
   /* VISTA 1: FORMULARIO DE LOGIN ADMINISTRATIVO (SI NO ESTÁ AUTENTICADO) */
   /* ------------------------------------------------------------- */
- 
-
-if (!autenticado) {
+  if (!autenticado) {
     return (
-      <div className="min-h-screen bg-brand-800 flex flex-col justify-center items-center p-4 font-sans text-brand-900">
-        <div className="w-full max-w-sm bg-brand-100 border border-brand-200 rounded-2xl p-6 shadow-2xl">
-          <div className="text-center mb-6">
-            {/* Logo en Login de Administración */}
-            <div className="w-48 h-auto mx-auto mb-3 flex items-center justify-center">
-              <img 
-                src="/logo.png" 
-                alt="Logo Unidad de Imágenes" 
-                className="w-full h-full object-contain drop-shadow-sm" 
-              />
+    <div className="min-h-screen bg-rose-950 flex flex-col justify-center items-center p-4 font-sans">
+      <div className="w-full max-w-sm bg-white border border-slate-800 rounded-2xl p-6 shadow-2xl">
+        <div className="text-center mb-6">
+          {/* Logo en Login de Administración */}
+          <div className="w-50 h-50 mx-auto mb-3 flex items-center justify-center">
+            <img 
+              src="/logo.png" 
+              alt="Logo Unidad de Imágenes" 
+              className="w-full h-full object-contain drop-shadow-sm" 
+            />
+          </div>
+          <h2 className="text-lg font-bold text-slate-900">Acceso Administrativo</h2>
+          <p className="text-xs text-slate-400">Ingresa con tus credenciales de personal</p>
+        </div>
+
+        <form onSubmit={handleAdminLogin} className="space-y-4">
+          {errorLogin && (
+            <div className="p-2.5 text-xs text-red-600 bg-red-50 border border-red-100 rounded-xl text-center font-medium">
+              {errorLogin}
             </div>
-            <h2 className="text-lg font-bold text-brand-900">Acceso Administrativo</h2>
-            <p className="text-xs font-medium text-brand-800/70">Ingresa con tus credenciales de personal</p>
+          )}
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Usuario o Cédula</label>
+            <input 
+              type="text" 
+              placeholder="Ingrese su usuario o cédula" 
+              value={adminCedula}
+              onChange={e => setAdminCedula(e.target.value)}
+              className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
+              required 
+            />
           </div>
 
-          <form onSubmit={handleAdminLogin} className="space-y-4">
-            {errorLogin && (
-              <div className="p-2.5 text-xs text-rose-800 bg-rose-50 border border-rose-200 rounded-xl text-center font-medium">
-                {errorLogin}
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Contraseña</label>
+            <input 
+              type="password" 
+              placeholder="••••••••" 
+              value={adminClave}
+              onChange={e => setAdminClave(e.target.value)}
+              className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
+              required 
+            />
+          </div>
+
+          <button 
+            type="submit" 
+            className="w-full py-3 bg-red-800 hover:bg-red-950 text-white text-xs font-semibold rounded-xl shadow-md transition-all cursor-pointer mt-2"
+          >
+            Iniciar Sesión
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------- */
+/* VISTA 2: PANEL ADMINISTRATIVO (SI YA SE AUTENTICÓ) */
+/* ------------------------------------------------------------- */
+return (
+  <div className="flex min-h-screen bg-slate-100 font-sans text-slate-800">
+    
+    {/* SIDEBAR LATERAL */}
+    <aside className="w-64 bg-red-950 text-slate-300 flex flex-col justify-between p-4 shrink-0 shadow-xl">
+      <div>
+        <div className="flex items-center space-x-3 px-2 py-4 mb-6 border-b border-slate-800">
+          <div className="w-25 h-25 flex items-center justify-center shrink-0">
+            <img 
+              src="/logo.png" 
+              alt="Logo Unidad de Imágenes" 
+              className="w-full h-full object-contain" 
+            />
+          </div>
+          <div>
+            <h2 className="text-sm font-bold text-white leading-tight">{usuarioLogueado?.nombre_completo || 'Panel Interno'}</h2>
+            <p className="text-[11px] text-slate-400">Unidad de Imágenes del este</p>
+            {usuarioLogueado?.rol && (
+              <span className="inline-block px-2 py-0.5 mt-1 text-[9px] font-bold uppercase tracking-wider bg-red-900 text-red-200 border border-red-700/50 rounded-md">
+                {usuarioLogueado.rol}
+              </span>
+            )}
+          </div>
+        </div>
+
+        <nav className="space-y-1.5">
+          <button
+            onClick={() => setSeccion('pacientes-lista')}
+            className={`w-full flex items-center space-x-3 px-3.5 py-3 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+              seccion === 'pacientes-lista'
+                ? 'bg-red-800 text-white shadow-lg shadow-red-600/30'
+                : 'hover:bg-red-900 text-red-200 hover:text-slate-200'
+            }`}
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+            <span>Pacientes ({pacientes.length})</span>
+          </button>
+
+          {/* SOLO SECRETARÍA PUEDE CREAR PACIENTES */}
+          {usuarioLogueado?.rol === 'secretaria' && (
+            <button
+              onClick={() => setSeccion('crear-paciente')}
+              className={`w-full flex items-center space-x-3 px-3.5 py-3 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                seccion === 'crear-paciente'
+                  ? 'bg-red-800 text-white shadow-lg shadow-red-600/30'
+                  : 'hover:bg-red-900 text-red-200 hover:text-slate-200'
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+              </svg>
+              <span>Crear Paciente</span>
+            </button>
+          )}
+
+          <button
+            onClick={() => setSeccion('subir-estudio')}
+            className={`w-full flex items-center space-x-3 px-3.5 py-3 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+              seccion === 'subir-estudio'
+                ? 'bg-red-800 text-white shadow-lg shadow-red-600/30'
+                : 'hover:bg-red-900 text-red-200 hover:text-slate-200'
+            }`}
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+            </svg>
+            <span>Subir Resultado</span>
+          </button>
+        </nav>
+      </div>
+
+      <div className="pt-4 border-t border-slate-800 flex items-center justify-between">
+        <span className="text-[11px] text-white">MedicsWeb v1.0</span>
+        <button 
+          onClick={() => { setAutenticado(false); setUsuarioLogueado(null); }} 
+          className="text-xs text-red-400 hover:text-red-300 transition-colors font-medium cursor-pointer"
+        >
+          Salir
+        </button>
+      </div>
+    </aside>
+
+    {/* ÁREA PRINCIPAL */}
+    <main className="flex-1 p-8 overflow-y-auto">
+      <div className="max-w-4xl mx-auto">
+        
+        {/* VISTA: LISTA DE PACIENTES */}
+        {seccion === 'pacientes-lista' && (
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-100">
+              <div>
+                <h2 className="text-lg font-bold text-slate-900">Directorio de Pacientes</h2>
+                <p className="text-xs text-slate-500 mt-0.5">Total registrados: <strong className="text-sky-600">{pacientes.length} pacientes</strong></p>
+              </div>
+
+              <div className="relative w-full sm:w-72">
+                <input 
+                  type="text" 
+                  placeholder="Buscar cédula o nombre..." 
+                  value={busquedaLista}
+                  onChange={e => setBusquedaLista(e.target.value)}
+                  className="w-full pl-9 pr-4 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
+                />
+                <svg className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+            </div>
+
+            {pacientesFiltradosLista.length === 0 ? (
+              <div className="text-center py-10 text-xs text-slate-400">
+                No se encontraron pacientes coincidentes.
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="border-b border-slate-100 text-slate-400 uppercase tracking-wider text-[10px]">
+                      <th className="py-3 px-2 font-semibold">Cédula / DNI</th>
+                      <th className="py-3 px-2 font-semibold">Nombre Completo</th>
+                      <th className="py-3 px-2 font-semibold">Teléfono</th>
+                      <th className="py-3 px-2 font-semibold text-right">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {pacientesFiltradosLista.map(p => (
+                      <tr key={p.id} className="hover:bg-slate-50 transition-colors">
+                        <td className="py-3 px-2 font-semibold text-slate-900">{p.cedula}</td>
+                        <td className="py-3 px-2 text-slate-700">{p.nombre_completo}</td>
+                        <td className="py-3 px-2 text-slate-500">{p.telefono || 'Sin registro'}</td>
+                        <td className="py-3 px-2 text-right space-x-2">
+                          {/* SOLO LA SECRETARÍA PUEDE EDITAR */}
+                          {usuarioLogueado?.rol === 'secretaria' && (
+                            <button 
+                              onClick={() => handleAbrirEditar(p)}
+                              className="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 font-semibold rounded-lg transition-all cursor-pointer text-xs"
+                            >
+                              Editar
+                            </button>
+                          )}
+                          <button 
+                            onClick={() => handleVerEstudios(p)}
+                            className="px-3 py-1.5 bg-sky-50 hover:bg-sky-100 text-sky-600 font-semibold rounded-lg transition-all cursor-pointer text-xs"
+                          >
+                            Ver Expediente
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
+          </div>
+        )}
 
+        {/* VISTA: CREAR PACIENTE (SOLO SECRETARÍA) */}
+        {seccion === 'crear-paciente' && usuarioLogueado?.rol === 'secretaria' && (
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm max-w-xl mx-auto">
+            <div className="mb-6 pb-4 border-b border-slate-100">
+              <h2 className="text-lg font-bold text-slate-900">Registrar Nuevo Paciente</h2>
+              <p className="text-xs text-slate-500 mt-0.5">Asigna la cédula como usuario y define su contraseña de acceso.</p>
+            </div>
+
+            <form onSubmit={handleGuardarPaciente} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Cédula / DNI (Usuario)</label>
+                <input 
+                  type="text" 
+                  placeholder="Ej: 12345678" 
+                  value={formPaciente.cedula}
+                  onChange={e => setFormPaciente({...formPaciente, cedula: e.target.value})}
+                  className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
+                  required 
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Nombre Completo</label>
+                <input 
+                  type="text" 
+                  placeholder="Nombre y Apellidos del paciente" 
+                  value={formPaciente.nombre_completo}
+                  onChange={e => setFormPaciente({...formPaciente, nombre_completo: e.target.value})}
+                  className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
+                  required 
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Teléfono</label>
+                <input 
+                  type="text" 
+                  placeholder="Número de contacto" 
+                  value={formPaciente.telefono}
+                  onChange={e => setFormPaciente({...formPaciente, telefono: e.target.value})}
+                  className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Correo Electrónico</label>
+                <input 
+                  type="email" 
+                  placeholder="ejemplo@paciente.com" 
+                  value={formPaciente.correo}
+                  onChange={e => setFormPaciente({...formPaciente, correo: e.target.value})}
+                  className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Contraseña Asignada</label>
+                <input 
+                  type="password" 
+                  placeholder="••••••••" 
+                  value={formPaciente.clave}
+                  onChange={e => setFormPaciente({...formPaciente, clave: e.target.value})}
+                  className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
+                  required 
+                />
+              </div>
+
+              <button 
+                type="submit" 
+                className="w-full py-3 bg-red-800 hover:bg-red-950 text-white text-xs font-semibold rounded-xl shadow-md transition-all cursor-pointer mt-2"
+              >
+                Guardar Paciente
+              </button>
+            </form>
+          </div>
+        )}
+
+        {/* VISTA: SUBIR RESULTADO (CON BÚSQUEDA Y OPCIONES SEGÚN ROL) */}
+        {seccion === 'subir-estudio' && (
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm max-w-xl mx-auto">
+            <div className="mb-6 pb-4 border-b border-slate-100">
+              <h2 className="text-lg font-bold text-slate-900">Cargar Resultado Médico</h2>
+              <p className="text-xs text-slate-500 mt-0.5">Busca al paciente por nombre o cédula para asociar el examen.</p>
+            </div>
+
+            <form onSubmit={handleGuardarEstudio} className="space-y-4">
+              <div className="relative">
+                <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Buscar Paciente (Cédula o Nombre)</label>
+                
+                {pacienteSeleccionadoSubida ? (
+                  <div className="p-3 bg-sky-50 border border-sky-200 rounded-xl flex items-center justify-between">
+                    <div>
+                      <strong className="text-xs text-sky-900 block">{pacienteSeleccionadoSubida.nombre_completo}</strong>
+                      <span className="text-[11px] text-sky-600">C.I: {pacienteSeleccionadoSubida.cedula}</span>
+                    </div>
+                    <button 
+                      type="button" 
+                      onClick={() => { setPacienteSeleccionadoSubida(null); setBusquedaPacienteSubida(''); }}
+                      className="text-xs text-red-500 hover:underline font-medium"
+                    >
+                      Cambiar
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <input 
+                      type="text" 
+                      placeholder="Escribe el nombre o cédula..." 
+                      value={busquedaPacienteSubida}
+                      onChange={e => setBusquedaPacienteSubida(e.target.value)}
+                      className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
+                    />
+
+                    {pacientesFiltradosSubida.length > 0 && (
+                      <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-20 max-h-48 overflow-y-auto">
+                        {pacientesFiltradosSubida.map(p => (
+                          <div 
+                            key={p.id} 
+                            onClick={() => { setPacienteSeleccionadoSubida(p); setBusquedaPacienteSubida(''); }}
+                            className="p-3 hover:bg-slate-50 border-b border-slate-100 last:border-none cursor-pointer flex justify-between items-center"
+                          >
+                            <span className="text-xs font-medium text-slate-800">{p.nombre_completo}</span>
+                            <span className="text-[11px] text-slate-400">C.I: {p.cedula}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Tipo de Examen</label>
+                <select 
+                  value={tipoExamen} 
+                  onChange={e => setTipoExamen(e.target.value)}
+                  className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 cursor-pointer"
+                >
+                  <option value="Informe Médico">Informe Médico</option>
+                  {(usuarioLogueado?.rol === 'tecnico' || usuarioLogueado?.rol === 'secretaria') && (
+                    <>
+                      <option value="Radiografía">Radiografía</option>
+                      <option value="Tomografía">Tomografía</option>
+                    </>
+                  )}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Título del Estudio</label>
+                <input 
+                  type="text" 
+                  placeholder="Ej: Radiografía de Tórax AP" 
+                  value={titulo}
+                  onChange={e => setTitulo(e.target.value)}
+                  className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
+                  required 
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Archivo de Examen (Cualquier Formato)</label>
+                <input 
+                  type="file" 
+                  onChange={e => setArchivo(e.target.files[0])}
+                  className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-red-50 file:text-red-800 hover:file:bg-red-100 cursor-pointer border border-slate-200 rounded-xl bg-slate-50 p-1"
+                  required 
+                />
+              </div>
+
+              <button 
+                type="submit" 
+                className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shadow-md transition-all cursor-pointer mt-2"
+              >
+                Subir y Notificar
+              </button>
+            </form>
+          </div>
+        )}
+
+      </div>
+    </main>
+
+    {/* MODAL EXPEDIENTE */}
+    {pacienteSeleccionado && (
+      <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div className="bg-white rounded-2xl p-6 max-w-lg w-full shadow-2xl border border-slate-100">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
             <div>
-              <label className="block text-xs font-bold text-brand-800 uppercase tracking-wider mb-1">
-                Usuario o Cédula
-              </label>
+              <h3 className="text-base font-bold text-slate-900">{pacienteSeleccionado.nombre_completo}</h3>
+              <p className="text-xs text-slate-400">C.I: {pacienteSeleccionado.cedula}</p>
+            </div>
+            <button 
+              onClick={() => setPacienteSeleccionado(null)}
+              className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 transition-colors cursor-pointer"
+            >
+              ✕
+            </button>
+          </div>
+
+          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Estudios Cargados</h4>
+
+          {cargandoEstudios ? (
+            <p className="text-xs text-center text-slate-400 py-6">Cargando expediente...</p>
+          ) : estudiosPaciente.length === 0 ? (
+            <p className="text-xs text-center text-slate-400 py-6">Este paciente aún no tiene exámenes registrados.</p>
+          ) : (
+            <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+              {estudiosPaciente.map(e => (
+                <div key={e.id} className="p-3 border border-slate-100 bg-slate-50 rounded-xl flex items-center justify-between">
+                  <div>
+                    <span className="inline-block px-2 py-0.5 text-[9px] font-bold text-red-800 bg-red-50 rounded mb-1">
+                      {e.tipo_examen}
+                    </span>
+                    <h5 className="text-xs font-semibold text-slate-800">{e.titulo}</h5>
+                    <span className="text-[10px] text-slate-400">{new Date(e.fecha_estudio).toLocaleDateString()}</span>
+                  </div>
+                  <a 
+                    href={`http://localhost:3001/api/descargar/${e.id}`} 
+                    download
+                    className="px-3 py-1.5 bg-red-950 hover:bg-red-800 text-white text-xs font-medium rounded-lg transition-colors"
+                  >
+                    Descargar
+                  </a>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    )}
+
+    {/* MODAL PARA EDITAR PACIENTE (SOLO SECRETARÍA) */}
+    {pacienteAEditar && usuarioLogueado?.rol === 'secretaria' && (
+      <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-slate-100">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+            <h3 className="text-base font-bold text-slate-900">Editar Datos del Paciente</h3>
+            <button onClick={() => setPacienteAEditar(null)} className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500">✕</button>
+          </div>
+
+          <form onSubmit={handleActualizarPaciente} className="space-y-4">
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 uppercase mb-1">Cédula / DNI</label>
               <input 
                 type="text" 
-                placeholder="Ingrese su usuario o cédula" 
-                value={adminCedula}
-                onChange={e => setAdminCedula(e.target.value)}
-                className="w-full px-4 py-2.5 text-sm bg-brand-50 border border-brand-200 rounded-xl text-brand-900 focus:outline-none focus:ring-2 focus:ring-brand-400/40 focus:border-brand-600"
+                value={formEditPaciente.cedula}
+                onChange={e => setFormEditPaciente({...formEditPaciente, cedula: e.target.value})}
+                className="w-full px-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl"
                 required 
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-brand-800 uppercase tracking-wider mb-1">
-                Contraseña
-              </label>
+              <label className="block text-xs font-semibold text-slate-600 uppercase mb-1">Nombre Completo</label>
               <input 
-                type="password" 
-                placeholder="••••••••" 
-                value={adminClave}
-                onChange={e => setAdminClave(e.target.value)}
-                className="w-full px-4 py-2.5 text-sm bg-brand-50 border border-brand-200 rounded-xl text-brand-900 focus:outline-none focus:ring-2 focus:ring-brand-400/40 focus:border-brand-600"
+                type="text" 
+                value={formEditPaciente.nombre_completo}
+                onChange={e => setFormEditPaciente({...formEditPaciente, nombre_completo: e.target.value})}
+                className="w-full px-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl"
                 required 
               />
             </div>
 
-            <button 
-              type="submit" 
-              className="w-full py-3 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl shadow-md transition-all cursor-pointer mt-2"
-            >
-              Iniciar Sesión
-            </button>
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 uppercase mb-1">Teléfono</label>
+              <input 
+                type="text" 
+                value={formEditPaciente.telefono}
+                onChange={e => setFormEditPaciente({...formEditPaciente, telefono: e.target.value})}
+                className="w-full px-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 uppercase mb-1">Correo Electrónico</label>
+              <input 
+                type="email" 
+                value={formEditPaciente.correo}
+                onChange={e => setFormEditPaciente({...formEditPaciente, correo: e.target.value})}
+                className="w-full px-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl"
+              />
+            </div>
+
+            <div className="flex items-center space-x-2 pt-2">
+              <button 
+                type="button"
+                onClick={() => setPacienteAEditar(null)}
+                className="w-1/2 py-2.5 bg-slate-100 text-slate-600 text-xs font-semibold rounded-xl"
+              >
+                Cancelar
+              </button>
+              <button 
+                type="submit" 
+                className="w-1/2 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-xl"
+              >
+                Guardar Cambios
+              </button>
+            </div>
           </form>
         </div>
       </div>
-    );
-  }
+    )}
 
-  /* ------------------------------------------------------------- */
-  /* VISTA 2: PANEL ADMINISTRATIVO (SI YA SE AUTENTICÓ) */
-  /* ------------------------------------------------------------- */
-  return (
-    <div className="flex min-h-screen bg-brand-50 font-sans text-brand-900">
-      
-      {/* SIDEBAR LATERAL (Vino Oscuro) */}
-      <aside className="w-64 bg-brand-900 text-brand-100 flex flex-col justify-between p-4 shrink-0 shadow-xl">
-        <div>
-          <div className="flex items-center space-x-3 px-2 py-4 mb-6 border-b border-brand-800">
-            <div className="w-20 h-auto flex items-center justify-center shrink-0">
-              <img 
-                src="/logo.png" 
-                alt="Logo Unidad de Imágenes" 
-                className="w-full h-full object-contain" 
-              />
-            </div>
-            <div>
-              <h2 className="text-sm font-bold text-white leading-tight">
-                {usuarioLogueado?.nombre_completo || 'Panel Interno'}
-              </h2>
-              <p className="text-[11px] text-brand-200/80">Unidad de Imágenes del Este</p>
-              {usuarioLogueado?.rol && (
-                <span className="inline-block px-2 py-0.5 mt-1 text-[9px] font-bold uppercase tracking-wider bg-brand-800 text-brand-200 border border-brand-700/60 rounded-md">
-                  {usuarioLogueado.rol}
-                </span>
-              )}
-            </div>
-          </div>
-
-          <nav className="space-y-1.5">
-            <button
-              onClick={() => setSeccion('pacientes-lista')}
-              className={`w-full flex items-center space-x-3 px-3.5 py-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                seccion === 'pacientes-lista'
-                  ? 'bg-brand-600 text-white shadow-lg shadow-brand-950/30'
-                  : 'hover:bg-brand-800 text-brand-200 hover:text-white'
-              }`}
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-              <span>Pacientes ({pacientes.length})</span>
-            </button>
-
-            {/* SOLO SECRETARÍA PUEDE CREAR PACIENTES */}
-            {usuarioLogueado?.rol === 'secretaria' && (
-              <button
-                onClick={() => setSeccion('crear-paciente')}
-                className={`w-full flex items-center space-x-3 px-3.5 py-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                  seccion === 'crear-paciente'
-                    ? 'bg-brand-600 text-white shadow-lg shadow-brand-950/30'
-                    : 'hover:bg-brand-800 text-brand-200 hover:text-white'
-                }`}
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                </svg>
-                <span>Crear Paciente</span>
-              </button>
-            )}
-
-            <button
-              onClick={() => setSeccion('subir-estudio')}
-              className={`w-full flex items-center space-x-3 px-3.5 py-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                seccion === 'subir-estudio'
-                  ? 'bg-brand-600 text-white shadow-lg shadow-brand-950/30'
-                  : 'hover:bg-brand-800 text-brand-200 hover:text-white'
-              }`}
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-              </svg>
-              <span>Subir Resultado</span>
-            </button>
-          </nav>
-        </div>
-
-        <div className="pt-4 border-t border-brand-800 flex items-center justify-between">
-          <span className="text-[11px] font-medium text-brand-300">MedicsWeb v1.0</span>
-          <button 
-            onClick={() => { setAutenticado(false); setUsuarioLogueado(null); }} 
-            className="text-xs text-rose-300 hover:text-rose-200 transition-colors font-bold cursor-pointer"
-          >
-            Salir
-          </button>
-        </div>
-      </aside>
-
-      {/* ÁREA PRINCIPAL */}
-      <main className="flex-1 p-8 overflow-y-auto">
-        <div className="max-w-4xl mx-auto">
-          
-          {/* VISTA: LISTA DE PACIENTES */}
-          {seccion === 'pacientes-lista' && (
-            <div className="bg-brand-100 border border-brand-200 rounded-2xl p-6 shadow-sm">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-brand-200">
-                <div>
-                  <h2 className="text-lg font-bold text-brand-900">Directorio de Pacientes</h2>
-                  <p className="text-xs text-brand-800/80 mt-0.5">Total registrados: <strong className="text-brand-600">{pacientes.length} pacientes</strong></p>
-                </div>
-
-                <div className="relative w-full sm:w-72">
-                  <input 
-                    type="text" 
-                    placeholder="Buscar cédula o nombre..." 
-                    value={busquedaLista}
-                    onChange={e => setBusquedaLista(e.target.value)}
-                    className="w-full pl-9 pr-4 py-2 text-xs bg-brand-50 border border-brand-200 rounded-xl text-brand-900 focus:outline-none focus:ring-2 focus:ring-brand-400/40 focus:border-brand-600 placeholder:text-brand-300"
-                  />
-                  <svg className="w-4 h-4 text-brand-400 absolute left-3 top-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                </div>
-              </div>
-
-              {pacientesFiltradosLista.length === 0 ? (
-                <div className="text-center py-10 text-xs text-brand-800/60 font-medium">
-                  No se encontraron pacientes coincidentes.
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs border-collapse">
-                    <thead>
-                      <tr className="border-b border-brand-200 text-brand-800/70 uppercase tracking-wider text-[10px]">
-                        <th className="py-3 px-2 font-bold">Cédula / DNI</th>
-                        <th className="py-3 px-2 font-bold">Nombre Completo</th>
-                        <th className="py-3 px-2 font-bold">Teléfono</th>
-                        <th className="py-3 px-2 font-bold text-right">Acciones</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-brand-200/60">
-                      {pacientesFiltradosLista.map(p => (
-                        <tr key={p.id} className="hover:bg-brand-50/70 transition-colors">
-                          <td className="py-3 px-2 font-bold text-brand-900">{p.cedula}</td>
-                          <td className="py-3 px-2 font-medium text-brand-900/90">{p.nombre_completo}</td>
-                          <td className="py-3 px-2 text-brand-800/70">{p.telefono || 'Sin registro'}</td>
-                          <td className="py-3 px-2 text-right space-x-2">
-                            {/* SOLO LA SECRETARÍA PUEDE EDITAR */}
-                            {usuarioLogueado?.rol === 'secretaria' && (
-                              <button 
-                                onClick={() => handleAbrirEditar(p)}
-                                className="px-2.5 py-1.5 bg-amber-100/80 hover:bg-amber-200/80 text-amber-900 font-bold rounded-lg transition-all cursor-pointer text-xs border border-amber-300/50"
-                              >
-                                Editar
-                              </button>
-                            )}
-                            <button 
-                              onClick={() => handleVerEstudios(p)}
-                              className="px-3 py-1.5 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-lg transition-all cursor-pointer text-xs shadow-sm"
-                            >
-                              Ver Expediente
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* VISTA: CREAR PACIENTE (SOLO SECRETARÍA) */}
-          {seccion === 'crear-paciente' && usuarioLogueado?.rol === 'secretaria' && (
-            <div className="bg-brand-100 border border-brand-200 rounded-2xl p-6 shadow-sm max-w-xl mx-auto">
-              <div className="mb-6 pb-4 border-b border-brand-200">
-                <h2 className="text-lg font-bold text-brand-900">Registrar Nuevo Paciente</h2>
-                <p className="text-xs text-brand-800/80 mt-0.5">Asigna la cédula como usuario y define su contraseña de acceso.</p>
-              </div>
-
-              <form onSubmit={handleGuardarPaciente} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-bold text-brand-800 uppercase tracking-wider mb-1">Cédula / DNI (Usuario)</label>
-                  <input 
-                    type="text" 
-                    placeholder="Ej: 12345678" 
-                    value={formPaciente.cedula}
-                    onChange={e => setFormPaciente({...formPaciente, cedula: e.target.value})}
-                    className="w-full px-4 py-2.5 text-sm bg-brand-50 border border-brand-200 rounded-xl text-brand-900 focus:outline-none focus:ring-2 focus:ring-brand-400/40 focus:border-brand-600"
-                    required 
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-brand-800 uppercase tracking-wider mb-1">Nombre Completo</label>
-                  <input 
-                    type="text" 
-                    placeholder="Nombre y Apellidos del paciente" 
-                    value={formPaciente.nombre_completo}
-                    onChange={e => setFormPaciente({...formPaciente, nombre_completo: e.target.value})}
-                    className="w-full px-4 py-2.5 text-sm bg-brand-50 border border-brand-200 rounded-xl text-brand-900 focus:outline-none focus:ring-2 focus:ring-brand-400/40 focus:border-brand-600"
-                    required 
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-brand-800 uppercase tracking-wider mb-1">Teléfono</label>
-                  <input 
-                    type="text" 
-                    placeholder="Número de contacto" 
-                    value={formPaciente.telefono}
-                    onChange={e => setFormPaciente({...formPaciente, telefono: e.target.value})}
-                    className="w-full px-4 py-2.5 text-sm bg-brand-50 border border-brand-200 rounded-xl text-brand-900 focus:outline-none focus:ring-2 focus:ring-brand-400/40 focus:border-brand-600"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-brand-800 uppercase tracking-wider mb-1">Correo Electrónico</label>
-                  <input 
-                    type="email" 
-                    placeholder="ejemplo@paciente.com" 
-                    value={formPaciente.correo}
-                    onChange={e => setFormPaciente({...formPaciente, correo: e.target.value})}
-                    className="w-full px-4 py-2.5 text-sm bg-brand-50 border border-brand-200 rounded-xl text-brand-900 focus:outline-none focus:ring-2 focus:ring-brand-400/40 focus:border-brand-600"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-brand-800 uppercase tracking-wider mb-1">Contraseña Asignada</label>
-                  <input 
-                    type="password" 
-                    placeholder="••••••••" 
-                    value={formPaciente.clave}
-                    onChange={e => setFormPaciente({...formPaciente, clave: e.target.value})}
-                    className="w-full px-4 py-2.5 text-sm bg-brand-50 border border-brand-200 rounded-xl text-brand-900 focus:outline-none focus:ring-2 focus:ring-brand-400/40 focus:border-brand-600"
-                    required 
-                  />
-                </div>
-
-                <button 
-                  type="submit" 
-                  className="w-full py-3 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl shadow-md transition-all cursor-pointer mt-2"
-                >
-                  Guardar Paciente
-                </button>
-              </form>
-            </div>
-          )}
-
-          {/* VISTA: SUBIR RESULTADO */}
-          {seccion === 'subir-estudio' && (
-            <div className="bg-brand-100 border border-brand-200 rounded-2xl p-6 shadow-sm max-w-xl mx-auto">
-              <div className="mb-6 pb-4 border-b border-brand-200">
-                <h2 className="text-lg font-bold text-brand-900">Cargar Resultado Médico</h2>
-                <p className="text-xs text-brand-800/80 mt-0.5">Busca al paciente por nombre o cédula para asociar el examen.</p>
-              </div>
-
-              <form onSubmit={handleGuardarEstudio} className="space-y-4">
-                <div className="relative">
-                  <label className="block text-xs font-bold text-brand-800 uppercase tracking-wider mb-1">Buscar Paciente (Cédula o Nombre)</label>
-                  
-                  {pacienteSeleccionadoSubida ? (
-                    <div className="p-3 bg-brand-50 border border-brand-300 rounded-xl flex items-center justify-between shadow-sm">
-                      <div>
-                        <strong className="text-xs text-brand-900 block font-bold">{pacienteSeleccionadoSubida.nombre_completo}</strong>
-                        <span className="text-[11px] text-brand-600 font-semibold">C.I: {pacienteSeleccionadoSubida.cedula}</span>
-                      </div>
-                      <button 
-                        type="button" 
-                        onClick={() => { setPacienteSeleccionadoSubida(null); setBusquedaPacienteSubida(''); }}
-                        className="text-xs text-rose-700 hover:underline font-bold"
-                      >
-                        Cambiar
-                      </button>
-                    </div>
-                  ) : (
-                    <>
-                      <input 
-                        type="text" 
-                        placeholder="Escribe el nombre o cédula..." 
-                        value={busquedaPacienteSubida}
-                        onChange={e => setBusquedaPacienteSubida(e.target.value)}
-                        className="w-full px-4 py-2.5 text-sm bg-brand-50 border border-brand-200 rounded-xl text-brand-900 focus:outline-none focus:ring-2 focus:ring-brand-400/40 focus:border-brand-600"
-                      />
-
-                      {pacientesFiltradosSubida.length > 0 && (
-                        <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-brand-200 rounded-xl shadow-xl z-20 max-h-48 overflow-y-auto">
-                          {pacientesFiltradosSubida.map(p => (
-                            <div 
-                              key={p.id} 
-                              onClick={() => { setPacienteSeleccionadoSubida(p); setBusquedaPacienteSubida(''); }}
-                              className="p-3 hover:bg-brand-50 border-b border-brand-100 last:border-none cursor-pointer flex justify-between items-center"
-                            >
-                              <span className="text-xs font-bold text-brand-900">{p.nombre_completo}</span>
-                              <span className="text-[11px] text-brand-600 font-semibold">C.I: {p.cedula}</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-brand-800 uppercase tracking-wider mb-1">Tipo de Examen</label>
-                  <select 
-                    value={tipoExamen} 
-                    onChange={e => setTipoExamen(e.target.value)}
-                    className="w-full px-4 py-2.5 text-sm bg-brand-50 border border-brand-200 rounded-xl text-brand-900 focus:outline-none focus:ring-2 focus:ring-brand-400/40 focus:border-brand-600 cursor-pointer font-medium"
-                  >
-                    <option value="Informe Médico">Informe Médico</option>
-                    {(usuarioLogueado?.rol === 'tecnico' || usuarioLogueado?.rol === 'secretaria') && (
-                      <>
-                        <option value="Radiografía">Radiografía</option>
-                        <option value="Tomografía">Tomografía</option>
-                      </>
-                    )}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-brand-800 uppercase tracking-wider mb-1">Título del Estudio</label>
-                  <input 
-                    type="text" 
-                    placeholder="Ej: Radiografía de Tórax AP" 
-                    value={titulo}
-                    onChange={e => setTitulo(e.target.value)}
-                    className="w-full px-4 py-2.5 text-sm bg-brand-50 border border-brand-200 rounded-xl text-brand-900 focus:outline-none focus:ring-2 focus:ring-brand-400/40 focus:border-brand-600"
-                    required 
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-brand-800 uppercase tracking-wider mb-1">Archivo de Examen (Cualquier Formato)</label>
-                  <input 
-                    type="file" 
-                    onChange={e => setArchivo(e.target.files[0])}
-                    className="w-full text-xs text-brand-800 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-brand-200 file:text-brand-900 hover:file:bg-brand-300 cursor-pointer border border-brand-200 rounded-xl bg-brand-50 p-1"
-                    required 
-                  />
-                </div>
-
-                <button 
-                  type="submit" 
-                  className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-md transition-all cursor-pointer mt-2"
-                >
-                  Subir y Notificar
-                </button>
-              </form>
-            </div>
-          )}
-
-        </div>
-      </main>
-
-      {/* MODAL EXPEDIENTE */}
-      {pacienteSeleccionado && (
-        <div className="fixed inset-0 bg-brand-950/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-brand-100 rounded-2xl p-6 max-w-lg w-full shadow-2xl border border-brand-200">
-            <div className="flex items-center justify-between pb-3 border-b border-brand-200 mb-4">
-              <div>
-                <h3 className="text-base font-bold text-brand-900">{pacienteSeleccionado.nombre_completo}</h3>
-                <p className="text-xs font-semibold text-brand-600">C.I: {pacienteSeleccionado.cedula}</p>
-              </div>
-              <button 
-                onClick={() => setPacienteSeleccionado(null)}
-                className="w-8 h-8 rounded-full bg-brand-200 hover:bg-brand-300 flex items-center justify-center text-brand-800 transition-colors cursor-pointer font-bold"
-              >
-                ✕
-              </button>
-            </div>
-
-            <h4 className="text-xs font-bold uppercase tracking-wider text-brand-800 mb-3">Estudios Cargados</h4>
-
-            {cargandoEstudios ? (
-              <p className="text-xs text-center text-brand-800/60 py-6">Cargando expediente...</p>
-            ) : estudiosPaciente.length === 0 ? (
-              <p className="text-xs text-center text-brand-800/60 py-6">Este paciente aún no tiene exámenes registrados.</p>
-            ) : (
-              <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
-                {estudiosPaciente.map(e => (
-                  <div key={e.id} className="p-3 border border-brand-200 bg-brand-50 rounded-xl flex items-center justify-between">
-                    <div>
-                      <span className="inline-block px-2 py-0.5 text-[9px] font-bold text-white bg-brand-400 rounded mb-1">
-                        {e.tipo_examen}
-                      </span>
-                      <h5 className="text-xs font-bold text-brand-900">{e.titulo}</h5>
-                      <span className="text-[10px] text-brand-800/60 font-medium block">{new Date(e.fecha_estudio).toLocaleDateString()}</span>
-                    </div>
-                    <a 
-                      href={`https://app-radiografia-production.up.railway.app/api/descargar/${e.id}`} 
-                      download
-                      className="px-3 py-1.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-lg transition-colors shadow-sm"
-                    >
-                      Descargar
-                    </a>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* MODAL PARA EDITAR PACIENTE (SOLO SECRETARÍA) */}
-      {pacienteAEditar && usuarioLogueado?.rol === 'secretaria' && (
-        <div className="fixed inset-0 bg-brand-950/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-brand-100 rounded-2xl p-6 max-w-md w-full shadow-2xl border border-brand-200">
-            <div className="flex items-center justify-between pb-3 border-b border-brand-200 mb-4">
-              <h3 className="text-base font-bold text-brand-900">Editar Datos del Paciente</h3>
-              <button 
-                onClick={() => setPacienteAEditar(null)} 
-                className="w-8 h-8 rounded-full bg-brand-200 hover:bg-brand-300 flex items-center justify-center text-brand-800 font-bold"
-              >
-                ✕
-              </button>
-            </div>
-
-            <form onSubmit={handleActualizarPaciente} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-brand-800 uppercase mb-1">Cédula / DNI</label>
-                <input 
-                  type="text" 
-                  value={formEditPaciente.cedula}
-                  onChange={e => setFormEditPaciente({...formEditPaciente, cedula: e.target.value})}
-                  className="w-full px-4 py-2 text-sm bg-brand-50 border border-brand-200 rounded-xl text-brand-900 focus:outline-none focus:ring-2 focus:ring-brand-400/40 focus:border-brand-600"
-                  required 
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-brand-800 uppercase mb-1">Nombre Completo</label>
-                <input 
-                  type="text" 
-                  value={formEditPaciente.nombre_completo}
-                  onChange={e => setFormEditPaciente({...formEditPaciente, nombre_completo: e.target.value})}
-                  className="w-full px-4 py-2 text-sm bg-brand-50 border border-brand-200 rounded-xl text-brand-900 focus:outline-none focus:ring-2 focus:ring-brand-400/40 focus:border-brand-600"
-                  required 
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-brand-800 uppercase mb-1">Teléfono</label>
-                <input 
-                  type="text" 
-                  value={formEditPaciente.telefono}
-                  onChange={e => setFormEditPaciente({...formEditPaciente, telefono: e.target.value})}
-                  className="w-full px-4 py-2 text-sm bg-brand-50 border border-brand-200 rounded-xl text-brand-900 focus:outline-none focus:ring-2 focus:ring-brand-400/40 focus:border-brand-600"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-brand-800 uppercase mb-1">Correo Electrónico</label>
-                <input 
-                  type="email" 
-                  value={formEditPaciente.correo}
-                  onChange={e => setFormEditPaciente({...formEditPaciente, correo: e.target.value})}
-                  className="w-full px-4 py-2 text-sm bg-brand-50 border border-brand-200 rounded-xl text-brand-900 focus:outline-none focus:ring-2 focus:ring-brand-400/40 focus:border-brand-600"
-                />
-              </div>
-
-              <div className="flex items-center space-x-2 pt-2">
-                <button 
-                  type="button"
-                  onClick={() => setPacienteAEditar(null)}
-                  className="w-1/2 py-2.5 bg-brand-200 hover:bg-brand-300 text-brand-900 text-xs font-bold rounded-xl"
-                >
-                  Cancelar
-                </button>
-                <button 
-                  type="submit" 
-                  className="w-1/2 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl shadow-sm"
-                >
-                  Guardar Cambios
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-    </div>
-  );
+  </div>
+);
 }
