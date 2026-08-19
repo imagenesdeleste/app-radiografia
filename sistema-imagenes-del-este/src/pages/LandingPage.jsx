@@ -793,7 +793,7 @@ export default function LandingPage({ navegar }) {
         {/* Logo Oficial de Cashea */}
         <div className="w-6 h-6 rounded-full bg-[#DFFF00] flex items-center justify-center overflow-hidden p-0.5">
           <img 
-            src="https://www.cashea.app/favicon.ico" 
+            src="/cashea.jpg" 
             alt="Cashea Logo" 
             className="w-full h-full object-contain"
           />
