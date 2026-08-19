@@ -149,11 +149,8 @@ export default function LandingPage({ navegar }) {
       <img 
         src="/logo.png" 
         alt="Logo Unidad de Imágenes Del Este" 
-        className="h-10 w-auto object-contain transition-transform group-hover:scale-105 brightness-0 invert drop-shadow" 
+        className="h-10 w-auto object-contain transition-transform group-hover:scale-105 drop-shadow" 
       />
-      <span className="hidden sm:inline-block font-black text-sm tracking-tight text-white uppercase">
-        Unidad de Imágenes <span className="text-brand-200">Del Este</span>
-      </span>
     </a>
 
     {/* Menú Desktop */}
