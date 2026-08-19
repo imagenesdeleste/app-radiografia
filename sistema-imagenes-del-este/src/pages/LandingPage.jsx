@@ -203,7 +203,7 @@ export default function LandingPage({ navegar }) {
               <li className="flex items-center gap-3"><i className="fa-solid fa-location-dot text-brand-400"></i> Este de Barquisimeto, Estado Lara</li>
               <li className="flex items-center gap-3"><i className="fa-solid fa-phone text-brand-400"></i> +58 424-571.53.51</li>
               <li className="flex items-center gap-3"><i className="fa-solid fa-envelope text-brand-400"></i> unidaddeimagenesdeleste@gmail.com</li>
-              <li className="flex items-center gap-3"><i className="fa-solid fa-clock text-brand-400"></i> Lunes a Viernes: 8:00 AM - 6:00 PM, Sábados y domingos te atienden emerencias</li>
+              <li className="flex items-center gap-3"><i className="fa-solid fa-clock text-brand-400"></i> Lunes a Viernes: 8:00 AM - 6:00 PM, Sábados y domingos se atienden emergencias</li>
             </ul>
           </div>
 
