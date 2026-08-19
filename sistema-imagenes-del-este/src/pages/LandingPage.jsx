@@ -686,95 +686,112 @@ export default function LandingPage({ navegar }) {
       </main>
 
       {/* ========================================== */}
-      {/* 8. FOOTER          */}
-      {/* ========================================== */}
-      <footer id="contacto-footer" className="bg-brand-600 text-white pt-14 pb-6 border-t border-brand-700 shadow-inner">
-        <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-10 text-center md:text-left items-start pb-12">
-          
-          {/* COLUMNA 1 */}
-          <div className="flex flex-col items-center md:items-start space-y-5">
-            <div className="w-48 h-auto flex justify-center md:justify-start">
-              <img 
-                src="/logo.png" 
-                alt="Unidad de Imágenes Del Este" 
-                className="w-full h-full object-contain drop-shadow-sm" 
-              />
-            </div>
+{/* 8. FOOTER EN VINO TINTO OFICIAL (IDÉNTICO AL HERO) */}
+{/* ========================================== */}
+<footer id="contacto-footer" className="relative bg-gradient-to-br from-brand-900 via-brand-800 to-brand-950 text-white pt-14 pb-6 border-t border-brand-700/50 shadow-2xl overflow-hidden">
+  
+  {/* Destello sutil de luz vino de fondo */}
+  <div className="absolute -bottom-24 -left-24 w-80 h-80 bg-brand-600/20 rounded-full blur-3xl pointer-events-none"></div>
 
-            <p className="text-xs font-bold tracking-tight text-brand-100 italic">
-              "Unidad De Imagenes Del Este"
-            </p>
+  <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-10 text-center md:text-left items-start pb-12 relative z-10">
+    
+    {/* COLUMNA 1: LOGO, SLOGAN Y CONTACTO */}
+    <div className="flex flex-col items-center md:items-start space-y-5">
+      <div className="w-48 h-auto flex justify-center md:justify-start">
+        <img 
+          src="/logo.png" 
+          alt="Unidad de Imágenes Del Este" 
+          className="w-full h-full object-contain drop-shadow-md" 
+        />
+      </div>
 
-            <div className="space-y-2 pt-2 text-xs font-medium text-brand-100/90">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-white mb-2">Contacto</h4>
-              <p className="flex items-center justify-center md:justify-start gap-2">
-                <i className="fa-solid fa-location-dot text-brand-300"></i> Calle 8 entre Carreras 21 y 22, Bqto.
-              </p>
-              <p className="flex items-center justify-center md:justify-start gap-2">
-                <i className="fa-solid fa-phone text-brand-300"></i> +58 424-5715351
-              </p>
-              <p className="flex items-center justify-center md:justify-start gap-2">
-                <i className="fa-solid fa-envelope text-brand-300"></i> centrodeimagenesdeleste@gmail.com
-              </p>
-            </div>
-          </div>
+      <p className="text-xs font-bold tracking-tight text-brand-200 italic">
+        "Unidad De Imagenes Del Este"
+      </p>
 
-          {/* COLUMNA 2 */}
-          <div className="flex flex-col items-center space-y-4 md:pt-4">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-white">Síguenos</h4>
-            <div className="flex items-center justify-center gap-3">
-              <a 
-                href="https://instagram.com/imagenesdeleste_bqto" 
-                target="_blank" 
-                rel="noreferrer"
-                className="w-10 h-10 rounded-full bg-white/20 hover:bg-white hover:text-brand-600 text-white flex items-center justify-center text-lg transition-all shadow-sm"
-              >
-                <i className="fa-brands fa-instagram"></i>
-              </a>
-              <a 
-                href="#facebook" 
-                className="w-10 h-10 rounded-full bg-white/20 hover:bg-white hover:text-brand-600 text-white flex items-center justify-center text-lg transition-all shadow-sm"
-              >
-                <i className="fa-brands fa-facebook-f"></i>
-              </a>
-              <a 
-                href="https://wa.me/584245715351" 
-                target="_blank" 
-                rel="noreferrer"
-                className="w-10 h-10 rounded-full bg-white/20 hover:bg-white hover:text-brand-600 text-white flex items-center justify-center text-lg transition-all shadow-sm"
-              >
-                <i className="fa-brands fa-whatsapp"></i>
-              </a>
-            </div>
-          </div>
+      <div className="space-y-2 pt-2 text-xs font-medium text-brand-100/90">
+        <h4 className="text-xs font-bold uppercase tracking-wider text-white mb-2">Contacto</h4>
+        <p className="flex items-center justify-center md:justify-start gap-2">
+          <i className="fa-solid fa-location-dot text-brand-300"></i> Calle 8 entre Carreras 21 y 22, Barquisimeto.
+        </p>
+        <p className="flex items-center justify-center md:justify-start gap-2">
+          <i className="fa-solid fa-phone text-brand-300"></i> +58 424-5715351
+        </p>
+        <p className="flex items-center justify-center md:justify-start gap-2">
+          <i className="fa-solid fa-envelope text-brand-300"></i> centrodeimagenesdeleste@gmail.com
+        </p>
+      </div>
+    </div>
 
-          {/* COLUMNA 3 */}
-          <div className="flex flex-col items-center md:items-end space-y-2.5 md:pt-4 text-xs font-semibold text-brand-100/90">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-white mb-1">Servicios</h4>
-            <a href="#equipos" className="hover:text-white transition">Tecnología Médica</a>
-            <button onClick={() => navegar('/pacientes')} className="hover:text-white transition cursor-pointer">
-              Portal de Pacientes
-            </button>
-            <button onClick={() => navegar('/personal')} className="hover:text-white transition cursor-pointer">
-              Acceso Personal
-            </button>
-            <a href="https://wa.me/584245715351" target="_blank" rel="noreferrer" className="hover:text-white transition">
-              Atención Corporativa
-            </a>
-          </div>
+    {/* COLUMNA 2: REDES SOCIALES */}
+    <div className="flex flex-col items-center space-y-4 md:pt-4">
+      <h4 className="text-xs font-bold uppercase tracking-wider text-white">Síguenos</h4>
+      <div className="flex items-center justify-center gap-3">
+        <a 
+          href="https://instagram.com/imagenesdeleste_bqto" 
+          target="_blank" 
+          rel="noreferrer"
+          className="w-10 h-10 rounded-full bg-brand-950/60 border border-brand-700/60 hover:bg-brand-600 text-white flex items-center justify-center text-lg transition-all shadow-md"
+          aria-label="Instagram"
+        >
+          <i className="fa-brands fa-instagram"></i>
+        </a>
+        <a 
+          href="#facebook" 
+          className="w-10 h-10 rounded-full bg-brand-950/60 border border-brand-700/60 hover:bg-brand-600 text-white flex items-center justify-center text-lg transition-all shadow-md"
+          aria-label="Facebook"
+        >
+          <i className="fa-brands fa-facebook-f"></i>
+        </a>
+        <a 
+          href="https://wa.me/584245715351" 
+          target="_blank" 
+          rel="noreferrer"
+          className="w-10 h-10 rounded-full bg-brand-950/60 border border-brand-700/60 hover:bg-brand-600 text-white flex items-center justify-center text-lg transition-all shadow-md"
+          aria-label="WhatsApp"
+        >
+          <i className="fa-brands fa-whatsapp"></i>
+        </a>
+      </div>
+    </div>
 
-        </div>
+    {/* COLUMNA 3: SERVICIOS */}
+    <div className="flex flex-col items-center md:items-end space-y-2.5 md:pt-4 text-xs font-semibold text-brand-200">
+      <h4 className="text-xs font-bold uppercase tracking-wider text-white mb-1">Servicios</h4>
+      <a href="#equipos" className="hover:text-white transition">Tecnología Médica</a>
+      <button onClick={() => navegar('/pacientes')} className="hover:text-white transition cursor-pointer">
+        Portal de Pacientes
+      </button>
+      <button onClick={() => navegar('/personal')} className="hover:text-white transition cursor-pointer">
+        Acceso Personal
+      </button>
+      <a href="https://wa.me/584245715351" target="_blank" rel="noreferrer" className="hover:text-white transition">
+        Atención Corporativa
+      </a>
+    </div>
 
-        {/* SUB-FOOTER */}
-        <div className="border-t border-brand-700/60 pt-6 px-6 max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-xs">
-          
+  </div>
 
-          <div className="text-center md:text-right text-[11px] text-brand-200/90 leading-relaxed">
-            <p>© 2026 Unidad de Imágenes Del Este, C.A.</p>
-            <p className="font-bold text-white">Powered by Axell Peraza</p>
-          </div>
-        </div>
-      </footer>
+  {/* SUB-FOOTER CON BORDES EN ARMONÍA */}
+  <div className="border-t border-brand-800/80 pt-6 px-6 max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-xs relative z-10">
+    <a 
+      href="https://wa.me/584245715351?text=Hola,%20deseo%20pagar%20mi%20estudio%20con%20Cashea" 
+      target="_blank" 
+      rel="noreferrer"
+      className="bg-black hover:bg-zinc-900 text-white font-bold py-2.5 px-5 rounded-full flex items-center gap-2.5 shadow-lg border border-zinc-800 transition transform active:scale-95"
+    >
+      <div className="w-5 h-5 rounded-full bg-[#DFFF00] flex items-center justify-center overflow-hidden p-0.5">
+        <img src="/cashea.png" alt="Cashea" className="w-full h-full object-contain" />
+      </div>
+      <span>Pagar con Cashea</span>
+    </a>
+
+    <div className="text-center md:text-right text-[11px] text-brand-200/80 leading-relaxed">
+      <p>© 2026 Unidad de Imágenes Del Este, C.A.</p>
+      <p className="font-bold text-white">Powered by Axell Peraza</p>
+    </div>
+  </div>
+</footer>
 
       {/* ========================================== */}
       {/* BOTÓN FLOTANTE CASHEA (IZQUIERDA)          */}
