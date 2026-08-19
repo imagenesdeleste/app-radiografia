@@ -208,7 +208,6 @@ app.post('/api/paciente/login', async (req, res) => {
 // API PARA AENVIAR CORREOS ELECTRONICOS DE NOTIFICACIÓN
 
 const resend = new Resend(process.env.RESEND_API_KEY);
-
 export const enviarCorreoPaciente = async (
   correoPaciente,
   nombrePaciente,
@@ -217,27 +216,84 @@ export const enviarCorreoPaciente = async (
 ) => {
   try {
     const { data, error } = await resend.emails.send({
-      // 🟢 Reemplazas 'onboarding@resend.dev' por tu dominio de GoDaddy verificado
+      // 🟢 Dirección con tu dominio verificado
       from: 'Unidad de Imágenes Del Este <notificaciones@unidaddeimagenesdeleste.com>',
-      to: [correoPaciente], // 💡 Ahora le enviará a CUALQUIER correo de paciente
+      to: [correoPaciente],
       reply_to: 'sistemaunidaddeimagenes@gmail.com',
       subject: `¡Tus resultados de ${tipoExamen} están listos!`,
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 500px; margin: auto; padding: 25px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
-          <h2 style="color: #0284c7; text-align: center; margin-bottom: 20px;">Unidad de Imágenes Del Este</h2>
-          <p style="font-size: 16px; color: #334155;">Hola <strong>${nombrePaciente}</strong>,</p>
-          <p style="font-size: 14px; color: #475569; line-height: 1.5;">
-            Te informamos que tu estudio <strong>"${tituloEstudio}"</strong> (${tipoExamen}) ya se encuentra disponible en nuestro portal digital.
-          </p>
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="https://www.unidaddeimagenesdeleste.com/pacientes" style="background-color: #0f172a; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 14px; display: inline-block;">
-              Consultar Resultados
-            </a>
+        <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 550px; margin: 0 auto; background-color: #F9F6F0; padding: 25px; border-radius: 16px;">
+          
+          <!-- TARJETA PRINCIPAL BLANCA -->
+          <div style="background-color: #ffffff; border: 1px solid #EFE9E0; border-radius: 16px; padding: 32px; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
+
+            <!-- HEADER CON LOGO Y MARCA -->
+            <div style="text-align: center; margin-bottom: 25px; padding-bottom: 20px; border-bottom: 2px solid #EFE9E0;">
+              <img 
+                src="https://www.unidaddeimagenesdeleste.com/logo.png" 
+                alt="Unidad de Imágenes Del Este" 
+                style="max-width: 170px; height: auto; display: block; margin: 0 auto 12px auto;" 
+              />
+              <span style="font-size: 10px; font-weight: 800; color: #7A2328; text-transform: uppercase; letter-spacing: 1.5px; display: block;">
+                Centro de Imágenes Médicas Del Este
+              </span>
+            </div>
+
+            <!-- SALUDO Y MENSAJE PRINCIPAL -->
+            <h2 style="color: #2D2423; font-size: 20px; margin-top: 0; margin-bottom: 12px; font-weight: 800;">
+              ¡Hola, <span style="color: #7A2328;">${nombrePaciente}</span>!
+            </h2>
+
+            <p style="font-size: 14px; color: #3D1C1E; line-height: 1.6; margin-bottom: 20px;">
+              Te informamos que tu estudio radiológico ha sido procesado exitosamente por nuestro equipo especialista y ya se encuentra disponible en nuestro portal web.
+            </p>
+
+            <!-- TARJETA DESTACADA CON DETALLES DEL ESTUDIO -->
+            <div style="background-color: #F9F6F0; border-left: 4px solid #7A2328; padding: 16px 20px; border-radius: 8px; margin-bottom: 25px;">
+              <p style="margin: 0; font-size: 13px; color: #2D2423; font-weight: 600;">
+                <strong style="color: #7A2328;">Estudio:</strong> ${tituloEstudio}
+              </p>
+              <p style="margin: 6px 0 0 0; font-size: 13px; color: #2D2423; font-weight: 600;">
+                <strong style="color: #7A2328;">Tipo de Examen:</strong> ${tipoExamen}
+              </p>
+              <p style="margin: 6px 0 0 0; font-size: 12px; color: #16a34a; font-weight: 700;">
+                ● Disponible para consulta y descarga
+              </p>
+            </div>
+
+            <!-- BOTÓN CTA VINO TINTO -->
+            <div style="text-align: center; margin: 30px 0;">
+              <a 
+                href="https://www.unidaddeimagenesdeleste.com/pacientes" 
+                style="background-color: #7A2328; color: #ffffff; padding: 14px 30px; text-decoration: none; border-radius: 12px; font-weight: 700; font-size: 14px; display: inline-block; letter-spacing: 0.5px; box-shadow: 0 4px 12px rgba(122, 35, 40, 0.25);"
+              >
+                Consultar Mis Resultados →
+              </a>
+            </div>
+
+            <p style="font-size: 12px; color: #611B1E; line-height: 1.5; text-align: center; margin-bottom: 0; font-weight: 500;">
+              Para acceder, ingresa con tu <strong>número de cédula</strong> y tu clave registrada.
+            </p>
+
+            <!-- LÍNEA DIVISORA -->
+            <hr style="border: none; border-top: 1px solid #EFE9E0; margin: 25px 0 20px 0;" />
+
+            <!-- DATOS DE LA CLÍNICA EN BARQUISIMETO -->
+            <div style="text-align: center; font-size: 11px; color: #3D1C1E; line-height: 1.6;">
+              <p style="margin: 0; font-weight: 700; color: #7A2328;">Unidad de Imágenes Del Este, C.A.</p>
+              <p style="margin: 2px 0 0 0; color: #611B1E;">Calle 8 entre Carreras 21 y 22, Barquisimeto, Edo. Lara</p>
+              <p style="margin: 2px 0 0 0; color: #611B1E;">Contacto / WhatsApp: +58 424-5715351</p>
+            </div>
+
           </div>
-          <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
-          <p style="font-size: 12px; color: #94a3b8; text-align: center;">
-            Ingresa con tu número de cédula para descargar tus archivos.
-          </p>
+
+          <!-- FOOTER EXTERNO DE SEGURIDAD -->
+          <div style="text-align: center; margin-top: 15px;">
+            <p style="font-size: 10px; color: #994E4A; margin: 0;">
+              Este es un correo automático del sistema de notificación médica. Por favor no respondas a esta dirección.
+            </p>
+          </div>
+
         </div>
       `
     });
