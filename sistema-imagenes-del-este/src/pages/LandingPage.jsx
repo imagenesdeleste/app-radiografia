@@ -148,11 +148,7 @@ export default function LandingPage({ navegar }) {
             <img 
               src="/logo.png" 
               alt="Logo" 
-              className="h-10 w-auto object-contain transition-transform group-hover:scale-105 brightness-0 invert" 
             />
-            <span className="hidden sm:inline-block font-black text-sm tracking-tight text-white uppercase">
-              Unidad de Imágenes <span className="text-brand-300">Del Este</span>
-            </span>
           </a>
 
           <nav className="hidden md:flex items-center gap-7 text-xs font-bold uppercase tracking-wider text-brand-100">
@@ -705,7 +701,6 @@ export default function LandingPage({ navegar }) {
               <img 
                 src="/logo.png" 
                 alt="Unidad de Imágenes Del Este" 
-                className="w-full h-full object-contain brightness-0 invert drop-shadow-sm" 
               />
             </div>
 
@@ -789,7 +784,7 @@ export default function LandingPage({ navegar }) {
 
           <div className="text-center md:text-right text-[11px] text-brand-200/90 leading-relaxed">
             <p>© 2026 Unidad de Imágenes Del Este, C.A.</p>
-            <p className="font-bold text-white">Powered by Axell Peraza</p>
+            <p className="font-bold text-white">Desarrollado por Axell Peraza</p>
           </div>
         </div>
       </footer>
