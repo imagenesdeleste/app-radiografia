@@ -1,0 +1,10 @@
+# Permitir a todos los buscadores rastrear la web
+User-agent: *
+Allow: /
+
+# Prohibir que Google muestre rutas internas o privadas
+Disallow: /personal
+Disallow: /api/
+
+# Enlace al mapa del sitio para Google
+Sitemap: https://www.unidaddeimagenesdeleste.com/sitemap.xml
