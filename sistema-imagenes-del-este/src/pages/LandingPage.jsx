@@ -202,107 +202,97 @@ export default function LandingPage({ navegar }) {
       <main>
         
         {/* ========================================== */}
-        {/* 2. HERO FULL SCREEN CAROUSEL               */}
-        {/* ========================================== */}
-        <section id="inicio" className="relative min-h-screen bg-brand-900 text-white flex items-center pt-24 pb-16 px-6 lg:px-12 overflow-hidden shadow-2xl">
-          <div className="absolute inset-0 bg-gradient-to-r from-brand-950 via-brand-900 to-brand-950 opacity-90 z-0"></div>
+{/* 2. HERO FULL SCREEN EN VINO TINTO OFICIAL  */}
+{/* ========================================== */}
+<section id="inicio" className="relative min-h-screen bg-brand-900 text-white flex items-center pt-24 pb-16 px-6 lg:px-12 overflow-hidden shadow-2xl">
+  
+  {/* Fondo Degradado Vino Tinto Borgoña */}
+  <div className="absolute inset-0 bg-gradient-to-br from-brand-900 via-brand-800 to-brand-950 opacity-95 z-0"></div>
+  
+  {/* Efectos de Luz e Iluminación Vino Tinto de Fondo */}
+  <div className="absolute -top-40 -left-40 w-96 h-96 bg-brand-600/30 rounded-full blur-3xl pointer-events-none"></div>
+  <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-brand-500/20 rounded-full blur-3xl pointer-events-none"></div>
 
-          <div className="max-w-6xl mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-12 items-center relative z-10 min-h-[500px]">
-            <div className="space-y-6 text-center lg:text-left transition-all duration-500">
-              <span className="inline-block bg-brand-400 text-white text-xs font-extrabold uppercase tracking-widest px-4 py-1.5 rounded-full shadow-md">
-                {slides[currentSlide].badge}
-              </span>
-              
-              <h1 className="text-4xl lg:text-6xl font-black leading-tight tracking-tight text-white">
-                {slides[currentSlide].title}
-                <span className="text-brand-300 block sm:inline">{slides[currentSlide].highlight}</span>
-              </h1>
-              
-              <p className="text-brand-100/90 text-base lg:text-lg leading-relaxed max-w-xl mx-auto lg:mx-0">
-                {slides[currentSlide].desc}
-              </p>
+  <div className="max-w-6xl mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-12 items-center relative z-10 min-h-[500px]">
+    
+    {/* Contenido de la Diapositiva */}
+    <div className="space-y-6 text-center lg:text-left transition-all duration-500">
+      <span className="inline-block bg-brand-600 border border-brand-400/40 text-white text-xs font-extrabold uppercase tracking-widest px-4 py-1.5 rounded-full shadow-md">
+        {slides[currentSlide].badge}
+      </span>
+      
+      <h1 className="text-4xl lg:text-6xl font-black leading-tight tracking-tight text-white">
+        {slides[currentSlide].title}
+        <span className="text-brand-200 block sm:inline">{slides[currentSlide].highlight}</span>
+      </h1>
+      
+      <p className="text-brand-100/90 text-base lg:text-lg leading-relaxed max-w-xl mx-auto lg:mx-0 font-medium">
+        {slides[currentSlide].desc}
+      </p>
 
-              <div className="flex flex-col sm:flex-row gap-4 pt-4 justify-center lg:justify-start">
-                {slides[currentSlide].isPortalBtn ? (
-                  <button 
-                    onClick={() => navegar('/pacientes')} 
-                    className="bg-brand-600 hover:bg-brand-700 active:scale-95 text-white font-bold px-8 py-4 rounded-xl shadow-lg transition flex items-center justify-center gap-2 cursor-pointer"
-                  >
-                    <i className="fa-solid fa-user-check"></i> {slides[currentSlide].btnText}
-                  </button>
-                ) : (
-                  <a 
-                    href={slides[currentSlide].btnLink} 
-                    className="bg-brand-600 hover:bg-brand-700 active:scale-95 text-white font-bold px-8 py-4 rounded-xl shadow-lg transition flex items-center justify-center gap-2 cursor-pointer"
-                  >
-                    {slides[currentSlide].btnText} <i className="fa-solid fa-arrow-right text-sm"></i>
-                  </a>
-                )}
+      {/* Botones de Acción */}
+      <div className="flex flex-col sm:flex-row gap-4 pt-4 justify-center lg:justify-start">
+        {slides[currentSlide].isPortalBtn ? (
+          <button 
+            onClick={() => navegar('/pacientes')} 
+            className="bg-brand-600 hover:bg-brand-500 active:scale-95 text-white font-bold px-8 py-4 rounded-xl shadow-lg transition flex items-center justify-center gap-2 cursor-pointer border border-brand-400/30"
+          >
+            <i className="fa-solid fa-user-check"></i> {slides[currentSlide].btnText}
+          </button>
+        ) : (
+          <a 
+            href={slides[currentSlide].btnLink} 
+            className="bg-brand-600 hover:bg-brand-500 active:scale-95 text-white font-bold px-8 py-4 rounded-xl shadow-lg transition flex items-center justify-center gap-2 cursor-pointer border border-brand-400/30"
+          >
+            {slides[currentSlide].btnText} <i className="fa-solid fa-arrow-right text-sm"></i>
+          </a>
+        )}
 
-                <a 
-                  href="https://wa.me/584245715351" 
-                  target="_blank" 
-                  rel="noreferrer"
-                  className="bg-white/10 hover:bg-white/20 text-white border border-white/20 font-bold px-6 py-4 rounded-xl transition flex items-center justify-center gap-2"
-                >
-                  <i className="fa-brands fa-whatsapp text-emerald-400 text-lg"></i> Contactar Asesor
-                </a>
-              </div>
-            </div>
+        <a 
+          href="https://wa.me/584245715351" 
+          target="_blank" 
+          rel="noreferrer"
+          className="bg-brand-950/60 hover:bg-brand-950 text-white border border-brand-400/30 font-bold px-6 py-4 rounded-xl transition flex items-center justify-center gap-2"
+        >
+          <i className="fa-brands fa-whatsapp text-emerald-400 text-lg"></i> Contactar Asesor
+        </a>
+      </div>
+    </div>
 
-            <div className="hidden lg:flex justify-center items-center">
-              <div className="relative w-full max-w-md bg-brand-950/80 p-6 rounded-3xl border border-brand-700/60 shadow-2xl backdrop-blur-sm">
-                <div className="w-16 h-16 bg-brand-600 text-white rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4 shadow-md">
-                  <i className={`fa-solid ${slides[currentSlide].icon}`}></i>
-                </div>
-                <div className="text-center space-y-2">
-                  <h3 className="text-xl font-bold text-white uppercase tracking-wide">Unidad de Imágenes</h3>
-                  <p className="text-xs text-brand-200">Calle 8 entre Carreras 21 y 22, Barquisimeto</p>
-                  <div className="pt-4 border-t border-brand-800/80">
-                    <span className="text-[11px] font-semibold text-brand-300 bg-brand-900 px-3 py-1 rounded-full border border-brand-700">
-                      Respuesta Rápida y Garantizada
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
+    {/* Tarjeta Ilustrativa en Vino Oscuro Transparente */}
+    <div className="hidden lg:flex justify-center items-center">
+      <div className="relative w-full max-w-md bg-brand-950/70 p-6 rounded-3xl border border-brand-600/40 shadow-2xl backdrop-blur-md">
+        <div className="w-16 h-16 bg-brand-600 text-white rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4 shadow-lg border border-brand-400/30">
+          <i className={`fa-solid ${slides[currentSlide].icon}`}></i>
+        </div>
+        <div className="text-center space-y-2">
+          <h3 className="text-xl font-bold text-white uppercase tracking-wide">Unidad de Imágenes</h3>
+          <p className="text-xs text-brand-200">Calle 8 entre Carreras 21 y 22, Barquisimeto</p>
+          <div className="pt-4 border-t border-brand-800/80">
+            <span className="text-[11px] font-semibold text-brand-200 bg-brand-900/80 px-3 py-1 rounded-full border border-brand-700/60">
+              Respuesta Rápida y Garantizada
+            </span>
           </div>
+        </div>
+      </div>
+    </div>
 
-          <div className="absolute bottom-8 left-0 right-0 z-20 flex justify-center gap-3">
-            {slides.map((_, idx) => (
-              <button
-                key={idx}
-                onClick={() => setCurrentSlide(idx)}
-                className={`h-2.5 rounded-full transition-all duration-300 ${
-                  currentSlide === idx ? 'w-8 bg-brand-300' : 'w-2.5 bg-white/30 hover:bg-white/60'
-                }`}
-              />
-            ))}
-          </div>
-        </section>
+  </div>
 
-        {/* BANNER CONSULTA */}
-        <section className="py-10 px-6 lg:px-12 max-w-6xl mx-auto -mt-10 relative z-30">
-          <div className="bg-brand-100 border border-brand-200 rounded-3xl p-6 lg:p-8 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="space-y-1 text-center md:text-left">
-              <span className="text-[10px] font-black uppercase tracking-widest text-white bg-brand-400 px-3 py-1 rounded-md">
-                Resultados en Línea
-              </span>
-              <h2 className="text-xl lg:text-2xl font-black text-brand-900">
-                ¿Buscas tus exámenes o informe médico?
-              </h2>
-              <p className="text-xs text-brand-800">Accede con tu número de cédula en cualquier momento.</p>
-            </div>
-            <button 
-              type="button"
-              onClick={() => navegar('/pacientes')} 
-              className="w-full md:w-auto bg-brand-600 hover:bg-brand-700 text-white font-bold px-7 py-3.5 rounded-xl shadow-md transition text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer"
-            >
-              Consultar por Cédula <i className="fa-solid fa-arrow-right"></i>
-            </button>
-          </div>
-        </section>
-
+  {/* Controles e Indicadores del Carousel */}
+  <div className="absolute bottom-8 left-0 right-0 z-20 flex justify-center gap-3">
+    {slides.map((_, idx) => (
+      <button
+        key={idx}
+        onClick={() => setCurrentSlide(idx)}
+        className={`h-2.5 rounded-full transition-all duration-300 cursor-pointer ${
+          currentSlide === idx ? 'w-8 bg-brand-300' : 'w-2.5 bg-white/30 hover:bg-white/60'
+        }`}
+        aria-label={`Ver diapositiva ${idx + 1}`}
+      />
+    ))}
+  </div>
+</section>
         {/* ========================================== */}
         {/* 3. EQUIPOS MÉDICOS DESTACADOS (ZIG-ZAG)    */}
         {/* ========================================== */}
@@ -702,12 +692,12 @@ export default function LandingPage({ navegar }) {
               <img 
                 src="/logo.png" 
                 alt="Unidad de Imágenes Del Este" 
-                className="w-full h-full object-contain brightness-0 invert drop-shadow-sm" 
+                className="w-full h-full object-contain drop-shadow-sm" 
               />
             </div>
 
             <p className="text-xs font-bold tracking-tight text-brand-100 italic">
-              "El Centro de Imágenes de los Barquisimetanos"
+              "Unidad De Imagenes Del Este"
             </p>
 
             <div className="space-y-2 pt-2 text-xs font-medium text-brand-100/90">
