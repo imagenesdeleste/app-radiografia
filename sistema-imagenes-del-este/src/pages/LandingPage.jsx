@@ -148,11 +148,8 @@ export default function LandingPage({ navegar }) {
             <img 
               src="/logo.png" 
               alt="Logo" 
-              className="h-10 w-auto object-contain transition-transform group-hover:scale-105 brightness-0 invert" 
+              className="h-10 w-auto object-contain transition-transform group-hover:scale-105 " 
             />
-            <span className="hidden sm:inline-block font-black text-sm tracking-tight text-white uppercase">
-              Unidad de Imágenes <span className="text-brand-300">Del Este</span>
-            </span>
           </a>
 
           <nav className="hidden md:flex items-center gap-7 text-xs font-bold uppercase tracking-wider text-brand-100">
@@ -694,7 +691,7 @@ export default function LandingPage({ navegar }) {
       </main>
 
       {/* ========================================== */}
-      {/* 8. FOOTER ESTILO LABORATORIO ONG           */}
+      {/* 8. FOOTER          */}
       {/* ========================================== */}
       <footer id="contacto-footer" className="bg-brand-600 text-white pt-14 pb-6 border-t border-brand-700 shadow-inner">
         <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-10 text-center md:text-left items-start pb-12">
@@ -775,17 +772,7 @@ export default function LandingPage({ navegar }) {
 
         {/* SUB-FOOTER */}
         <div className="border-t border-brand-700/60 pt-6 px-6 max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-xs">
-          <a 
-            href="https://wa.me/584245715351?text=Hola,%20deseo%20pagar%20mi%20estudio%20con%20Cashea" 
-            target="_blank" 
-            rel="noreferrer"
-            className="bg-black hover:bg-zinc-900 text-white font-bold py-2.5 px-5 rounded-full flex items-center gap-2.5 shadow-lg transition transform active:scale-95"
-          >
-            <span className="w-5 h-5 bg-[#DFFF00] text-black font-black rounded-full flex items-center justify-center text-[10px]">
-              c
-            </span>
-            <span>Pagar con Cashea</span>
-          </a>
+          
 
           <div className="text-center md:text-right text-[11px] text-brand-200/90 leading-relaxed">
             <p>© 2026 Unidad de Imágenes Del Este, C.A.</p>
@@ -794,16 +781,39 @@ export default function LandingPage({ navegar }) {
         </div>
       </footer>
 
-      {/* BOTÓN WHATSAPP */}
-      <a 
-        href="https://wa.me/584245715351" 
-        target="_blank" 
-        rel="noreferrer"
-        className="fixed bottom-6 right-6 bg-emerald-500 hover:bg-emerald-600 text-white p-4 rounded-full shadow-2xl flex items-center justify-center text-2xl transition hover:scale-110 z-50"
-      >
-        <i className="fa-brands fa-whatsapp"></i>
-      </a>
+      {/* ========================================== */}
+      {/* BOTONES FLOTANTES (CASHEA + WHATSAPP)     */}
+      {/* ========================================== */}
+      <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
+        
+        {/* Botón Flotante Cashea */}
+        <a 
+          href="https://wa.me/584245715351?text=Hola,%20quisiera%20pagar%20mi%20estudio%20con%20Cashea" 
+          target="_blank" 
+          rel="noreferrer"
+          className="bg-black hover:bg-zinc-900 text-white font-bold py-2.5 px-4 rounded-full shadow-2xl flex items-center gap-2.5 border border-zinc-700 transition hover:scale-105 active:scale-95 cursor-pointer group"
+        >
+          <span className="w-6 h-6 bg-[#DFFF00] text-black font-black rounded-full flex items-center justify-center text-xs shadow-sm">
+            c
+          </span>
+          <span className="text-xs font-bold pr-1">Pagar con Cashea</span>
+        </a>
+
+        {/* Botón Flotante WhatsApp */}
+        <a 
+          href="https://wa.me/584245715351" 
+          target="_blank" 
+          rel="noreferrer"
+          className="bg-emerald-500 hover:bg-emerald-600 text-white w-14 h-14 rounded-full shadow-2xl flex items-center justify-center text-2xl transition hover:scale-110 active:scale-95 cursor-pointer"
+          aria-label="Contactar por WhatsApp"
+        >
+          <i className="fa-brands fa-whatsapp"></i>
+        </a>
+
+      </div>
 
     </div>
   );
 }
+
+  
