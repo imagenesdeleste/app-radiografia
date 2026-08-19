@@ -24,9 +24,6 @@ export default function LandingPage({ navegar }) {
               alt="Logo Unidad de Imágenes" 
               className="h-11 w-auto object-contain transition-transform group-hover:scale-105" 
             />
-            <span className="hidden sm:inline-block font-black text-sm tracking-tight text-brand-900 uppercase">
-              Unidad de Imágenes <span className="text-brand-600">Del Este</span>
-            </span>
           </a>
 
           {/* Menú Desktop */}
@@ -408,13 +405,12 @@ export default function LandingPage({ navegar }) {
               <img 
                 src="/logo.png" 
                 alt="Unidad de Imágenes Del Este" 
-                className="w-full h-full object-contain brightness-0 invert drop-shadow-sm" 
               />
             </div>
 
             {/* Slogan */}
             <p className="text-xs font-bold tracking-tight text-brand-100 italic">
-              "El Centro de Imágenes de los Barquisimetanos"
+              "Imagenes del Este"
             </p>
 
             {/* Datos de Contacto */}
@@ -493,19 +489,6 @@ export default function LandingPage({ navegar }) {
 
         {/* BARRA INFERIOR CON CASHEA Y COPYRIGHT */}
         <div className="border-t border-brand-700/60 pt-6 px-6 max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-xs">
-          
-          {/* Botón Cashea */}
-          <a 
-            href="https://wa.me/584245715351?text=Hola,%20deseo%20pagar%20mi%20estudio%20con%20Cashea" 
-            target="_blank" 
-            rel="noreferrer"
-            className="bg-black hover:bg-zinc-900 text-white font-bold py-2.5 px-5 rounded-full flex items-center gap-2.5 shadow-lg transition transform active:scale-95"
-          >
-            <span className="w-5 h-5 bg-[#DFFF00] text-black font-black rounded-full flex items-center justify-center text-[10px]">
-              c
-            </span>
-            <span>Pagar con Cashea</span>
-          </a>
 
           {/* Firma */}
           <div className="text-center md:text-right text-[11px] text-brand-200/90 leading-relaxed">
