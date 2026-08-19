@@ -121,19 +121,33 @@ export default function PanelPersonal() {
   };
 
   // Ver Expediente
-  const handleVerEstudios = async (paciente) => {
-    setPacienteSeleccionado(paciente);
-    setCargandoEstudios(true);
-    try {
-      const res = await fetch(`https://app-radiografia-production.up.railway.app/api/paciente/${paciente.id}/estudios`);
+  // Estado para guardar el paciente activo y sus estudios
+const [pacienteSeleccionado, setPacienteSeleccionado] = useState(null);
+const [estudiosPaciente, setEstudiosPaciente] = useState([]);
+const [cargandoExpediente, setCargandoExpediente] = useState(false);
+
+// Función que se dispara al hacer clic en "Ver expediente"
+const handleVerExpediente = async (paciente) => {
+  setPacienteSeleccionado(paciente);
+  setCargandoExpediente(true);
+
+  try {
+    // 🟢 Hacemos la petición a la nueva ruta del backend
+    const res = await fetch(`https://app-radiografia-production.up.railway.app/api/estudios/paciente/${paciente.id}`);
+    
+    if (res.ok) {
       const data = await res.json();
-      if (res.ok) setEstudiosPaciente(data);
-    } catch (e) {
-      console.error("Error al obtener estudios", e);
-    } finally {
-      setCargandoEstudios(false);
+      setEstudiosPaciente(data); // 🟢 Guardamos los estudios encontrados
+    } else {
+      setEstudiosPaciente([]);
     }
-  };
+  } catch (error) {
+    console.error("Error al cargar expediente:", error);
+    setEstudiosPaciente([]);
+  } finally {
+    setCargandoExpediente(false);
+  }
+};
 
   // Crear Paciente
   const handleGuardarPaciente = async (e) => {
