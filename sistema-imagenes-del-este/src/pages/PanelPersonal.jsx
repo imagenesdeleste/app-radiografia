@@ -414,7 +414,7 @@ return (
                             </button>
                           )}
                           <button 
-                            onClick={() => handleVerEstudios(p)}
+                            onClick={() => abrirExpediente(p)}
                             className="px-3 py-1.5 bg-sky-50 hover:bg-sky-100 text-sky-600 font-semibold rounded-lg transition-all cursor-pointer text-xs"
                           >
                             Ver Expediente
@@ -653,7 +653,7 @@ return (
                 <span className="text-[10px] text-slate-400">{new Date(e.fecha_estudio).toLocaleDateString()}</span>
               </div>
               <a 
-                href={`/api/descargar/${e.id}`} 
+                href={`https://app-radiografia-production.up.railway.app/api/descargar/${e.id}`} 
                 target="_blank"
                 rel="noopener noreferrer"
                 className="px-3 py-1.5 bg-red-950 hover:bg-red-800 text-white text-xs font-medium rounded-lg transition-colors inline-block"
