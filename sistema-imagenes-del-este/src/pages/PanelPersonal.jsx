@@ -126,25 +126,25 @@ export default function PanelPersonal() {
   // Ver Expediente
   
 // Función que se dispara al hacer clic en "Ver expediente"
-const handleVerExpediente = async (paciente) => {
-  setPacienteSeleccionado(paciente);
-  setCargandoExpediente(true);
+const abrirExpediente = async (paciente) => {
+  setPacienteSeleccionado(paciente); // 1. Muestra el modal
+  setCargandoEstudios(true);         // 2. Activa el spinner
+  setEstudiosPaciente([]);           // 3. Limpia los exámenes viejos
 
   try {
-    // 🟢 Hacemos la petición a la nueva ruta del backend
+    // 4. Pide los exámenes del paciente al backend
     const res = await fetch(`https://app-radiografia-production.up.railway.app/api/estudios/paciente/${paciente.id}`);
-    
     if (res.ok) {
       const data = await res.json();
-      setEstudiosPaciente(data); // 🟢 Guardamos los estudios encontrados
+      setEstudiosPaciente(data); // 5. Llena la lista de estudios
     } else {
       setEstudiosPaciente([]);
     }
   } catch (error) {
-    console.error("Error al cargar expediente:", error);
+    console.error("Error cargando expediente:", error);
     setEstudiosPaciente([]);
   } finally {
-    setCargandoExpediente(false);
+    setCargandoEstudios(false); // 6. Apaga el spinner
   }
 };
 
