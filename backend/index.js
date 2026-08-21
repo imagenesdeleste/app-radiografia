@@ -217,7 +217,7 @@ app.post('/api/pacientes', async (req, res) => {
 // RUTA: Obtener la lista de todos los pacientes
 app.get('/api/pacientes', async (req, res) => {
   try {
-    const result = await pool.query('SELECT id, cedula, nombre_completo, correo FROM pacientes ORDER BY created_at DESC');
+    const result = await pool.query('SELECT id, cedula, nombre_completo, correo, telefono FROM pacientes ORDER BY created_at DESC');
     res.json(result.rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
