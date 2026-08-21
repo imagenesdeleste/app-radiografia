@@ -27,6 +27,9 @@ export default function PanelPersonal() {
     correo: ''
   });
 
+  const [estudiosExpediente, setEstudiosExpediente] = useState([]);
+  const [cargandoExpediente, setCargandoExpediente] = useState(false);
+
   // 5. Formulario Crear Paciente
   const [formPaciente, setFormPaciente] = useState({
     cedula: '',
@@ -121,11 +124,7 @@ export default function PanelPersonal() {
   };
 
   // Ver Expediente
-  // Estado para guardar el paciente activo y sus estudios
-const [pacienteSeleccionado, setPacienteSeleccionado] = useState(null);
-const [estudiosPaciente, setEstudiosPaciente] = useState([]);
-const [cargandoExpediente, setCargandoExpediente] = useState(false);
-
+  
 // Función que se dispara al hacer clic en "Ver expediente"
 const handleVerExpediente = async (paciente) => {
   setPacienteSeleccionado(paciente);
@@ -648,7 +647,7 @@ return (
                     <span className="text-[10px] text-slate-400">{new Date(e.fecha_estudio).toLocaleDateString()}</span>
                   </div>
                   <a 
-                    href={`http://localhost:3001/api/descargar/${e.id}`} 
+                    href={`http://app-radiografia-production.up.railway.app/api/descargar/${e.id}`} 
                     download
                     className="px-3 py-1.5 bg-red-950 hover:bg-red-800 text-white text-xs font-medium rounded-lg transition-colors"
                   >
