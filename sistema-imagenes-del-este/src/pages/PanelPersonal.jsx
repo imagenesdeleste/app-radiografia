@@ -44,7 +44,7 @@ export default function PanelPersonal() {
   const [pacienteSeleccionadoSubida, setPacienteSeleccionadoSubida] = useState(null);
   const [tipoExamen, setTipoExamen] = useState('Informe Médico');
   const [titulo, setTitulo] = useState('');
-  const [archivo, setArchivo] = useState(null);
+  const [archivos, setArchivos] = useState([]);
 
   const cargarPacientes = async () => {
     try {
@@ -54,6 +54,12 @@ export default function PanelPersonal() {
     } catch (e) {
       console.error("Error al cargar pacientes", e);
     }
+  };
+
+    const handleLimpiarArchivos = () => {
+    setArchivos([]);
+    const fileInput = document.getElementById('input-archivos');
+    if (fileInput) fileInput.value = '';
   };
 
   useEffect(() => {
@@ -169,30 +175,41 @@ const abrirExpediente = async (paciente) => {
 
   // Subir Estudio y Notificar
   const handleGuardarEstudio = async (e) => {
-    e.preventDefault();
-    if (!archivo || !pacienteSeleccionadoSubida) return alert('Selecciona un paciente y adjunta un archivo');
+  e.preventDefault();
+  if (archivos.length === 0 || !pacienteSeleccionadoSubida) {
+    return alert('Selecciona un paciente y adjunta al menos un archivo');
+  }
 
-    const formData = new FormData();
-    formData.append('paciente_id', pacienteSeleccionadoSubida.id);
-    formData.append('tipo_examen', tipoExamen);
-    formData.append('titulo', titulo);
-    formData.append('archivo', archivo);
+  const formData = new FormData();
+  formData.append('paciente_id', pacienteSeleccionadoSubida.id);
+  formData.append('tipo_examen', tipoExamen);
+  formData.append('titulo', titulo);
 
+  // Adjunta cada uno de los archivos seleccionados
+  archivos.forEach((file) => {
+    formData.append('archivos', file);
+  });
+
+  try {
     const res = await fetch('https://app-radiografia-production.up.railway.app/api/estudios', {
       method: 'POST',
       body: formData
     });
 
     if (res.ok) {
-      alert('¡Estudio cargado y notificación enviada al paciente!');
+      alert('¡Estudio(s) cargado(s) y notificación enviada al paciente!');
       setTitulo('');
-      setArchivo(null);
+      handleLimpiarArchivos();
       setPacienteSeleccionadoSubida(null);
       setBusquedaPacienteSubida('');
     } else {
-      alert('Error al subir el estudio');
+      alert('Error al subir los archivos');
     }
-  };
+  } catch (error) {
+    console.error('Error al conectar:', error);
+    alert('Error de conexión con el servidor');
+  }
+};
 
   // Filtrado de pacientes
   const pacientesFiltradosLista = pacientes.filter(p => 
@@ -513,6 +530,40 @@ return (
               <h2 className="text-lg font-bold text-slate-900">Cargar Resultado Médico</h2>
               <p className="text-xs text-slate-500 mt-0.5">Busca al paciente por nombre o cédula para asociar el examen.</p>
             </div>
+
+            <div>
+            <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
+              Archivos de Examen (Selección Múltiple)
+            </label>
+            
+            <div className="flex items-center gap-2">
+              <input 
+                id="input-archivos"
+                type="file" 
+                multiple
+                onChange={e => setArchivos(Array.from(e.target.files))}
+                className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-red-50 file:text-red-800 hover:file:bg-red-100 cursor-pointer border border-slate-200 rounded-xl bg-slate-50 p-1"
+                required 
+              />
+
+              {archivos.length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleLimpiarArchivos}
+                  className="w-9 h-9 bg-red-100 hover:bg-red-200 text-red-800 font-bold rounded-xl flex items-center justify-center transition-colors cursor-pointer shrink-0 text-sm"
+                  title="Cancelar / Borrar selección"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+
+            {archivos.length > 0 && (
+              <p className="text-[11px] text-emerald-600 font-medium mt-1.5 flex items-center gap-1">
+                <span>✓</span> {archivos.length} {archivos.length === 1 ? 'archivo seleccionado' : 'archivos seleccionados'}
+              </p>
+            )}
+          </div>
 
             <form onSubmit={handleGuardarEstudio} className="space-y-4">
               <div className="relative">

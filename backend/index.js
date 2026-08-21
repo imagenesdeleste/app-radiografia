@@ -118,6 +118,10 @@ export const enviarCorreoPaciente = async (
               </p>
             </div>
 
+            <p style="font-size: 12px; color: #611B1E; line-height: 1.5; text-align: center; margin-bottom: 0; font-weight: 500;">
+              Para acceder, ingresa con tu <strong>número de cédula: ${cedula}</strong> y tu clave registrada: ${clave}.
+            </p>
+
             <div style="text-align: center; margin: 30px 0;">
               <a 
                 href="https://www.unidaddeimagenesdeleste.com/pacientes" 
@@ -126,10 +130,6 @@ export const enviarCorreoPaciente = async (
                 Consultar Mis Resultados →
               </a>
             </div>
-
-            <p style="font-size: 12px; color: #611B1E; line-height: 1.5; text-align: center; margin-bottom: 0; font-weight: 500;">
-              Para acceder, ingresa con tu <strong>número de cédula</strong> y tu clave registrada.
-            </p>
 
             <hr style="border: none; border-top: 1px solid #EFE9E0; margin: 25px 0 20px 0;" />
 
