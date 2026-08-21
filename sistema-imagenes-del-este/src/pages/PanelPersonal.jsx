@@ -523,142 +523,145 @@ return (
           </div>
         )}
 
-        {/* VISTA: SUBIR RESULTADO (CON BÚSQUEDA Y OPCIONES SEGÚN ROL) */}
-        {seccion === 'subir-estudio' && (
-          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm max-w-xl mx-auto">
-            <div className="mb-6 pb-4 border-b border-slate-100">
-              <h2 className="text-lg font-bold text-slate-900">Cargar Resultado Médico</h2>
-              <p className="text-xs text-slate-500 mt-0.5">Busca al paciente por nombre o cédula para asociar el examen.</p>
-            </div>
+        {/* VISTA: SUBIR RESULTADO */}
+{seccion === 'subir-estudio' && (
+  <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm max-w-xl mx-auto">
+    <div className="mb-6 pb-4 border-b border-slate-100">
+      <h2 className="text-lg font-bold text-slate-900">Cargar Resultado Médico</h2>
+      <p className="text-xs text-slate-500 mt-0.5">Busca al paciente por nombre o cédula para asociar el examen.</p>
+    </div>
 
+    <form onSubmit={handleGuardarEstudio} className="space-y-4">
+      
+      {/* BÚSQUEDA DE PACIENTE */}
+      <div className="relative">
+        <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
+          Buscar Paciente (Cédula o Nombre)
+        </label>
+        
+        {pacienteSeleccionadoSubida ? (
+          <div className="p-3 bg-sky-50 border border-sky-200 rounded-xl flex items-center justify-between">
             <div>
-            <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
-              Archivos de Examen (Selección Múltiple)
-            </label>
-            
-            <div className="flex items-center gap-2">
-              <input 
-                id="input-archivos"
-                type="file" 
-                multiple
-                onChange={e => setArchivos(Array.from(e.target.files))}
-                className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-red-50 file:text-red-800 hover:file:bg-red-100 cursor-pointer border border-slate-200 rounded-xl bg-slate-50 p-1"
-                required 
-              />
-
-              {archivos.length > 0 && (
-                <button
-                  type="button"
-                  onClick={handleLimpiarArchivos}
-                  className="w-9 h-9 bg-red-100 hover:bg-red-200 text-red-800 font-bold rounded-xl flex items-center justify-center transition-colors cursor-pointer shrink-0 text-sm"
-                  title="Cancelar / Borrar selección"
-                >
-                  ✕
-                </button>
-              )}
+              <strong className="text-xs text-sky-900 block">{pacienteSeleccionadoSubida.nombre_completo}</strong>
+              <span className="text-[11px] text-sky-600">C.I: {pacienteSeleccionadoSubida.cedula}</span>
             </div>
-
-            {archivos.length > 0 && (
-              <p className="text-[11px] text-emerald-600 font-medium mt-1.5 flex items-center gap-1">
-                <span>✓</span> {archivos.length} {archivos.length === 1 ? 'archivo seleccionado' : 'archivos seleccionados'}
-              </p>
-            )}
+            <button 
+              type="button" 
+              onClick={() => { setPacienteSeleccionadoSubida(null); setBusquedaPacienteSubida(''); }}
+              className="text-xs text-red-500 hover:underline font-medium cursor-pointer"
+            >
+              Cambiar
+            </button>
           </div>
+        ) : (
+          <>
+            <input 
+              type="text" 
+              placeholder="Escribe el nombre o cédula..." 
+              value={busquedaPacienteSubida}
+              onChange={e => setBusquedaPacienteSubida(e.target.value)}
+              className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
+            />
 
-            <form onSubmit={handleGuardarEstudio} className="space-y-4">
-              <div className="relative">
-                <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Buscar Paciente (Cédula o Nombre)</label>
-                
-                {pacienteSeleccionadoSubida ? (
-                  <div className="p-3 bg-sky-50 border border-sky-200 rounded-xl flex items-center justify-between">
-                    <div>
-                      <strong className="text-xs text-sky-900 block">{pacienteSeleccionadoSubida.nombre_completo}</strong>
-                      <span className="text-[11px] text-sky-600">C.I: {pacienteSeleccionadoSubida.cedula}</span>
-                    </div>
-                    <button 
-                      type="button" 
-                      onClick={() => { setPacienteSeleccionadoSubida(null); setBusquedaPacienteSubida(''); }}
-                      className="text-xs text-red-500 hover:underline font-medium"
-                    >
-                      Cambiar
-                    </button>
+            {pacientesFiltradosSubida.length > 0 && (
+              <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-20 max-h-48 overflow-y-auto">
+                {pacientesFiltradosSubida.map(p => (
+                  <div 
+                    key={p.id} 
+                    onClick={() => { setPacienteSeleccionadoSubida(p); setBusquedaPacienteSubida(''); }}
+                    className="p-3 hover:bg-slate-50 border-b border-slate-100 last:border-none cursor-pointer flex justify-between items-center"
+                  >
+                    <span className="text-xs font-medium text-slate-800">{p.nombre_completo}</span>
+                    <span className="text-[11px] text-slate-400">C.I: {p.cedula}</span>
                   </div>
-                ) : (
-                  <>
-                    <input 
-                      type="text" 
-                      placeholder="Escribe el nombre o cédula..." 
-                      value={busquedaPacienteSubida}
-                      onChange={e => setBusquedaPacienteSubida(e.target.value)}
-                      className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
-                    />
-
-                    {pacientesFiltradosSubida.length > 0 && (
-                      <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-20 max-h-48 overflow-y-auto">
-                        {pacientesFiltradosSubida.map(p => (
-                          <div 
-                            key={p.id} 
-                            onClick={() => { setPacienteSeleccionadoSubida(p); setBusquedaPacienteSubida(''); }}
-                            className="p-3 hover:bg-slate-50 border-b border-slate-100 last:border-none cursor-pointer flex justify-between items-center"
-                          >
-                            <span className="text-xs font-medium text-slate-800">{p.nombre_completo}</span>
-                            <span className="text-[11px] text-slate-400">C.I: {p.cedula}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </>
-                )}
+                ))}
               </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Tipo de Examen</label>
-                <select 
-                  value={tipoExamen} 
-                  onChange={e => setTipoExamen(e.target.value)}
-                  className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 cursor-pointer"
-                >
-                  <option value="Informe Médico">Informe Médico</option>
-                  {(usuarioLogueado?.rol === 'tecnico' || usuarioLogueado?.rol === 'secretaria') && (
-                    <>
-                      <option value="Radiografía">Radiografía</option>
-                      <option value="Tomografía">Tomografía</option>
-                    </>
-                  )}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Título del Estudio</label>
-                <input 
-                  type="text" 
-                  placeholder="Ej: Radiografía de Tórax AP" 
-                  value={titulo}
-                  onChange={e => setTitulo(e.target.value)}
-                  className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
-                  required 
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Archivo de Examen (Cualquier Formato)</label>
-                <input 
-                  type="file" 
-                  onChange={e => setArchivo(e.target.files[0])}
-                  className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-red-50 file:text-red-800 hover:file:bg-red-100 cursor-pointer border border-slate-200 rounded-xl bg-slate-50 p-1"
-                  required 
-                />
-              </div>
-
-              <button 
-                type="submit" 
-                className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shadow-md transition-all cursor-pointer mt-2"
-              >
-                Subir y Notificar
-              </button>
-            </form>
-          </div>
+            )}
+          </>
         )}
+      </div>
+
+      {/* TIPO DE EXAMEN */}
+      <div>
+        <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
+          Tipo de Examen
+        </label>
+        <select 
+          value={tipoExamen} 
+          onChange={e => setTipoExamen(e.target.value)}
+          className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 cursor-pointer"
+        >
+          <option value="Informe Médico">Informe Médico</option>
+          {(usuarioLogueado?.rol === 'tecnico' || usuarioLogueado?.rol === 'secretaria') && (
+            <>
+              <option value="Radiografía">Radiografía</option>
+              <option value="Tomografía">Tomografía</option>
+            </>
+          )}
+        </select>
+      </div>
+
+      {/* TÍTULO DEL ESTUDIO */}
+      <div>
+        <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
+          Título del Estudio
+        </label>
+        <input 
+          type="text" 
+          placeholder="Ej: Radiografía de Tórax AP" 
+          value={titulo}
+          onChange={e => setTitulo(e.target.value)}
+          className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
+          required 
+        />
+      </div>
+
+      {/* ARCHIVOS MULTIPLES Y BOTÓN BORRAR "✕" */}
+      <div>
+        <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
+          Archivos de Examen (Selección Múltiple)
+        </label>
+        
+        <div className="flex items-center gap-2">
+          <input 
+            id="input-archivos"
+            type="file" 
+            multiple
+            onChange={e => setArchivos(Array.from(e.target.files))}
+            className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-red-50 file:text-red-800 hover:file:bg-red-100 cursor-pointer border border-slate-200 rounded-xl bg-slate-50 p-1"
+            required 
+          />
+
+          {archivos.length > 0 && (
+            <button
+              type="button"
+              onClick={handleLimpiarArchivos}
+              className="w-9 h-9 bg-red-100 hover:bg-red-200 text-red-800 font-bold rounded-xl flex items-center justify-center transition-colors cursor-pointer shrink-0 text-sm"
+              title="Cancelar / Borrar selección"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+
+        {archivos.length > 0 && (
+          <p className="text-[11px] text-emerald-600 font-medium mt-1.5 flex items-center gap-1">
+            <span>✓</span> {archivos.length} {archivos.length === 1 ? 'archivo seleccionado' : 'archivos seleccionados'}
+          </p>
+        )}
+      </div>
+
+      {/* BOTÓN DE ENVÍO */}
+      <button 
+        type="submit" 
+        className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shadow-md transition-all cursor-pointer mt-2"
+      >
+        Subir y Notificar
+      </button>
+
+    </form>
+  </div>
+)}
 
       </div>
     </main>
