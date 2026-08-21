@@ -92,18 +92,6 @@ export default function PortalPaciente() {
                 Consultar Resultados
               </button>
             </form>
-
-            {/* BOTÓN SOPORTE WHATSAPP - LOGIN */}
-              {/* BOTÓN FLOTANTE WHATSAPP - SEGURO */}
-              <a
-                href="https://wa.me/584245715351?text=Hola,%20necesito%20asistencia%20con%20el%20portal%20m%C3%A9dico."
-                target="_blank"
-                rel="noopener noreferrer"
-                className="fixed bottom-6 right-6 z-50 bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-3 rounded-full shadow-2xl flex items-center gap-2 text-xs font-bold transition-all transform hover:scale-105 active:scale-95 border-2 border-white"
-              >
-                <span className="text-base">💬</span>
-                <span>¿Necesitas ayuda?</span>
-              </a>
           </div>
 
           
