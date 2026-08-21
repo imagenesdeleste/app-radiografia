@@ -86,17 +86,16 @@ export default function PortalPaciente() {
               </div>
 
               {/* BOTÓN SOPORTE WHATSAPP - LOGIN */}
-              <div className="mt-5 text-center">
-                <a
-                  href="https://wa.me/584245715351?text=Hola,%20tengo%20problemas%20para%20iniciar%20sesi%C3%B3n%20en%20el%20portal%20m%C3%A9dico."
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-xl text-xs font-semibold transition-all shadow-sm"
-                >
-                  <span className="text-sm">💬</span>
-                  <span>¿Tienes problemas para acceder? Reportar por WhatsApp</span>
-                </a>
-              </div>
+              {/* BOTÓN FLOTANTE WHATSAPP - SEGURO */}
+              <a
+                href="https://wa.me/584245715351?text=Hola,%20necesito%20asistencia%20con%20el%20portal%20m%C3%A9dico."
+                target="_blank"
+                rel="noopener noreferrer"
+                className="fixed bottom-6 right-6 z-50 bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-3 rounded-full shadow-2xl flex items-center gap-2 text-xs font-bold transition-all transform hover:scale-105 active:scale-95 border-2 border-white"
+              >
+                <span className="text-base">💬</span>
+                <span>¿Necesitas ayuda?</span>
+              </a>
 
               <button 
                 type="submit" 
