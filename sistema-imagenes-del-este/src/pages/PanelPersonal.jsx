@@ -13,13 +13,10 @@ export default function PanelPersonal() {
   const [pacientes, setPacientes] = useState([]);
   const [busquedaLista, setBusquedaLista] = useState('');
 
-  // 3 Modal nuevo
-
-  const [modalAbierto, setModalAbierto] = useState(false);
-  const [pacienteActivo, setPacienteActivo] = useState(null);
+  // 3. Modal de Expediente
+  const [pacienteSeleccionado, setPacienteSeleccionado] = useState(null);
   const [estudiosPaciente, setEstudiosPaciente] = useState([]);
   const [cargandoEstudios, setCargandoEstudios] = useState(false);
-
 
   // 4. Modal de Editar Paciente
   const [pacienteAEditar, setPacienteAEditar] = useState(null);
@@ -29,6 +26,9 @@ export default function PanelPersonal() {
     telefono: '',
     correo: ''
   });
+
+  const [estudiosExpediente, setEstudiosExpediente] = useState([]);
+  const [cargandoExpediente, setCargandoExpediente] = useState(false);
 
   // 5. Formulario Crear Paciente
   const [formPaciente, setFormPaciente] = useState({
@@ -125,23 +125,26 @@ export default function PanelPersonal() {
 
   // Ver Expediente
   
-// Función para abrir y cargar los datos
-const abrirExpediente = async (paciente) => {
-  setPacienteActivo(paciente);
-  setModalAbierto(true);
-  setCargandoEstudios(true);
-  setEstudiosPaciente([]);
+// Función que se dispara al hacer clic en "Ver expediente"
+const handleVerExpediente = async (paciente) => {
+  setPacienteSeleccionado(paciente);
+  setCargandoExpediente(true);
 
   try {
+    // 🟢 Hacemos la petición a la nueva ruta del backend
     const res = await fetch(`https://app-radiografia-production.up.railway.app/api/estudios/paciente/${paciente.id}`);
+    
     if (res.ok) {
       const data = await res.json();
-      setEstudiosPaciente(data);
+      setEstudiosPaciente(data); // 🟢 Guardamos los estudios encontrados
+    } else {
+      setEstudiosPaciente([]);
     }
   } catch (error) {
-    console.error("Error cargando expediente:", error);
+    console.error("Error al cargar expediente:", error);
+    setEstudiosPaciente([]);
   } finally {
-    setCargandoEstudios(false);
+    setCargandoExpediente(false);
   }
 };
 
@@ -411,7 +414,7 @@ return (
                             </button>
                           )}
                           <button 
-                            onClick={() => abrirExpediente(paciente)}
+                            onClick={() => handleVerEstudios(p)}
                             className="px-3 py-1.5 bg-sky-50 hover:bg-sky-100 text-sky-600 font-semibold rounded-lg transition-all cursor-pointer text-xs"
                           >
                             Ver Expediente
@@ -609,54 +612,61 @@ return (
       </div>
     </main>
 
-    {/* MODAL EXPEDIENTE */}
-    {pacienteSeleccionado && (
-      <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-        <div className="bg-white rounded-2xl p-6 max-w-lg w-full shadow-2xl border border-slate-100">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
-            <div>
-              <h3 className="text-base font-bold text-slate-900">{pacienteSeleccionado.nombre_completo}</h3>
-              <p className="text-xs text-slate-400">C.I: {pacienteSeleccionado.cedula}</p>
-            </div>
-            <button 
-              onClick={() => setPacienteSeleccionado(null)}
-              className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 transition-colors cursor-pointer"
-            >
-              ✕
-            </button>
-          </div>
-
-          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Estudios Cargados</h4>
-
-          {cargandoEstudios ? (
-            <p className="text-xs text-center text-slate-400 py-6">Cargando expediente...</p>
-          ) : estudiosPaciente.length === 0 ? (
-            <p className="text-xs text-center text-slate-400 py-6">Este paciente aún no tiene exámenes registrados.</p>
-          ) : (
-            <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
-              {estudiosPaciente.map(e => (
-                <div key={e.id} className="p-3 border border-slate-100 bg-slate-50 rounded-xl flex items-center justify-between">
-                  <div>
-                    <span className="inline-block px-2 py-0.5 text-[9px] font-bold text-red-800 bg-red-50 rounded mb-1">
-                      {e.tipo_examen}
-                    </span>
-                    <h5 className="text-xs font-semibold text-slate-800">{e.titulo}</h5>
-                    <span className="text-[10px] text-slate-400">{new Date(e.fecha_estudio).toLocaleDateString()}</span>
-                  </div>
-                  <a 
-                    href={`http://app-radiografia-production.up.railway.app/api/descargar/${e.id}`} 
-                    download
-                    className="px-3 py-1.5 bg-red-950 hover:bg-red-800 text-white text-xs font-medium rounded-lg transition-colors"
-                  >
-                    Descargar
-                  </a>
-                </div>
-              ))}
-            </div>
-          )}
+   {/* MODAL EXPEDIENTE */}
+{pacienteSeleccionado && (
+  <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+    <div className="bg-white rounded-2xl p-6 max-w-lg w-full shadow-2xl border border-slate-100 animate-fadeIn">
+      <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+        <div>
+          <h3 className="text-base font-bold text-slate-900">{pacienteSeleccionado.nombre_completo}</h3>
+          <p className="text-xs text-slate-400">C.I: {pacienteSeleccionado.cedula}</p>
         </div>
+        <button 
+          onClick={() => {
+            setPacienteSeleccionado(null);
+            setEstudiosPaciente([]);
+          }}
+          className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 transition-colors cursor-pointer font-bold text-sm"
+        >
+          ✕
+        </button>
       </div>
-    )}
+
+      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Estudios Cargados</h4>
+
+      {cargandoEstudios ? (
+        <div className="py-8 text-center text-slate-400 flex flex-col items-center gap-2">
+          <div className="w-5 h-5 border-2 border-red-800 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-xs">Cargando expediente...</p>
+        </div>
+      ) : estudiosPaciente.length === 0 ? (
+        <p className="text-xs text-center text-slate-400 py-6">Este paciente aún no tiene exámenes registrados.</p>
+      ) : (
+        <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+          {estudiosPaciente.map(e => (
+            <div key={e.id} className="p-3 border border-slate-100 bg-slate-50 rounded-xl flex items-center justify-between">
+              <div>
+                <span className="inline-block px-2 py-0.5 text-[9px] font-bold text-red-800 bg-red-50 rounded mb-1">
+                  {e.tipo_examen}
+                </span>
+                <h5 className="text-xs font-semibold text-slate-800">{e.titulo}</h5>
+                <span className="text-[10px] text-slate-400">{new Date(e.fecha_estudio).toLocaleDateString()}</span>
+              </div>
+              <a 
+                href={`/api/descargar/${e.id}`} 
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3 py-1.5 bg-red-950 hover:bg-red-800 text-white text-xs font-medium rounded-lg transition-colors inline-block"
+              >
+                Descargar
+              </a>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  </div>
+)}
 
     {/* MODAL PARA EDITAR PACIENTE (SOLO SECRETARÍA) */}
     {pacienteAEditar && usuarioLogueado?.rol === 'secretaria' && (
@@ -729,8 +739,6 @@ return (
         </div>
       </div>
     )}
-
-
 
   </div>
 );
