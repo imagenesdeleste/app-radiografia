@@ -267,7 +267,7 @@ app.post('/api/admin/usuarios', async (req, res) => {
 
     // 2. Insertar el nuevo usuario
     await pool.query(
-      'INSERT INTO usuarios_personal (cedula, nombre_completo, clave, rol) VALUES ($1, $2, $3, $4)',
+      'INSERT INTO personal (cedula, nombre_completo, clave, rol) VALUES ($1, $2, $3, $4)',
       [cedula, nombre_completo, clave, rol || 'tecnico']
     );
 
