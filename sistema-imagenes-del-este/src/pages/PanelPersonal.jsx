@@ -56,6 +56,23 @@ export default function PanelPersonal() {
     }
   };
 
+  // Función para ir SUMANDO archivos a la lista actual
+  const handleArchivosChange = (e) => {
+    if (e.target.files.length > 0) {
+      const nuevosArchivos = Array.from(e.target.files);
+      setArchivos((prev) => [...prev, ...nuevosArchivos]);
+      
+      // Limpiamos el valor del input para que te deje volver a seleccionar el mismo archivo si quieres
+      e.target.value = ''; 
+    }
+  };
+
+  // Función para eliminar UN SOLO archivo específico de la lista
+  const handleRemoverArchivo = (indexAEliminar) => {
+    setArchivos((prev) => prev.filter((_, index) => index !== indexAEliminar));
+  };
+
+  //funcion de limpiar todos los archivos
     const handleLimpiarArchivos = () => {
     setArchivos([]);
     const fileInput = document.getElementById('input-archivos');
@@ -180,10 +197,13 @@ const abrirExpediente = async (paciente) => {
     return alert('Selecciona un paciente y adjunta al menos un archivo');
   }
 
+  const esTecnico = usuarioLogueado?.rol === 'tecnico';
+
   const formData = new FormData();
   formData.append('paciente_id', pacienteSeleccionadoSubida.id);
   formData.append('tipo_examen', tipoExamen);
   formData.append('titulo', titulo);
+  formData.append('notificar_correo', !esTecnico);
 
   // Adjunta cada uno de los archivos seleccionados
   archivos.forEach((file) => {
@@ -197,7 +217,11 @@ const abrirExpediente = async (paciente) => {
     });
 
     if (res.ok) {
-      alert('¡Estudio(s) cargado(s) y notificación enviada al paciente!');
+      alert(
+        esTecnico
+        ? '¡Estudio(s) cargado(s) con éxito en la base de datos!'
+        :'¡Estudio(s) cargado(s) y notificación enviada al paciente!'
+      );
       setTitulo('');
       handleLimpiarArchivos();
       setPacienteSeleccionadoSubida(null);
@@ -616,10 +640,10 @@ return (
         />
       </div>
 
-      {/* ARCHIVOS MULTIPLES Y BOTÓN BORRAR "✕" */}
+      {/* ARCHIVOS MÚLTIPLES CON ACUMULACIÓN Y VISTA PREVIA */}
       <div>
         <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
-          Archivos de Examen (Selección Múltiple)
+          Archivos de Examen (Selección Múltiple Acumulativa)
         </label>
         
         <div className="flex items-center gap-2">
@@ -627,9 +651,8 @@ return (
             id="input-archivos"
             type="file" 
             multiple
-            onChange={e => setArchivos(Array.from(e.target.files))}
+            onChange={handleArchivosChange}
             className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-red-50 file:text-red-800 hover:file:bg-red-100 cursor-pointer border border-slate-200 rounded-xl bg-slate-50 p-1"
-            required 
           />
 
           {archivos.length > 0 && (
@@ -637,17 +660,39 @@ return (
               type="button"
               onClick={handleLimpiarArchivos}
               className="w-9 h-9 bg-red-100 hover:bg-red-200 text-red-800 font-bold rounded-xl flex items-center justify-center transition-colors cursor-pointer shrink-0 text-sm"
-              title="Cancelar / Borrar selección"
+              title="Borrar todos los archivos"
             >
               ✕
             </button>
           )}
         </div>
 
+        {/* LISTA DE ARCHIVOS ACUMULADOS CON BOTÓN INDIVIDUAL PARA QUITAR */}
         {archivos.length > 0 && (
-          <p className="text-[11px] text-emerald-600 font-medium mt-1.5 flex items-center gap-1">
-            <span>✓</span> {archivos.length} {archivos.length === 1 ? 'archivo seleccionado' : 'archivos seleccionados'}
-          </p>
+          <div className="mt-3 space-y-1.5 max-h-36 overflow-y-auto pr-1">
+            <p className="text-[11px] text-emerald-700 font-bold mb-1">
+              ✓ {archivos.length} {archivos.length === 1 ? 'archivo listo' : 'archivos listos'} para subir:
+            </p>
+
+            {archivos.map((file, idx) => (
+              <div 
+                key={idx} 
+                className="flex items-center justify-between p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
+              >
+                <span className="truncate max-w-[240px] text-slate-700 font-medium">
+                  📄 {file.name}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => handleRemoverArchivo(idx)}
+                  className="text-red-500 hover:text-red-700 font-bold text-xs px-1.5 py-0.5 rounded hover:bg-red-50 cursor-pointer"
+                  title="Quitar este archivo"
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+          </div>
         )}
       </div>
 
@@ -656,7 +701,7 @@ return (
         type="submit" 
         className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shadow-md transition-all cursor-pointer mt-2"
       >
-        Subir y Notificar
+        {usuarioLogueado?.rol === 'tecnico' ? 'Subir Resultado' : 'Subir y Notificar'}
       </button>
 
     </form>
