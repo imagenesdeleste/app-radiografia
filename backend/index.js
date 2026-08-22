@@ -312,6 +312,24 @@ app.delete('/api/admin/usuarios/:id', async (req, res) => {
   }
 });
 
+// ACTUALIZAR CONTRASEÑA DE UN USUARIO DEL PERSONAL
+app.put('/api/admin/usuarios/:id/clave', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { clave } = req.body;
+
+    if (!clave || clave.trim() === '') {
+      return res.status(400).json({ error: 'La contraseña no puede estar vacía' });
+    }
+
+    await pool.query('UPDATE persona SET clave = $1 WHERE id = $2', [clave, id]);
+    res.json({ mensaje: 'Contraseña actualizada correctamente' });
+  } catch (error) {
+    console.error('Error al actualizar contraseña:', error);
+    res.status(500).json({ error: 'Error al actualizar la contraseña' });
+  }
+});
+
 // RUTA: Subir estudio, registrar en BD y notificar por correo
 app.post('/api/estudios', upload.single('archivo'), async (req, res) => {
   const { paciente_id, tipo_examen, titulo } = req.body;

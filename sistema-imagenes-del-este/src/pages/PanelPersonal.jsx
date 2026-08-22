@@ -346,6 +346,29 @@ const handleCrearUsuarioPersonal = async (e) => {
     }
   };
 
+  // Cambiar contraseña de usuario del personal (SuperAdmin)
+  const handleCambiarClaveUsuarioPersonal = async (usuarioId) => {
+    const nuevaClave = prompt('Ingresa la nueva contraseña para este usuario:');
+    if (!nuevaClave || nuevaClave.trim() === '') return;
+
+    try {
+      const res = await fetch(`https://app-radiografia-production.up.railway.app/api/admin/usuarios/${usuarioId}/clave`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clave: nuevaClave })
+      });
+
+      if (res.ok) {
+        alert('¡Contraseña actualizada con éxito!');
+      } else {
+        alert('Error al actualizar la contraseña');
+      }
+    } catch (e) {
+      console.error('Error:', e);
+      alert('Error de conexión con el servidor');
+    }
+  };
+
   const pacientesFiltradosLista = pacientes.filter(p => 
     p.cedula.toLowerCase().includes(busquedaLista.toLowerCase()) ||
     p.nombre_completo.toLowerCase().includes(busquedaLista.toLowerCase())
@@ -948,6 +971,16 @@ const handleCrearUsuarioPersonal = async (e) => {
                           <option value="medico">Médico</option>
                           <option value="superadmin">SuperAdmin</option>
                         </select>
+
+                        <button
+                          type="button"
+                          onClick={() => handleCambiarClaveUsuarioPersonal(u.id)}
+                          className="px-2.5 py-1 bg-amber-100 hover:bg-amber-200 text-amber-800 text-xs font-semibold rounded-lg transition-colors cursor-pointer"
+                          title="Cambiar contraseña"
+                        >
+                          🔑
+                        </button>
+                        
                          <button
                           type="button"
                           onClick={() => handleEliminarUsuarioPersonal(u.id)}
