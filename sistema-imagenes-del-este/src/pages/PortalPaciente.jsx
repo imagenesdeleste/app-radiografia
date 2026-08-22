@@ -6,6 +6,16 @@ export default function PortalPaciente() {
   const [datosPaciente, setDatosPaciente] = useState(null);
   const [estudios, setEstudios] = useState([]);
   const [error, setError] = useState('');
+  const [fechaAbierta, setFechaAbierta] = useState(null);
+  const [archivoPreview, setArchivoPreview] = useState(null);
+
+  // Agrupar estudios por fecha de realización
+  const estudiosPorFecha = estudios.reduce((acc, est) => {
+    const fecha = new Date(est.fecha_estudio).toLocaleDateString();
+    if (!acc[fecha]) acc[fecha] = [];
+    acc[fecha].push(est);
+    return acc;
+  }, {});
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -125,40 +135,113 @@ export default function PortalPaciente() {
               </button>
             </div>
 
-            {/* Listado de Exámenes */}
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Estudios disponibles ({estudios.length})</h4>
+            {/* Listado de Exámenes Agrupados por Fecha */}
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">
+              Estudios e Informes ({estudios.length})
+            </h4>
 
-            {estudios.length === 0 ? (
+            {Object.keys(estudiosPorFecha).length === 0 ? (
               <p className="text-xs text-center text-slate-400 py-6">No hay resultados disponibles en este momento.</p>
             ) : (
               <div className="space-y-3">
-                {estudios.map(e => (
-                  <div key={e.id} className="p-3.5 border border-slate-100 bg-slate-50/50 rounded-xl flex items-center justify-between hover:border-slate-200 transition-all">
-                    <div className="pr-2">
-                      <span className="inline-block px-2 py-0.5 text-[10px] font-semibold text-sky-600 bg-sky-50 rounded-md mb-1">
-                        {e.tipo_examen}
-                      </span>
-                      <h5 className="text-xs font-semibold text-slate-800 leading-tight">{e.titulo}</h5>
-                      <span className="text-[10px] text-slate-400 block mt-0.5">{new Date(e.fecha_estudio).toLocaleDateString()}</span>
-                    </div>
+                {Object.entries(estudiosPorFecha).map(([fecha, listaEstudios]) => {
+                  const estaAbierto = fechaAbierta === fecha;
 
-                    <a 
-                      href={`https://app-radiografia-production.up.railway.app/api/descargar/${e.id}`} 
-                      download
-                      className="px-3.5 py-2 bg-slate-900 hover:bg-sky-600 text-white text-xs font-semibold rounded-xl transition-colors flex items-center space-x-1 cursor-pointer"
-                    >
-                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                      </svg>
-                      <span>Descargar</span>
-                    </a>
-                  </div>
-                ))}
+                  return (
+                    <div key={fecha} className="border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-sm transition-all">
+                      
+                      {/* CABECERA DESPLEGABLE */}
+                      <button
+                        type="button"
+                        onClick={() => setFechaAbierta(estaAbierto ? null : fecha)}
+                        className="w-full p-3.5 flex items-center justify-between bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer text-left"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <span className="w-8 h-8 rounded-full bg-red-100 text-red-900 flex items-center justify-center font-bold text-xs">
+                            📁
+                          </span>
+                          <div>
+                            <h5 className="text-xs font-bold text-slate-800">Estudios del {fecha}</h5>
+                            <p className="text-[10px] text-slate-400 font-medium">
+                              {listaEstudios.length} {listaEstudios.length === 1 ? 'resultado' : 'resultados'}
+                            </p>
+                          </div>
+                        </div>
+
+                        <span className={`text-slate-400 transform transition-transform duration-200 text-xs font-bold ${estaAbierto ? 'rotate-180' : ''}`}>
+                          ▼
+                        </span>
+                      </button>
+
+                      {/* CONTENIDO DESPLEGABLE */}
+                      {estaAbierto && (
+                        <div className="p-3 border-t border-slate-100 space-y-2 bg-white">
+                          {listaEstudios.map((e) => (
+                            <div key={e.id} className="p-3 border border-slate-100 bg-slate-50/60 rounded-xl flex items-center justify-between hover:border-slate-200 transition-all">
+                              <div className="pr-2">
+                                <span className="inline-block px-2 py-0.5 text-[10px] font-semibold text-red-800 bg-red-50 rounded-md mb-1">
+                                  {e.tipo_examen}
+                                </span>
+                                <h6 className="text-xs font-semibold text-slate-800 leading-tight">{e.titulo}</h6>
+                              </div>
+
+                              <div className="flex items-center gap-1.5">
+                                {/* VER / VISTA PREVIA */}
+                                <button
+                                  type="button"
+                                  onClick={() => setArchivoPreview(`https://app-radiografia-production.up.railway.app/api/descargar/${e.id}`)}
+                                  className="px-2.5 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-medium rounded-lg transition-colors cursor-pointer"
+                                >
+                                  👁️ Ver
+                                </button>
+
+                                {/* DESCARGAR */}
+                                <a 
+                                  href={`https://app-radiografia-production.up.railway.app/api/descargar/${e.id}`} 
+                                  download
+                                  className="px-3 py-1.5 bg-red-950 hover:bg-red-800 text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer"
+                                >
+                                  ⬇️
+                                </a>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
         )}
       </main>
+
+      {/* MODAL VISTA PREVIA (Ubicado afuera para no romper el contenedor) */}
+      {archivoPreview && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl p-4 max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl relative">
+            <div className="flex justify-between items-center pb-3 border-b border-slate-100 mb-3">
+              <h4 className="text-xs font-bold text-slate-700 uppercase">Vista Previa del Resultado</h4>
+              <button 
+                type="button"
+                onClick={() => setArchivoPreview(null)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 font-bold text-sm cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-auto flex items-center justify-center bg-slate-900 rounded-xl min-h-[300px]">
+              <iframe 
+                src={archivoPreview} 
+                className="w-full h-[60vh] rounded-xl border-none"
+                title="Vista previa del resultado"
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* BOTÓN FLOTANTE WHATSAPP */}
       <a
