@@ -250,7 +250,18 @@ app.put('/api/pacientes/:id', async (req, res) => {
   }
 });
 
-// CREAR NUEVO USUARIO DEL PERSONAL (CON VALIDACIÓN DE CÉDULA Y CAPTURA DE ERRORES)
+// OBTENER USUARIOS DEL PERSONAL
+app.get('/api/admin/usuarios', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT id, cedula, nombre_completo, rol FROM persona ORDER BY id ASC');
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error al obtener usuarios:', error);
+    res.status(500).json({ error: 'Error al obtener usuarios' });
+  }
+});
+
+// CREAR USUARIO DEL PERSONAL
 app.post('/api/admin/usuarios', async (req, res) => {
   try {
     const { cedula, nombre_completo, clave, rol } = req.body;
@@ -259,22 +270,45 @@ app.post('/api/admin/usuarios', async (req, res) => {
       return res.status(400).json({ error: 'Todos los campos son obligatorios' });
     }
 
-    // 1. Verificar si la cédula ya existe en el personal
-    const usuarioExiste = await pool.query('SELECT id FROM personal WHERE cedula = $1', [cedula]);
+    const usuarioExiste = await pool.query('SELECT id FROM persona WHERE cedula = $1', [cedula]);
     if (usuarioExiste.rows.length > 0) {
       return res.status(400).json({ error: 'Esa cédula ya pertenece a un usuario registrado' });
     }
 
-    // 2. Insertar el nuevo usuario
     await pool.query(
-      'INSERT INTO personal (cedula, nombre_completo, clave, rol) VALUES ($1, $2, $3, $4)',
+      'INSERT INTO persona (cedula, nombre_completo, clave, rol) VALUES ($1, $2, $3, $4)',
       [cedula, nombre_completo, clave, rol || 'tecnico']
     );
 
-    res.json({ mensaje: 'Usuario del personal registrado con éxito' });
+    res.json({ mensaje: 'Usuario registrado con éxito' });
   } catch (error) {
-    console.error('Error al crear usuario personal:', error);
+    console.error('Error al crear usuario:', error);
     res.status(500).json({ error: 'Error en base de datos: ' + error.message });
+  }
+});
+
+// ACTUALIZAR ROL DE UN USUARIO
+app.put('/api/admin/usuarios/:id/rol', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { rol } = req.body;
+    await pool.query('UPDATE persona SET rol = $1 WHERE id = $2', [rol, id]);
+    res.json({ mensaje: 'Rol actualizado correctamente' });
+  } catch (error) {
+    console.error('Error al actualizar rol:', error);
+    res.status(500).json({ error: 'Error al actualizar el rol' });
+  }
+});
+
+// ELIMINAR UN USUARIO DEL PERSONAL
+app.delete('/api/admin/usuarios/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await pool.query('DELETE FROM persona WHERE id = $1', [id]);
+    res.json({ mensaje: 'Usuario eliminado correctamente' });
+  } catch (error) {
+    console.error('Error al eliminar usuario:', error);
+    res.status(500).json({ error: 'Error al eliminar el usuario' });
   }
 });
 

@@ -39,6 +39,7 @@ export default function PanelPersonal() {
 
   // Super usuario comprobación
   const esSuperAdmin = usuarioLogueado?.rol === 'superadmin' || usuarioLogueado?.rol === 'admin';
+  
 
   // 5. Formulario Crear Paciente
   const [formPaciente, setFormPaciente] = useState({
@@ -151,7 +152,26 @@ export default function PanelPersonal() {
     });
   };
 
-  // Funcion de guardad el nuevo usuario del personal
+  // Borrar un usuario del personal (SuperAdmin)
+  const handleEliminarUsuarioPersonal = async (usuarioId) => {
+    if (!confirm('¿Seguro que deseas eliminar este usuario? Perderá el acceso al sistema.')) return;
+
+    try {
+      const res = await fetch(`https://app-radiografia-production.up.railway.app/api/admin/usuarios/${usuarioId}`, {
+        method: 'DELETE'
+      });
+
+      if (res.ok) {
+        alert('¡Usuario eliminado correctamente!');
+        cargarUsuariosPersonal();
+      } else {
+        alert('Error al eliminar el usuario');
+      }
+    } catch (e) {
+      console.error('Error:', e);
+      alert('Error de conexión con el servidor');
+    }
+  };
 
   // Función para guardar el nuevo usuario del personal
 const handleCrearUsuarioPersonal = async (e) => {
@@ -869,6 +889,16 @@ const handleCrearUsuarioPersonal = async (e) => {
               >
                 Crear Usuario del Personal
               </button>
+
+              <button
+                  type="button"
+                  onClick={() => handleEliminarUsuarioPersonal(u.id)}
+                  className="px-2.5 py-1 bg-red-100 hover:bg-red-200 text-red-700 text-xs font-semibold rounded-lg transition-colors cursor-pointer"
+                  title="Eliminar usuario"
+                >
+                  🗑️
+                </button>
+
             </div>
           </form>
         </div>
