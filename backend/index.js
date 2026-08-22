@@ -394,6 +394,52 @@ app.get('/api/estudios/paciente/:paciente_id', async (req, res) => {
   }
 });
 
+// ELIMINAR UN ESTUDIO
+app.delete('/api/estudios/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await pool.query('DELETE FROM estudios WHERE id = $1', [id]);
+    res.json({ mensaje: 'Estudio eliminado correctamente' });
+  } catch (error) {
+    res.status(500).json({ error: 'Error al eliminar el estudio' });
+  }
+});
+
+// ELIMINAR UN PACIENTE
+app.delete('/api/pacientes/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    // Borra primero los estudios asociados para mantener integridad
+    await pool.query('DELETE FROM estudios WHERE paciente_id = $1', [id]);
+    await pool.query('DELETE FROM pacientes WHERE id = $1', [id]);
+    res.json({ mensaje: 'Paciente eliminado correctamente' });
+  } catch (error) {
+    res.status(500).json({ error: 'Error al eliminar el paciente' });
+  }
+});
+
+// OBTENER TODOS LOS USUARIOS DEL PERSONAL
+app.get('/api/admin/usuarios', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT id, cedula, nombre_completo, rol FROM usuarios_personal ORDER BY id ASC');
+    res.json(result.rows);
+  } catch (error) {
+    res.status(500).json({ error: 'Error al obtener usuarios' });
+  }
+});
+
+// ACTUALIZAR ROL DE UN USUARIO
+app.put('/api/admin/usuarios/:id/rol', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { rol } = req.body;
+    await pool.query('UPDATE usuarios_personal SET rol = $1 WHERE id = $2', [rol, id]);
+    res.json({ mensaje: 'Rol actualizado correctamente' });
+  } catch (error) {
+    res.status(500).json({ error: 'Error al actualizar el rol' });
+  }
+});
+
 // =============================================================
 // 5. INICIAR SERVIDOR
 // =============================================================

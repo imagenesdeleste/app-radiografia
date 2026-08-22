@@ -27,6 +27,10 @@ export default function PanelPersonal() {
     correo: ''
   });
 
+  // Super usuario:
+
+  const esSuperAdmin = usuarioLogueado?.rol === 'superadmin' || usuarioLogueado?.rol === 'admin';
+
   const [estudiosExpediente, setEstudiosExpediente] = useState([]);
   const [cargandoExpediente, setCargandoExpediente] = useState(false);
 
@@ -246,6 +250,36 @@ const abrirExpediente = async (paciente) => {
     p.nombre_completo.toLowerCase().includes(busquedaPacienteSubida.toLowerCase())
   );
 
+  //Funcion de acciones de borrado
+
+  // Borrar estudio desde el expediente
+const handleEliminarEstudio = async (estudioId) => {
+  if (!confirm('¿Estás seguro de eliminar este estudio de la base de datos?')) return;
+  
+  const res = await fetch(`https://app-radiografia-production.up.railway.app/api/estudios/${estudioId}`, {
+    method: 'DELETE'
+  });
+
+  if (res.ok) {
+    alert('Estudio eliminado');
+    setEstudiosPaciente(prev => prev.filter(e => e.id !== estudioId));
+  }
+};
+
+// Borrar paciente desde el directorio
+const handleEliminarPaciente = async (pacienteId) => {
+  if (!confirm('¿Seguro que deseas borrar este paciente y TODOS sus estudios asociados?')) return;
+
+  const res = await fetch(`https://app-radiografia-production.up.railway.app/api/pacientes/${pacienteId}`, {
+    method: 'DELETE'
+  });
+
+  if (res.ok) {
+    alert('Paciente eliminado');
+    cargarPacientes();
+  }
+};
+
   /* ------------------------------------------------------------- */
   /* VISTA 1: FORMULARIO DE LOGIN ADMINISTRATIVO (SI NO ESTÁ AUTENTICADO) */
   /* ------------------------------------------------------------- */
@@ -385,6 +419,17 @@ return (
         </nav>
       </div>
 
+      {esSuperAdmin && (
+      <button
+        onClick={() => setSeccion('gestion-usuarios')}
+        className={`w-full flex items-center space-x-3 px-3.5 py-3 rounded-xl text-xs font-semibold ${
+          seccion === 'gestion-usuarios' ? 'bg-red-800 text-white' : 'text-red-200 hover:bg-red-900'
+        }`}
+      >
+        <span>⚙️ Gestión de Usuarios</span>
+      </button>
+    )}
+
       <div className="pt-4 border-t border-slate-800 flex items-center justify-between">
         <span className="text-[11px] text-white">MedicsWeb v1.0</span>
         <button 
@@ -445,19 +490,19 @@ return (
                         <td className="py-3 px-2 text-slate-700">{p.nombre_completo}</td>
                         <td className="py-3 px-2 text-slate-500">{p.telefono || 'Sin registro'}</td>
                         <td className="py-3 px-2 text-right space-x-2">
-                          {/* SOLO LA SECRETARÍA PUEDE EDITAR */}
-                          {usuarioLogueado?.rol === 'secretaria' && (
-                            <button 
-                              onClick={() => handleAbrirEditar(p)}
-                              className="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 font-semibold rounded-lg transition-all cursor-pointer text-xs"
-                            >
+                          {(usuarioLogueado?.rol === 'secretaria' || esSuperAdmin) && (
+                            <button onClick={() => handleAbrirEditar(p)} className="px-2.5 py-1.5 bg-amber-50 text-amber-700 rounded-lg text-xs font-semibold">
                               Editar
                             </button>
                           )}
-                          <button 
-                            onClick={() => abrirExpediente(p)}
-                            className="px-3 py-1.5 bg-sky-50 hover:bg-sky-100 text-sky-600 font-semibold rounded-lg transition-all cursor-pointer text-xs"
-                          >
+
+                          {esSuperAdmin && (
+                          <button onClick={() => handleEliminarPaciente(p.id)} className="px-2.5 py-1.5 bg-red-50 text-red-600 rounded-lg text-xs font-semibold">
+                            Eliminar
+                          </button>
+                        )}
+
+                          <button onClick={() => abrirExpediente(p)} className="px-3 py-1.5 bg-sky-50 text-sky-600 rounded-lg text-xs font-semibold">
                             Ver Expediente
                           </button>
                         </td>
@@ -756,6 +801,15 @@ return (
               >
                 Descargar
               </a>
+
+              {esSuperAdmin && (
+              <button 
+                onClick={() => handleEliminarEstudio(e.id)}
+                className="px-2.5 py-1.5 bg-red-100 text-red-700 hover:bg-red-200 text-xs font-semibold rounded-lg transition-colors cursor-pointer"
+              >
+                🗑️
+              </button>
+)}
             </div>
           ))}
         </div>
