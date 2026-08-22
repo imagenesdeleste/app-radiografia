@@ -292,7 +292,7 @@ app.put('/api/admin/usuarios/:id/rol', async (req, res) => {
   try {
     const { id } = req.params;
     const { rol } = req.body;
-    await pool.query('UPDATE persona SET rol = $1 WHERE id = $2', [rol, id]);
+    await pool.query('UPDATE personal SET rol = $1 WHERE id = $2', [rol, id]);
     res.json({ mensaje: 'Rol actualizado correctamente' });
   } catch (error) {
     console.error('Error al actualizar rol:', error);
@@ -304,7 +304,7 @@ app.put('/api/admin/usuarios/:id/rol', async (req, res) => {
 app.delete('/api/admin/usuarios/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    await pool.query('DELETE FROM persona WHERE id = $1', [id]);
+    await pool.query('DELETE FROM personal WHERE id = $1', [id]);
     res.json({ mensaje: 'Usuario eliminado correctamente' });
   } catch (error) {
     console.error('Error al eliminar usuario:', error);
