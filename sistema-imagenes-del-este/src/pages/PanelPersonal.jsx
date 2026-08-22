@@ -607,23 +607,20 @@ return (
 
       {/* TIPO DE EXAMEN */}
       <div>
-        <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
-          Tipo de Examen
-        </label>
-        <select 
-          value={tipoExamen} 
-          onChange={e => setTipoExamen(e.target.value)}
-          className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 cursor-pointer"
-        >
-          <option value="Informe Médico">Informe Médico</option>
-          {(usuarioLogueado?.rol === 'tecnico' || usuarioLogueado?.rol === 'secretaria') && (
-            <>
-              <option value="Radiografía">Radiografía</option>
-              <option value="Tomografía">Tomografía</option>
-            </>
-          )}
-        </select>
-      </div>
+      <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
+        Tipo de Examen
+      </label>
+      <select 
+        value={tipoExamen} 
+        onChange={e => setTipoExamen(e.target.value)}
+        className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 cursor-pointer"
+      >
+        <option value="Informe Médico">Informe Médico</option>
+        {(usuarioLogueado?.rol === 'tecnico' || usuarioLogueado?.rol === 'secretaria') && (
+          <option value="Tomografías y/o Radiografías">Tomografías y/o Radiografías</option>
+        )}
+      </select>
+    </div>
 
       {/* TÍTULO DEL ESTUDIO */}
       <div>
