@@ -226,28 +226,29 @@ app.get('/api/pacientes', async (req, res) => {
 
 // RUTA: Editar paciente
 app.put('/api/pacientes/:id', async (req, res) => {
-  const { id } = req.params;
-  const { cedula, nombre_completo, telefono, correo } = req.body;
-
   try {
-    const result = await pool.query(
-      `UPDATE pacientes 
-       SET cedula = $1, nombre_completo = $2, telefono = $3, correo = $4 
-       WHERE id = $5 
-       RETURNING *`,
-      [cedula, nombre_completo, telefono, correo, id]
-    );
+    const { id } = req.params;
+    const { cedula, nombre_completo, telefono, correo, clave } = req.body;
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Paciente no encontrado' });
+    if (clave && clave.trim() !== '') {
+      // Si se envió una contraseña nueva, la actualiza
+      await pool.query(
+        'UPDATE pacientes SET cedula = $1, nombre_completo = $2, telefono = $3, correo = $4, clave = $5 WHERE id = $6',
+        [cedula, nombre_completo, telefono, correo, clave, id]
+      );
+    } else {
+      // Si se dejó en blanco, mantiene la clave anterior
+      await pool.query(
+        'UPDATE pacientes SET cedula = $1, nombre_completo = $2, telefono = $3, correo = $4 WHERE id = $5',
+        [cedula, nombre_completo, telefono, correo, id]
+      );
     }
 
-    res.json({ mensaje: 'Paciente actualizado con éxito', paciente: result.rows[0] });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.json({ mensaje: 'Paciente actualizado correctamente' });
+  } catch (error) {
+    res.status(500).json({ error: 'Error al actualizar paciente' });
   }
 });
-
 // RUTA: Subir estudio, registrar en BD y notificar por correo
 app.post('/api/estudios', upload.single('archivo'), async (req, res) => {
   const { paciente_id, tipo_examen, titulo } = req.body;
