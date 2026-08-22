@@ -890,15 +890,6 @@ const handleCrearUsuarioPersonal = async (e) => {
                 Crear Usuario del Personal
               </button>
 
-              <button
-                  type="button"
-                  onClick={() => handleEliminarUsuarioPersonal(u.id)}
-                  className="px-2.5 py-1 bg-red-100 hover:bg-red-200 text-red-700 text-xs font-semibold rounded-lg transition-colors cursor-pointer"
-                  title="Eliminar usuario"
-                >
-                  🗑️
-                </button>
-
             </div>
           </form>
         </div>
@@ -957,6 +948,14 @@ const handleCrearUsuarioPersonal = async (e) => {
                           <option value="medico">Médico</option>
                           <option value="superadmin">SuperAdmin</option>
                         </select>
+                         <button
+                          type="button"
+                          onClick={() => handleEliminarUsuarioPersonal(u.id)}
+                          className="px-2.5 py-1 bg-red-100 hover:bg-red-200 text-red-700 text-xs font-semibold rounded-lg transition-colors cursor-pointer"
+                          title="Eliminar usuario"
+                        >
+                          🗑️
+                        </button>
                       </td>
                     </tr>
                   ))}

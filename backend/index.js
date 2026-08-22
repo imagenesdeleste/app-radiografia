@@ -270,13 +270,13 @@ app.post('/api/admin/usuarios', async (req, res) => {
       return res.status(400).json({ error: 'Todos los campos son obligatorios' });
     }
 
-    const usuarioExiste = await pool.query('SELECT id FROM persona WHERE cedula = $1', [cedula]);
+    const usuarioExiste = await pool.query('SELECT id FROM personal WHERE cedula = $1', [cedula]);
     if (usuarioExiste.rows.length > 0) {
       return res.status(400).json({ error: 'Esa cédula ya pertenece a un usuario registrado' });
     }
 
     await pool.query(
-      'INSERT INTO persona (cedula, nombre_completo, clave, rol) VALUES ($1, $2, $3, $4)',
+      'INSERT INTO personal (cedula, nombre_completo, clave, rol) VALUES ($1, $2, $3, $4)',
       [cedula, nombre_completo, clave, rol || 'tecnico']
     );
 
