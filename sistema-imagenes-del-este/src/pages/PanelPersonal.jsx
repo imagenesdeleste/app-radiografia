@@ -28,6 +28,15 @@ export default function PanelPersonal() {
     clave: ''
   });
 
+  //Estado para el formulario de nuevo usuario
+
+  const [formNuevoUsuario, setFormNuevoUsuario] = useState({
+  cedula: '',
+  nombre_completo: '',
+  clave: '',
+  rol: 'tecnico'
+  });
+
   // Super usuario comprobación
   const esSuperAdmin = usuarioLogueado?.rol === 'superadmin' || usuarioLogueado?.rol === 'admin';
 
@@ -141,6 +150,31 @@ export default function PanelPersonal() {
       clave: ''
     });
   };
+
+  // Funcion de guardad el nuevo usuario del personal
+
+  // Función para guardar el nuevo usuario del personal
+const handleCrearUsuarioPersonal = async (e) => {
+  e.preventDefault();
+  try {
+    const res = await fetch('https://app-radiografia-production.up.railway.app/api/admin/usuarios', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(formNuevoUsuario)
+    });
+
+    if (res.ok) {
+      alert('¡Usuario registrado con éxito!');
+      setFormNuevoUsuario({ cedula: '', nombre_completo: '', clave: '', rol: 'tecnico' });
+      cargarUsuariosPersonal();
+    } else {
+      alert('Error al registrar el usuario');
+    }
+  } catch (e) {
+    console.error('Error:', e);
+    alert('Error de conexión con el servidor');
+  }
+};
 
   const handleActualizarPaciente = async (e) => {
     e.preventDefault();
@@ -465,374 +499,448 @@ export default function PanelPersonal() {
       </aside>
 
       {/* ÁREA PRINCIPAL */}
-      <main className="flex-1 p-4 md:p-8 pb-24 md:pb-8 overflow-y-auto">
-        <div className="max-w-4xl mx-auto">
-          
-          {/* VISTA: LISTA DE PACIENTES */}
-          {seccion === 'pacientes-lista' && (
-            <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-100">
-                <div>
-                  <h2 className="text-lg font-bold text-slate-900">Directorio de Pacientes</h2>
-                  <p className="text-xs text-slate-500 mt-0.5">Total registrados: <strong className="text-sky-600">{pacientes.length} pacientes</strong></p>
-                </div>
+<main className="flex-1 p-4 md:p-8 pb-24 md:pb-8 overflow-y-auto">
+  <div className="max-w-4xl mx-auto">
+    
+    {/* VISTA: LISTA DE PACIENTES */}
+    {seccion === 'pacientes-lista' && (
+      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-100">
+          <div>
+            <h2 className="text-lg font-bold text-slate-900">Directorio de Pacientes</h2>
+            <p className="text-xs text-slate-500 mt-0.5">Total registrados: <strong className="text-sky-600">{pacientes.length} pacientes</strong></p>
+          </div>
 
-                <div className="relative w-full sm:w-72">
-                  <input 
-                    type="text" 
-                    placeholder="Buscar cédula o nombre..." 
-                    value={busquedaLista}
-                    onChange={e => setBusquedaLista(e.target.value)}
-                    className="w-full pl-9 pr-4 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
-                  />
-                  <svg className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                </div>
-              </div>
-
-              {pacientesFiltradosLista.length === 0 ? (
-                <div className="text-center py-10 text-xs text-slate-400">
-                  No se encontraron pacientes coincidentes.
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs border-collapse">
-                    <thead>
-                      <tr className="border-b border-slate-100 text-slate-400 uppercase tracking-wider text-[10px]">
-                        <th className="py-3 px-2 font-semibold">Cédula / DNI</th>
-                        <th className="py-3 px-2 font-semibold">Nombre Completo</th>
-                        <th className="py-3 px-2 font-semibold">Teléfono</th>
-                        <th className="py-3 px-2 font-semibold text-right">Acciones</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {pacientesFiltradosLista.map(p => (
-                        <tr key={p.id} className="hover:bg-slate-50 transition-colors">
-                          <td className="py-3 px-2 font-semibold text-slate-900">{p.cedula}</td>
-                          <td className="py-3 px-2 text-slate-700">{p.nombre_completo}</td>
-                          <td className="py-3 px-2 text-slate-500">{p.telefono || 'Sin registro'}</td>
-                          <td className="py-3 px-2 text-right space-x-2">
-                            {(usuarioLogueado?.rol === 'secretaria' || esSuperAdmin) && (
-                              <button onClick={() => handleAbrirEditar(p)} className="px-2.5 py-1.5 bg-amber-50 text-amber-700 rounded-lg text-xs font-semibold cursor-pointer">
-                                Editar
-                              </button>
-                            )}
-
-                            {esSuperAdmin && (
-                              <button onClick={() => handleEliminarPaciente(p.id)} className="px-2.5 py-1.5 bg-red-50 text-red-600 rounded-lg text-xs font-semibold cursor-pointer">
-                                Eliminar
-                              </button>
-                            )}
-
-                            <button onClick={() => abrirExpediente(p)} className="px-3 py-1.5 bg-sky-50 text-sky-600 rounded-lg text-xs font-semibold cursor-pointer">
-                              Ver Expediente
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* VISTA: CREAR PACIENTE */}
-          {seccion === 'crear-paciente' && (usuarioLogueado?.rol === 'secretaria' || esSuperAdmin) && (
-            <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm max-w-xl mx-auto">
-              <div className="mb-6 pb-4 border-b border-slate-100">
-                <h2 className="text-lg font-bold text-slate-900">Registrar Nuevo Paciente</h2>
-                <p className="text-xs text-slate-500 mt-0.5">Asigna la cédula como usuario y define su contraseña de acceso.</p>
-              </div>
-
-              <form onSubmit={handleGuardarPaciente} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Cédula / DNI (Usuario)</label>
-                  <input 
-                    type="text" 
-                    placeholder="Ej: 12345678" 
-                    value={formPaciente.cedula}
-                    onChange={e => setFormPaciente({...formPaciente, cedula: e.target.value})}
-                    className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
-                    required 
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Nombre Completo</label>
-                  <input 
-                    type="text" 
-                    placeholder="Nombre y Apellidos del paciente" 
-                    value={formPaciente.nombre_completo}
-                    onChange={e => setFormPaciente({...formPaciente, nombre_completo: e.target.value})}
-                    className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
-                    required 
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Teléfono</label>
-                  <input 
-                    type="text" 
-                    placeholder="Número de contacto" 
-                    value={formPaciente.telefono}
-                    onChange={e => setFormPaciente({...formPaciente, telefono: e.target.value})}
-                    className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Correo Electrónico</label>
-                  <input 
-                    type="email" 
-                    placeholder="ejemplo@paciente.com" 
-                    value={formPaciente.correo}
-                    onChange={e => setFormPaciente({...formPaciente, correo: e.target.value})}
-                    className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Contraseña Asignada</label>
-                  <input 
-                    type="password" 
-                    placeholder="••••••••" 
-                    value={formPaciente.clave}
-                    onChange={e => setFormPaciente({...formPaciente, clave: e.target.value})}
-                    className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
-                    required 
-                  />
-                </div>
-
-                <button 
-                  type="submit" 
-                  className="w-full py-3 bg-red-800 hover:bg-red-950 text-white text-xs font-semibold rounded-xl shadow-md transition-all cursor-pointer mt-2"
-                >
-                  Guardar Paciente
-                </button>
-              </form>
-            </div>
-          )}
-
-          {/* VISTA: SUBIR RESULTADO */}
-          {seccion === 'subir-estudio' && (
-            <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm max-w-xl mx-auto">
-              <div className="mb-6 pb-4 border-b border-slate-100">
-                <h2 className="text-lg font-bold text-slate-900">Cargar Resultado Médico</h2>
-                <p className="text-xs text-slate-500 mt-0.5">Busca al paciente por nombre o cédula para asociar el examen.</p>
-              </div>
-
-              <form onSubmit={handleGuardarEstudio} className="space-y-4">
-                <div className="relative">
-                  <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
-                    Buscar Paciente (Cédula o Nombre)
-                  </label>
-                  
-                  {pacienteSeleccionadoSubida ? (
-                    <div className="p-3 bg-sky-50 border border-sky-200 rounded-xl flex items-center justify-between">
-                      <div>
-                        <strong className="text-xs text-sky-900 block">{pacienteSeleccionadoSubida.nombre_completo}</strong>
-                        <span className="text-[11px] text-sky-600">C.I: {pacienteSeleccionadoSubida.cedula}</span>
-                      </div>
-                      <button 
-                        type="button" 
-                        onClick={() => { setPacienteSeleccionadoSubida(null); setBusquedaPacienteSubida(''); }}
-                        className="text-xs text-red-500 hover:underline font-medium cursor-pointer"
-                      >
-                        Cambiar
-                      </button>
-                    </div>
-                  ) : (
-                    <>
-                      <input 
-                        type="text" 
-                        placeholder="Escribe el nombre o cédula..." 
-                        value={busquedaPacienteSubida}
-                        onChange={e => setBusquedaPacienteSubida(e.target.value)}
-                        className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
-                      />
-
-                      {pacientesFiltradosSubida.length > 0 && (
-                        <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-20 max-h-48 overflow-y-auto">
-                          {pacientesFiltradosSubida.map(p => (
-                            <div 
-                              key={p.id} 
-                              onClick={() => { setPacienteSeleccionadoSubida(p); setBusquedaPacienteSubida(''); }}
-                              className="p-3 hover:bg-slate-50 border-b border-slate-100 last:border-none cursor-pointer flex justify-between items-center"
-                            >
-                              <span className="text-xs font-medium text-slate-800">{p.nombre_completo}</span>
-                              <span className="text-[11px] text-slate-400">C.I: {p.cedula}</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
-                    Tipo de Examen
-                  </label>
-                  <select 
-                    value={tipoExamen} 
-                    onChange={e => setTipoExamen(e.target.value)}
-                    className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 cursor-pointer"
-                  >
-                    <option value="Informe Médico">Informe Médico</option>
-                    {(usuarioLogueado?.rol === 'tecnico' || usuarioLogueado?.rol === 'secretaria' || esSuperAdmin) && (
-                      <option value="Tomografías y/o Radiografías">Tomografías y/o Radiografías</option>
-                    )}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
-                    Título del Estudio
-                  </label>
-                  <input 
-                    type="text" 
-                    placeholder="Ej: Radiografía de Tórax AP" 
-                    value={titulo}
-                    onChange={e => setTitulo(e.target.value)}
-                    className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
-                    required 
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
-                    Archivos de Examen (Selección Múltiple Acumulativa)
-                  </label>
-                  
-                  <div className="flex items-center gap-2">
-                    <input 
-                      id="input-archivos"
-                      type="file" 
-                      multiple
-                      onChange={handleArchivosChange}
-                      className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-red-50 file:text-red-800 hover:file:bg-red-100 cursor-pointer border border-slate-200 rounded-xl bg-slate-50 p-1"
-                    />
-
-                    {archivos.length > 0 && (
-                      <button
-                        type="button"
-                        onClick={handleLimpiarArchivos}
-                        className="w-9 h-9 bg-red-100 hover:bg-red-200 text-red-800 font-bold rounded-xl flex items-center justify-center transition-colors cursor-pointer shrink-0 text-sm"
-                        title="Borrar todos los archivos"
-                      >
-                        ✕
-                      </button>
-                    )}
-                  </div>
-
-                  {archivos.length > 0 && (
-                    <div className="mt-3 space-y-1.5 max-h-36 overflow-y-auto pr-1">
-                      <p className="text-[11px] text-emerald-700 font-bold mb-1">
-                        ✓ {archivos.length} {archivos.length === 1 ? 'archivo listo' : 'archivos listos'} para subir:
-                      </p>
-
-                      {archivos.map((file, idx) => (
-                        <div 
-                          key={idx} 
-                          className="flex items-center justify-between p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
-                        >
-                          <span className="truncate max-w-[240px] text-slate-700 font-medium">
-                            📄 {file.name}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => handleRemoverArchivo(idx)}
-                            className="text-red-500 hover:text-red-700 font-bold text-xs px-1.5 py-0.5 rounded hover:bg-red-50 cursor-pointer"
-                            title="Quitar este archivo"
-                          >
-                            ✕
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <button 
-                  type="submit" 
-                  className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shadow-md transition-all cursor-pointer mt-2"
-                >
-                  {usuarioLogueado?.rol === 'tecnico' ? 'Subir Resultado' : 'Subir y Notificar'}
-                </button>
-
-              </form>
-            </div>
-          )}
-
-          {/* VISTA: GESTIÓN DE ROLES (SOLO SUPERADMIN) */}
-          {seccion === 'gestion-usuarios' && esSuperAdmin && (
-            <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-              <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-100">
-                <div>
-                  <h2 className="text-lg font-bold text-slate-900">Gestión de Roles del Personal</h2>
-                  <p className="text-xs text-slate-500 mt-0.5">Administra los accesos de médicos, secretarias y técnicos.</p>
-                </div>
-                <button 
-                  onClick={cargarUsuariosPersonal}
-                  className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition-all cursor-pointer"
-                >
-                  🔄 Actualizar
-                </button>
-              </div>
-
-              {cargandoUsuarios ? (
-                <div className="py-8 text-center text-slate-400">
-                  <div className="w-5 h-5 border-2 border-red-800 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                  <p className="text-xs">Cargando personal...</p>
-                </div>
-              ) : usuariosPersonal.length === 0 ? (
-                <p className="text-xs text-center text-slate-400 py-6">No hay usuarios registrados en el sistema.</p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs border-collapse">
-                    <thead>
-                      <tr className="border-b border-slate-100 text-slate-400 uppercase tracking-wider text-[10px]">
-                        <th className="py-3 px-2 font-semibold">Cédula</th>
-                        <th className="py-3 px-2 font-semibold">Nombre Completo</th>
-                        <th className="py-3 px-2 font-semibold">Rol Actual</th>
-                        <th className="py-3 px-2 font-semibold text-right">Asignar Nuevo Rol</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {usuariosPersonal.map(u => (
-                        <tr key={u.id} className="hover:bg-slate-50 transition-colors">
-                          <td className="py-3 px-2 font-semibold text-slate-900">{u.cedula}</td>
-                          <td className="py-3 px-2 text-slate-700">{u.nombre_completo}</td>
-                          <td className="py-3 px-2">
-                            <span className="inline-block px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-red-50 text-red-800 rounded-md">
-                              {u.rol}
-                            </span>
-                          </td>
-                          <td className="py-3 px-2 text-right">
-                            <select 
-                              value={u.rol}
-                              onChange={(e) => handleCambiarRol(u.id, e.target.value)}
-                              className="px-2.5 py-1 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500/20 text-slate-700 font-medium cursor-pointer"
-                            >
-                              <option value="tecnico">Técnico</option>
-                              <option value="secretaria">Secretaría</option>
-                              <option value="medico">Médico</option>
-                              <option value="superadmin">SuperAdmin</option>
-                            </select>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          )}
-
+          <div className="relative w-full sm:w-72">
+            <input 
+              type="text" 
+              placeholder="Buscar cédula o nombre..." 
+              value={busquedaLista}
+              onChange={e => setBusquedaLista(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
+            />
+            <svg className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
         </div>
-      </main>
+
+        {pacientesFiltradosLista.length === 0 ? (
+          <div className="text-center py-10 text-xs text-slate-400">
+            No se encontraron pacientes coincidentes.
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="border-b border-slate-100 text-slate-400 uppercase tracking-wider text-[10px]">
+                  <th className="py-3 px-2 font-semibold">Cédula / DNI</th>
+                  <th className="py-3 px-2 font-semibold">Nombre Completo</th>
+                  <th className="py-3 px-2 font-semibold">Teléfono</th>
+                  <th className="py-3 px-2 font-semibold text-right">Acciones</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {pacientesFiltradosLista.map(p => (
+                  <tr key={p.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="py-3 px-2 font-semibold text-slate-900">{p.cedula}</td>
+                    <td className="py-3 px-2 text-slate-700">{p.nombre_completo}</td>
+                    <td className="py-3 px-2 text-slate-500">{p.telefono || 'Sin registro'}</td>
+                    <td className="py-3 px-2 text-right space-x-2">
+                      {(usuarioLogueado?.rol === 'secretaria' || esSuperAdmin) && (
+                        <button onClick={() => handleAbrirEditar(p)} className="px-2.5 py-1.5 bg-amber-50 text-amber-700 rounded-lg text-xs font-semibold cursor-pointer">
+                          Editar
+                        </button>
+                      )}
+
+                      {esSuperAdmin && (
+                        <button onClick={() => handleEliminarPaciente(p.id)} className="px-2.5 py-1.5 bg-red-50 text-red-600 rounded-lg text-xs font-semibold cursor-pointer">
+                          Eliminar
+                        </button>
+                      )}
+
+                      <button onClick={() => abrirExpediente(p)} className="px-3 py-1.5 bg-sky-50 text-sky-600 rounded-lg text-xs font-semibold cursor-pointer">
+                        Ver Expediente
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    )}
+
+    {/* VISTA: CREAR PACIENTE */}
+    {seccion === 'crear-paciente' && (usuarioLogueado?.rol === 'secretaria' || esSuperAdmin) && (
+      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm max-w-xl mx-auto">
+        <div className="mb-6 pb-4 border-b border-slate-100">
+          <h2 className="text-lg font-bold text-slate-900">Registrar Nuevo Paciente</h2>
+          <p className="text-xs text-slate-500 mt-0.5">Asigna la cédula como usuario y define su contraseña de acceso.</p>
+        </div>
+
+        <form onSubmit={handleGuardarPaciente} className="space-y-4">
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Cédula / DNI (Usuario)</label>
+            <input 
+              type="text" 
+              placeholder="Ej: 12345678" 
+              value={formPaciente.cedula}
+              onChange={e => setFormPaciente({...formPaciente, cedula: e.target.value})}
+              className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
+              required 
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Nombre Completo</label>
+            <input 
+              type="text" 
+              placeholder="Nombre y Apellidos del paciente" 
+              value={formPaciente.nombre_completo}
+              onChange={e => setFormPaciente({...formPaciente, nombre_completo: e.target.value})}
+              className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
+              required 
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Teléfono</label>
+            <input 
+              type="text" 
+              placeholder="Número de contacto" 
+              value={formPaciente.telefono}
+              onChange={e => setFormPaciente({...formPaciente, telefono: e.target.value})}
+              className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Correo Electrónico</label>
+            <input 
+              type="email" 
+              placeholder="ejemplo@paciente.com" 
+              value={formPaciente.correo}
+              onChange={e => setFormPaciente({...formPaciente, correo: e.target.value})}
+              className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Contraseña Asignada</label>
+            <input 
+              type="password" 
+              placeholder="••••••••" 
+              value={formPaciente.clave}
+              onChange={e => setFormPaciente({...formPaciente, clave: e.target.value})}
+              className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
+              required 
+            />
+          </div>
+
+          <button 
+            type="submit" 
+            className="w-full py-3 bg-red-800 hover:bg-red-950 text-white text-xs font-semibold rounded-xl shadow-md transition-all cursor-pointer mt-2"
+          >
+            Guardar Paciente
+          </button>
+        </form>
+      </div>
+    )}
+
+    {/* VISTA: SUBIR RESULTADO */}
+    {seccion === 'subir-estudio' && (
+      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm max-w-xl mx-auto">
+        <div className="mb-6 pb-4 border-b border-slate-100">
+          <h2 className="text-lg font-bold text-slate-900">Cargar Resultado Médico</h2>
+          <p className="text-xs text-slate-500 mt-0.5">Busca al paciente por nombre o cédula para asociar el examen.</p>
+        </div>
+
+        <form onSubmit={handleGuardarEstudio} className="space-y-4">
+          <div className="relative">
+            <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
+              Buscar Paciente (Cédula o Nombre)
+            </label>
+            
+            {pacienteSeleccionadoSubida ? (
+              <div className="p-3 bg-sky-50 border border-sky-200 rounded-xl flex items-center justify-between">
+                <div>
+                  <strong className="text-xs text-sky-900 block">{pacienteSeleccionadoSubida.nombre_completo}</strong>
+                  <span className="text-[11px] text-sky-600">C.I: {pacienteSeleccionadoSubida.cedula}</span>
+                </div>
+                <button 
+                  type="button" 
+                  onClick={() => { setPacienteSeleccionadoSubida(null); setBusquedaPacienteSubida(''); }}
+                  className="text-xs text-red-500 hover:underline font-medium cursor-pointer"
+                >
+                  Cambiar
+                </button>
+              </div>
+            ) : (
+              <>
+                <input 
+                  type="text" 
+                  placeholder="Escribe el nombre o cédula..." 
+                  value={busquedaPacienteSubida}
+                  onChange={e => setBusquedaPacienteSubida(e.target.value)}
+                  className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
+                />
+
+                {pacientesFiltradosSubida.length > 0 && (
+                  <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-20 max-h-48 overflow-y-auto">
+                    {pacientesFiltradosSubida.map(p => (
+                      <div 
+                        key={p.id} 
+                        onClick={() => { setPacienteSeleccionadoSubida(p); setBusquedaPacienteSubida(''); }}
+                        className="p-3 hover:bg-slate-50 border-b border-slate-100 last:border-none cursor-pointer flex justify-between items-center"
+                      >
+                        <span className="text-xs font-medium text-slate-800">{p.nombre_completo}</span>
+                        <span className="text-[11px] text-slate-400">C.I: {p.cedula}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
+              Tipo de Examen
+            </label>
+            <select 
+              value={tipoExamen} 
+              onChange={e => setTipoExamen(e.target.value)}
+              className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 cursor-pointer"
+            >
+              <option value="Informe Médico">Informe Médico</option>
+              {(usuarioLogueado?.rol === 'tecnico' || usuarioLogueado?.rol === 'secretaria' || esSuperAdmin) && (
+                <option value="Tomografías y/o Radiografías">Tomografías y/o Radiografías</option>
+              )}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
+              Título del Estudio
+            </label>
+            <input 
+              type="text" 
+              placeholder="Ej: Radiografía de Tórax AP" 
+              value={titulo}
+              onChange={e => setTitulo(e.target.value)}
+              className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
+              required 
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
+              Archivos de Examen (Selección Múltiple Acumulativa)
+            </label>
+            
+            <div className="flex items-center gap-2">
+              <input 
+                id="input-archivos"
+                type="file" 
+                multiple
+                onChange={handleArchivosChange}
+                className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-red-50 file:text-red-800 hover:file:bg-red-100 cursor-pointer border border-slate-200 rounded-xl bg-slate-50 p-1"
+              />
+
+              {archivos.length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleLimpiarArchivos}
+                  className="w-9 h-9 bg-red-100 hover:bg-red-200 text-red-800 font-bold rounded-xl flex items-center justify-center transition-colors cursor-pointer shrink-0 text-sm"
+                  title="Borrar todos los archivos"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+
+            {archivos.length > 0 && (
+              <div className="mt-3 space-y-1.5 max-h-36 overflow-y-auto pr-1">
+                <p className="text-[11px] text-emerald-700 font-bold mb-1">
+                  ✓ {archivos.length} {archivos.length === 1 ? 'archivo listo' : 'archivos listos'} para subir:
+                </p>
+
+                {archivos.map((file, idx) => (
+                  <div 
+                    key={idx} 
+                    className="flex items-center justify-between p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
+                  >
+                    <span className="truncate max-w-[240px] text-slate-700 font-medium">
+                      📄 {file.name}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoverArchivo(idx)}
+                      className="text-red-500 hover:text-red-700 font-bold text-xs px-1.5 py-0.5 rounded hover:bg-red-50 cursor-pointer"
+                      title="Quitar este archivo"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <button 
+            type="submit" 
+            className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shadow-md transition-all cursor-pointer mt-2"
+          >
+            {usuarioLogueado?.rol === 'tecnico' ? 'Subir Resultado' : 'Subir y Notificar'}
+          </button>
+
+        </form>
+      </div>
+    )}
+
+    {/* VISTA: GESTIÓN Y CREACIÓN DE USUARIOS DEL PERSONAL (SUPERADMIN) */}
+    {seccion === 'gestion-usuarios' && esSuperAdmin && (
+      <div className="space-y-6">
+        
+        {/* FORMULARIO: REGISTRAR NUEVO USUARIO */}
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm max-w-2xl mx-auto">
+          <div className="mb-4 pb-3 border-b border-slate-100">
+            <h2 className="text-base font-bold text-slate-900">Registrar Nuevo Usuario del Personal</h2>
+            <p className="text-xs text-slate-500 mt-0.5">Crea cuentas de acceso para médicos, secretarias o técnicos.</p>
+          </div>
+
+          <form onSubmit={handleCrearUsuarioPersonal} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Cédula / Usuario</label>
+              <input 
+                type="text" 
+                placeholder="Ej: 15987654" 
+                value={formNuevoUsuario.cedula}
+                onChange={e => setFormNuevoUsuario({...formNuevoUsuario, cedula: e.target.value})}
+                className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500/20"
+                required 
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Nombre Completo</label>
+              <input 
+                type="text" 
+                placeholder="Dr. Juan Pérez" 
+                value={formNuevoUsuario.nombre_completo}
+                onChange={e => setFormNuevoUsuario({...formNuevoUsuario, nombre_completo: e.target.value})}
+                className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500/20"
+                required 
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Contraseña</label>
+              <input 
+                type="password" 
+                placeholder="••••••••" 
+                value={formNuevoUsuario.clave}
+                onChange={e => setFormNuevoUsuario({...formNuevoUsuario, clave: e.target.value})}
+                className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500/20"
+                required 
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Rol Asignado</label>
+              <select 
+                value={formNuevoUsuario.rol}
+                onChange={e => setFormNuevoUsuario({...formNuevoUsuario, rol: e.target.value})}
+                className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500/20 cursor-pointer"
+              >
+                <option value="tecnico">Técnico</option>
+                <option value="secretaria">Secretaría</option>
+                <option value="medico">Médico</option>
+                <option value="superadmin">SuperAdmin</option>
+              </select>
+            </div>
+
+            <div className="sm:col-span-2 pt-2">
+              <button 
+                type="submit" 
+                className="w-full py-3 bg-red-800 hover:bg-red-950 text-white text-xs font-semibold rounded-xl shadow-md transition-all cursor-pointer"
+              >
+                Crear Usuario del Personal
+              </button>
+            </div>
+          </form>
+        </div>
+
+        {/* TABLA: DIRECTORIO Y CAMBIO DE ROLES */}
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+          <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
+            <div>
+              <h3 className="text-base font-bold text-slate-900">Personal Registrado</h3>
+              <p className="text-xs text-slate-500">Modifica los roles de acceso existentes.</p>
+            </div>
+            <button 
+              onClick={cargarUsuariosPersonal}
+              className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition-all cursor-pointer"
+            >
+              🔄 Actualizar
+            </button>
+          </div>
+
+          {cargandoUsuarios ? (
+            <div className="py-8 text-center text-slate-400">
+              <div className="w-5 h-5 border-2 border-red-800 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+              <p className="text-xs">Cargando usuarios...</p>
+            </div>
+          ) : usuariosPersonal.length === 0 ? (
+            <p className="text-xs text-center text-slate-400 py-6">No hay usuarios registrados.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="border-b border-slate-100 text-slate-400 uppercase tracking-wider text-[10px]">
+                    <th className="py-3 px-2 font-semibold">Cédula</th>
+                    <th className="py-3 px-2 font-semibold">Nombre Completo</th>
+                    <th className="py-3 px-2 font-semibold">Rol Actual</th>
+                    <th className="py-3 px-2 font-semibold text-right">Cambiar Rol</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {usuariosPersonal.map(u => (
+                    <tr key={u.id} className="hover:bg-slate-50 transition-colors">
+                      <td className="py-3 px-2 font-semibold text-slate-900">{u.cedula}</td>
+                      <td className="py-3 px-2 text-slate-700">{u.nombre_completo}</td>
+                      <td className="py-3 px-2">
+                        <span className="inline-block px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-red-50 text-red-800 rounded-md">
+                          {u.rol}
+                        </span>
+                      </td>
+                      <td className="py-3 px-2 text-right">
+                        <select 
+                          value={u.rol}
+                          onChange={(e) => handleCambiarRol(u.id, e.target.value)}
+                          className="px-2.5 py-1 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500/20 text-slate-700 font-medium cursor-pointer"
+                        >
+                          <option value="tecnico">Técnico</option>
+                          <option value="secretaria">Secretaría</option>
+                          <option value="medico">Médico</option>
+                          <option value="superadmin">SuperAdmin</option>
+                        </select>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+      </div>
+    )}
+
+  </div>
+</main>
 
       {/* MODAL EXPEDIENTE */}
       {pacienteSeleccionado && (

@@ -249,6 +249,22 @@ app.put('/api/pacientes/:id', async (req, res) => {
     res.status(500).json({ error: 'Error al actualizar paciente' });
   }
 });
+
+// CREAR NUEVO USUARIO DEL PERSONAL
+app.post('/api/admin/usuarios', async (req, res) => {
+  try {
+    const { cedula, nombre_completo, clave, rol } = req.body;
+    await pool.query(
+      'INSERT INTO usuarios_personal (cedula, nombre_completo, clave, rol) VALUES ($1, $2, $3, $4)',
+      [cedula, nombre_completo, clave, rol]
+    );
+    res.json({ mensaje: 'Usuario del personal registrado con éxito' });
+  } catch (error) {
+    console.error('Error al crear usuario:', error);
+    res.status(500).json({ error: 'Error al registrar el usuario' });
+  }
+});
+
 // RUTA: Subir estudio, registrar en BD y notificar por correo
 app.post('/api/estudios', upload.single('archivo'), async (req, res) => {
   const { paciente_id, tipo_examen, titulo } = req.body;
