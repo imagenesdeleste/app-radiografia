@@ -6,14 +6,21 @@ export default function PortalPaciente() {
   const [datosPaciente, setDatosPaciente] = useState(null);
   const [estudios, setEstudios] = useState([]);
   const [error, setError] = useState('');
+
+  // Estados para acordeones anidados y vista previa
   const [fechaAbierta, setFechaAbierta] = useState(null);
+  const [categoriaAbierta, setCategoriaAbierta] = useState(null); // Formato: "Fecha-Tipo"
   const [archivoPreview, setArchivoPreview] = useState(null);
 
-  // Agrupar estudios por fecha de realización
-  const estudiosPorFecha = estudios.reduce((acc, est) => {
+  // Agrupar primero por FECHA y luego por TIPO DE EXAMEN
+  const estudiosAgrupados = estudios.reduce((acc, est) => {
     const fecha = new Date(est.fecha_estudio).toLocaleDateString();
-    if (!acc[fecha]) acc[fecha] = [];
-    acc[fecha].push(est);
+    const tipo = est.tipo_examen || 'Informe Médico';
+
+    if (!acc[fecha]) acc[fecha] = {};
+    if (!acc[fecha][tipo]) acc[fecha][tipo] = [];
+
+    acc[fecha][tipo].push(est);
     return acc;
   }, {});
 
@@ -41,7 +48,6 @@ export default function PortalPaciente() {
     }
   };
 
-  // Mensaje dinámico de WhatsApp según si inició sesión o no
   const mensajeWhatsApp = datosPaciente
     ? `Hola, soy ${datosPaciente.nombre_completo} (C.I: ${datosPaciente.cedula}) y necesito ayuda con mis resultados médicos.`
     : 'Hola, tengo problemas para consultar mis resultados en el portal.';
@@ -49,7 +55,7 @@ export default function PortalPaciente() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col justify-between items-center p-4 font-sans">
       
-      {/* HEADER CON LOGO PNG */}
+      {/* HEADER */}
       <header className="w-full max-w-sm pt-8 pb-4 flex flex-col items-center">
         <div className="w-100 h-50 mb-3 flex items-center justify-center">
           <img 
@@ -65,10 +71,9 @@ export default function PortalPaciente() {
       <main className="w-full max-w-sm my-auto">
         {!datosPaciente ? (
           
-          /* TARJETA DE LOGIN ESTILO INSTAGRAM */
+          /* LOGIN */
           <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-xl shadow-slate-200/40 backdrop-blur-sm">
             <form onSubmit={handleLogin} className="space-y-4">
-              
               {error && (
                 <div className="p-3 text-xs text-red-600 bg-red-50 border border-red-100 rounded-xl text-center font-medium">
                   {error}
@@ -110,10 +115,9 @@ export default function PortalPaciente() {
 
         ) : (
 
-          /* PERFIL DEL PACIENTE Y EXÁMENES ESTILO STORIES/FEED */
+          /* ÁREA DE RESULTADOS AGRUPADOS (FECHA ➔ TIPO) */
           <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xl shadow-slate-200/40">
             
-            {/* Header Perfil Paciente */}
             <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
               <div className="flex items-center space-x-3">
                 <div className="w-11 h-11 rounded-full bg-gradient-to-tr from-sky-400 to-blue-600 p-[2px]">
@@ -135,89 +139,123 @@ export default function PortalPaciente() {
               </button>
             </div>
 
-            {/* Listado de Exámenes Agrupados por Fecha */}
             <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">
               Estudios e Informes ({estudios.length})
             </h4>
 
-            {Object.keys(estudiosPorFecha).length === 0 ? (
+            {Object.keys(estudiosAgrupados).length === 0 ? (
               <p className="text-xs text-center text-slate-400 py-6">No hay resultados disponibles en este momento.</p>
             ) : (
               <div className="space-y-3">
-                {Object.entries(estudiosPorFecha).map(([fecha, listaEstudios]) => {
-                  const estaAbierto = fechaAbierta === fecha;
+                {Object.entries(estudiosAgrupados).map(([fecha, categorias]) => {
+                  const estaFechaAbierta = fechaAbierta === fecha;
+                  const totalEstudiosFecha = Object.values(categorias).flat().length;
 
                   return (
                     <div key={fecha} className="border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-sm transition-all">
                       
-                      {/* CABECERA DESPLEGABLE */}
+                      {/* NIVEL 1: ACORDEÓN DE FECHA */}
                       <button
                         type="button"
-                        onClick={() => setFechaAbierta(estaAbierto ? null : fecha)}
+                        onClick={() => setFechaAbierta(estaFechaAbierta ? null : fecha)}
                         className="w-full p-3.5 flex items-center justify-between bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer text-left"
                       >
                         <div className="flex items-center gap-2.5">
                           <span className="w-8 h-8 rounded-full bg-red-100 text-red-900 flex items-center justify-center font-bold text-xs">
-                            📁
+                            📅
                           </span>
                           <div>
                             <h5 className="text-xs font-bold text-slate-800">Estudios del {fecha}</h5>
                             <p className="text-[10px] text-slate-400 font-medium">
-                              {listaEstudios.length} {listaEstudios.length === 1 ? 'resultado' : 'resultados'}
+                              {totalEstudiosFecha} {totalEstudiosFecha === 1 ? 'estudio registrado' : 'estudios registrados'}
                             </p>
                           </div>
                         </div>
 
-                        <span className={`text-slate-400 transform transition-transform duration-200 text-xs font-bold ${estaAbierto ? 'rotate-180' : ''}`}>
+                        <span className={`text-slate-400 transform transition-transform duration-200 text-xs font-bold ${estaFechaAbierta ? 'rotate-180' : ''}`}>
                           ▼
                         </span>
                       </button>
 
-                      {/* CONTENIDO DESPLEGABLE */}
-                      {estaAbierto && (
-                        <div className="p-3 border-t border-slate-100 space-y-2 bg-white">
-                          {listaEstudios.map((e) => (
-                            <div key={e.id} className="p-3 border border-slate-100 bg-slate-50/60 rounded-xl flex items-center justify-between hover:border-slate-200 transition-all">
-                              <div className="pr-2">
-                                <span className="inline-block px-2 py-0.5 text-[10px] font-semibold text-red-800 bg-red-50 rounded-md mb-1">
-                                  {e.tipo_examen}
-                                </span>
-                                <h6 className="text-xs font-semibold text-slate-800 leading-tight">{e.titulo}</h6>
-                              </div>
+                      {/* NIVEL 2: ACORDEONES POR TIPO DE EXAMEN (Radiografía, Tomografía, etc.) */}
+                      {estaFechaAbierta && (
+                        <div className="p-3 border-t border-slate-100 space-y-2 bg-slate-50/50">
+                          {Object.entries(categorias).map(([tipo, listaEstudios]) => {
+                            const claveCat = `${fecha}-${tipo}`;
+                            const estaCatAbierta = categoriaAbierta === claveCat;
 
-                              <div className="flex items-center gap-1.5">
-                                {/* VER / VISTA PREVIA */}
+                            return (
+                              <div key={tipo} className="border border-slate-200 rounded-xl overflow-hidden bg-white">
+                                
                                 <button
                                   type="button"
-                                  onClick={() => setArchivoPreview(`https://app-radiografia-production.up.railway.app/api/descargar/${e.id}`)}
-                                  className="px-2.5 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-medium rounded-lg transition-colors cursor-pointer"
+                                  onClick={() => setCategoriaAbierta(estaCatAbierta ? null : claveCat)}
+                                  className="w-full p-2.5 flex items-center justify-between hover:bg-slate-50 transition-colors cursor-pointer text-left"
                                 >
-                                  👁️ Ver
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs font-bold text-red-900 bg-red-50 px-2 py-0.5 rounded-md">
+                                      {tipo}
+                                    </span>
+                                    <span className="text-[10px] text-slate-400 font-semibold">
+                                      ({listaEstudios.length})
+                                    </span>
+                                  </div>
+
+                                  <span className={`text-slate-400 transform transition-transform duration-200 text-[10px] font-bold ${estaCatAbierta ? 'rotate-180' : ''}`}>
+                                    ▼
+                                  </span>
                                 </button>
 
-                                {/* DESCARGAR */}
-                                <a 
-                                  href={`https://app-radiografia-production.up.railway.app/api/descargar/${e.id}`} 
-                                  download
-                                  className="px-3 py-1.5 bg-red-950 hover:bg-red-800 text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer"
-                                >
-                                  ⬇️
-                                </a>
+                                {/* NIVEL 3: ARCHIVOS DEL TIPO SELECCIONADO */}
+                                {estaCatAbierta && (
+                                  <div className="p-2.5 border-t border-slate-100 space-y-2 bg-white">
+                                    {listaEstudios.map((e) => (
+                                      <div key={e.id} className="p-2.5 border border-slate-100 bg-slate-50/60 rounded-lg flex items-center justify-between hover:border-slate-200 transition-all">
+                                        <div className="pr-2">
+                                          <h6 className="text-xs font-semibold text-slate-800 leading-tight">{e.titulo}</h6>
+                                        </div>
+
+                                        <div className="flex items-center gap-1.5 shrink-0">
+                                          {/* VISTA PREVIA */}
+                                          <button
+                                            type="button"
+                                            onClick={() => setArchivoPreview(`https://app-radiografia-production.up.railway.app/api/descargar/${e.id}`)}
+                                            className="px-2.5 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-medium rounded-lg transition-colors cursor-pointer"
+                                          >
+                                            👁️ Ver
+                                          </button>
+
+                                          {/* DESCARGAR */}
+                                          <a 
+                                            href={`https://app-radiografia-production.up.railway.app/api/descargar/${e.id}`} 
+                                            download
+                                            className="px-3 py-1.5 bg-red-950 hover:bg-red-800 text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer"
+                                          >
+                                            ⬇️
+                                          </a>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+
                               </div>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       )}
+
                     </div>
                   );
                 })}
               </div>
             )}
+
           </div>
         )}
       </main>
 
-      {/* MODAL VISTA PREVIA (Ubicado afuera para no romper el contenedor) */}
+      {/* MODAL VISTA PREVIA */}
       {archivoPreview && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl p-4 max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl relative">
@@ -256,7 +294,7 @@ export default function PortalPaciente() {
         <span>¿Necesitas ayuda?</span>
       </a>
 
-      {/* FOOTER DISCRETO */}
+      {/* FOOTER */}
       <footer className="py-4 text-center text-[11px] text-slate-400">
         © {new Date().getFullYear()} Unidad de imagenes del Este - By Axell Peraza
       </footer>
