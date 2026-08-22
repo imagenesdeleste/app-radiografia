@@ -253,7 +253,7 @@ app.put('/api/pacientes/:id', async (req, res) => {
 // OBTENER USUARIOS DEL PERSONAL
 app.get('/api/admin/usuarios', async (req, res) => {
   try {
-    const result = await pool.query('SELECT id, cedula, nombre_completo, rol FROM persona ORDER BY id ASC');
+    const result = await pool.query('SELECT id, cedula, nombre_completo, rol FROM personal ORDER BY id ASC');
     res.json(result.rows);
   } catch (error) {
     console.error('Error al obtener usuarios:', error);
