@@ -250,18 +250,31 @@ app.put('/api/pacientes/:id', async (req, res) => {
   }
 });
 
-// CREAR NUEVO USUARIO DEL PERSONAL
+// CREAR NUEVO USUARIO DEL PERSONAL (CON VALIDACIÓN DE CÉDULA Y CAPTURA DE ERRORES)
 app.post('/api/admin/usuarios', async (req, res) => {
   try {
     const { cedula, nombre_completo, clave, rol } = req.body;
+
+    if (!cedula || !nombre_completo || !clave) {
+      return res.status(400).json({ error: 'Todos los campos son obligatorios' });
+    }
+
+    // 1. Verificar si la cédula ya existe en el personal
+    const usuarioExiste = await pool.query('SELECT id FROM personal WHERE cedula = $1', [cedula]);
+    if (usuarioExiste.rows.length > 0) {
+      return res.status(400).json({ error: 'Esa cédula ya pertenece a un usuario registrado' });
+    }
+
+    // 2. Insertar el nuevo usuario
     await pool.query(
       'INSERT INTO usuarios_personal (cedula, nombre_completo, clave, rol) VALUES ($1, $2, $3, $4)',
-      [cedula, nombre_completo, clave, rol]
+      [cedula, nombre_completo, clave, rol || 'tecnico']
     );
+
     res.json({ mensaje: 'Usuario del personal registrado con éxito' });
   } catch (error) {
-    console.error('Error al crear usuario:', error);
-    res.status(500).json({ error: 'Error al registrar el usuario' });
+    console.error('Error al crear usuario personal:', error);
+    res.status(500).json({ error: 'Error en base de datos: ' + error.message });
   }
 });
 
