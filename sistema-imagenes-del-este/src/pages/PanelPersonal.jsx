@@ -789,7 +789,7 @@ export default function PanelPersonal() {
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
-                    Asunto / Descripción para el Correo
+                    Título del estudio
                   </label>
                   <input 
                     type="text" 
