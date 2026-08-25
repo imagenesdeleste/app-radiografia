@@ -213,7 +213,7 @@ app.post('/api/pacientes', async (req, res) => {
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
-    console.error("Esté paciente ya existe:", err);
+    console.error("Este paciente ya existe:", err);
     res.status(500).json({ error: err.message });
   }
 });
