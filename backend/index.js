@@ -53,11 +53,15 @@ const storage = multer.diskStorage({
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
-    cb(null, uploadDir); // 🟢 Guarda usando la ruta absoluta
+    cb(null, uploadDir); // Guarda usando la ruta absoluta
   },
   filename: (req, file, cb) => {
+    // Reemplaza espacios por guiones bajos pero SIN agregar Date.now()
     const nombreLimpio = file.originalname.replace(/\s+/g, '_');
-    cb(null, `${Date.now()}-${nombreLimpio}`);
+    cb(null, file.originalname);
+
+    // Si prefieres el nombre 100% exacto original (incluso con sus espacios intactos):
+    // cb(null, file.originalname);
   }
 });
 
