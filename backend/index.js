@@ -336,8 +336,8 @@ app.post('/api/estudios', upload.array('archivos'), async (req, res) => {
         [
           paciente_id, 
           tipo_examen, 
-          nombreReal,   // 👈 En la BD se guarda el nombre real del archivo
-          file.filename // 👈 Nombre guardado en disco
+          nombreReal,   // En la BD se guarda el nombre real del archivo
+          file.filename // Nombre guardado en el servidor
         ]
       );
       estudiosGuardados.push(result.rows[0]);
@@ -346,22 +346,43 @@ app.post('/api/estudios', upload.array('archivos'), async (req, res) => {
     // 2. Responder al frontend con los registros creados
     res.json({ mensaje: 'Estudios cargados correctamente', estudios: estudiosGuardados });
 
-    // 3. Correo en segundo plano (usa el "titulo" del input SOLO para la notificación)
-    if (notificar_correo === 'true' || notificar_correo === true) {
+    // 3. Conversión segura del flag notificar_correo
+    const debeNotificar = String(notificar_correo) === 'true' || notificar_correo === true;
+
+    console.log(`📧 Evaluando envío de correo... (notificar_correo recibido: "${notificar_correo}", evaluado: ${debeNotificar})`);
+
+    if (debeNotificar) {
       const pacienteQuery = await pool.query(
         'SELECT nombre_completo, correo FROM pacientes WHERE id = $1',
         [paciente_id]
       );
 
-      if (pacienteQuery.rows.length > 0 && pacienteQuery.rows[0].correo) {
+      if (pacienteQuery.rows.length > 0) {
         const paciente = pacienteQuery.rows[0];
-        enviarCorreoPaciente(
-          paciente.correo,
-          paciente.nombre_completo,
-          tipo_examen || 'Radiografía',
-          titulo || 'Estudio de Imagen' // 👈 Aquí sí se usa el texto del input
-        ).catch(err => console.error('Error enviando correo en background:', err));
+        
+        if (paciente.correo && paciente.correo.trim() !== '') {
+          console.log(`📩 Intentando enviar correo a: ${paciente.correo}`);
+          
+          try {
+            await enviarCorreoPaciente(
+              paciente.correo,
+              paciente.nombre_completo,
+              tipo_examen || 'Radiografía',
+              titulo || 'Nuevo Estudio de Imagen' // Asunto enviado al correo
+            );
+            console.log(`✅ Correo enviado exitosamente a ${paciente.correo}`);
+          } catch (emailErr) {
+            console.error('❌ Error en el servidor de correo (Nodemailer/SMTP):', emailErr.message);
+          }
+
+        } else {
+          console.log(`⚠️ El paciente "${paciente.nombre_completo}" no tiene correo electrónico registrado.`);
+        }
+      } else {
+        console.log(`⚠️ No se encontró al paciente con ID: ${paciente_id}`);
       }
+    } else {
+      console.log('ℹ️ Se omitió el envío de correo (el usuario activo tiene rol técnico o notificar_correo es false).');
     }
 
   } catch (err) {
