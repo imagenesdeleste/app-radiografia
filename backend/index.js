@@ -317,24 +317,6 @@ app.delete('/api/admin/usuarios/:id', async (req, res) => {
 });
 
 // ACTUALIZAR CONTRASEÑA DE UN USUARIO DEL PERSONAL
-app.put('/api/admin/usuarios/:id/clave', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { clave } = req.body;
-
-    if (!clave || clave.trim() === '') {
-      return res.status(400).json({ error: 'La contraseña no puede estar vacía' });
-    }
-
-    await pool.query('UPDATE persona SET clave = $1 WHERE id = $2', [clave, id]);
-    res.json({ mensaje: 'Contraseña actualizada correctamente' });
-  } catch (error) {
-    console.error('Error al actualizar contraseña:', error);
-    res.status(500).json({ error: 'Error al actualizar la contraseña' });
-  }
-});
-
-// RUTA: Subir estudio, registrar en BD y notificar por correo
 app.post('/api/estudios', upload.array('archivos'), async (req, res) => {
   const { paciente_id, tipo_examen, titulo, notificar_correo } = req.body;
 
@@ -345,11 +327,18 @@ app.post('/api/estudios', upload.array('archivos'), async (req, res) => {
   try {
     const estudiosGuardados = [];
 
-    // 1. Guardar cada archivo recibido en la base de datos
+    // 1. Guardar cada archivo usando su nombre original como título en la BD
     for (const file of req.files) {
+      const nombreReal = file.originalname;
+
       const result = await pool.query(
         'INSERT INTO estudios (paciente_id, tipo_examen, titulo, archivo_path) VALUES ($1, $2, $3, $4) RETURNING *',
-        [paciente_id, tipo_examen, titulo, file.filename]
+        [
+          paciente_id, 
+          tipo_examen, 
+          nombreReal,   // 👈 En la BD se guarda el nombre real del archivo
+          file.filename // 👈 Nombre guardado en disco
+        ]
       );
       estudiosGuardados.push(result.rows[0]);
     }
@@ -357,7 +346,7 @@ app.post('/api/estudios', upload.array('archivos'), async (req, res) => {
     // 2. Responder al frontend con los registros creados
     res.json({ mensaje: 'Estudios cargados correctamente', estudios: estudiosGuardados });
 
-    // 3. Correo en segundo plano (solo si notificar_correo es true)
+    // 3. Correo en segundo plano (usa el "titulo" del input SOLO para la notificación)
     if (notificar_correo === 'true' || notificar_correo === true) {
       const pacienteQuery = await pool.query(
         'SELECT nombre_completo, correo FROM pacientes WHERE id = $1',
@@ -370,7 +359,7 @@ app.post('/api/estudios', upload.array('archivos'), async (req, res) => {
           paciente.correo,
           paciente.nombre_completo,
           tipo_examen || 'Radiografía',
-          titulo || 'Estudio de Imagen'
+          titulo || 'Estudio de Imagen' // 👈 Aquí sí se usa el texto del input
         ).catch(err => console.error('Error enviando correo en background:', err));
       }
     }

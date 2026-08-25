@@ -775,15 +775,14 @@ export default function PanelPersonal() {
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
-                    Título del Estudio
+                    Asunto / Descripción para el Correo
                   </label>
                   <input 
                     type="text" 
-                    placeholder="Ej: Radiografía de Tórax AP" 
+                    placeholder="Ej: Radiografía de Tórax AP - Resultados Disponibles" 
                     value={titulo}
-                    onChange={e => setTitulo(e.target.value)}
+                    onChange={e => setTipoExamen ? setTitulo(e.target.value) : setTitulo(e.target.value)}
                     className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
-                    required 
                   />
                 </div>
 
