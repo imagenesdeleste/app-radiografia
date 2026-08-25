@@ -79,9 +79,7 @@ export const enviarCorreoPaciente = async (
   correoPaciente,
   nombrePaciente,
   tipoExamen = 'Estudio',
-  tituloEstudio = 'Radiografía',
-  cedula = 'cedula',
-  clave = 'clave'
+  tituloEstudio = 'Radiografía'
 ) => {
   try {
     const { data, error } = await resend.emails.send({
@@ -125,7 +123,7 @@ export const enviarCorreoPaciente = async (
             </div>
 
             <p style="font-size: 12px; color: #611B1E; line-height: 1.5; text-align: center; margin-bottom: 0; font-weight: 500;">
-              Para acceder, ingresa con tu <strong>número de cédula: ${cedula}</strong> y tu clave registrada: ${clave}.
+              Para acceder, ingresa con tu <strong>número de cédula </strong> y tu clave registrada (Tu Cédula).
             </p>
 
             <div style="text-align: center; margin: 30px 0;">
@@ -215,7 +213,7 @@ app.post('/api/pacientes', async (req, res) => {
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
-    console.error("Error al registrar paciente:", err);
+    console.error("Esté paciente ya existe:", err);
     res.status(500).json({ error: err.message });
   }
 });
