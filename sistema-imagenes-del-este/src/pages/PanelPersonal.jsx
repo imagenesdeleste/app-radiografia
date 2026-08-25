@@ -35,7 +35,7 @@ export default function PanelPersonal() {
   // Comprobación de SuperAdmin
   const esSuperAdmin = usuarioLogueado?.rol === 'superadmin' || usuarioLogueado?.rol === 'admin';
 
-  // 6. Formulario Crear Paciente (Con opción de Orden Inicial)
+  // 6. Formulario Crear Paciente (CON CAMPO DE CORREO Y ORDEN OPCIONAL)
   const [formPaciente, setFormPaciente] = useState({
     cedula: '',
     nombre_completo: '',
@@ -112,7 +112,7 @@ export default function PanelPersonal() {
     }
   }, [autenticado, seccion]);
 
-  // Manejo de Selección Acumulativa de Archivos
+  // Selección Acumulativa de Archivos
   const handleArchivosChange = (e) => {
     if (e.target.files.length > 0) {
       const nuevosArchivos = Array.from(e.target.files);
@@ -715,7 +715,7 @@ export default function PanelPersonal() {
             </div>
           )}
 
-          {/* VISTA: CREAR PACIENTE CON ORDEN OPCIONAL */}
+          {/* VISTA: CREAR PACIENTE (INCLUYE CAMPO CORREO Y ORDEN OPCIONAL) */}
           {seccion === 'crear-paciente' && (usuarioLogueado?.rol === 'secretaria' || esSuperAdmin) && (
             <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm max-w-xl mx-auto">
               <div className="mb-6 pb-4 border-b border-slate-100">
@@ -748,6 +748,7 @@ export default function PanelPersonal() {
                   />
                 </div>
 
+                {/* TELÉFONO Y CORREO ELECTRÓNICO */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Teléfono</label>
@@ -756,21 +757,32 @@ export default function PanelPersonal() {
                       placeholder="Número de contacto" 
                       value={formPaciente.telefono}
                       onChange={e => setFormPaciente({...formPaciente, telefono: e.target.value})}
-                      className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none"
+                      className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Contraseña Asignada</label>
+                    <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Correo Electrónico</label>
                     <input 
-                      type="password" 
-                      placeholder="••••••••" 
-                      value={formPaciente.clave}
-                      onChange={e => setFormPaciente({...formPaciente, clave: e.target.value})}
-                      className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none"
-                      required 
+                      type="email" 
+                      placeholder="ejemplo@paciente.com" 
+                      value={formPaciente.correo}
+                      onChange={e => setFormPaciente({...formPaciente, correo: e.target.value})}
+                      className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
                     />
                   </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Contraseña Asignada</label>
+                  <input 
+                    type="password" 
+                    placeholder="••••••••" 
+                    value={formPaciente.clave}
+                    onChange={e => setFormPaciente({...formPaciente, clave: e.target.value})}
+                    className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
+                    required 
+                  />
                 </div>
 
                 {/* CASILLA INTELIGENTE: CREAR ORDEN AL INSTANTE */}

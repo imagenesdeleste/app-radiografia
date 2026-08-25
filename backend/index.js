@@ -556,23 +556,20 @@ app.put('/api/admin/usuarios/:id/rol', async (req, res) => {
 });
 
 // 1. SECRETARÍA / SUPERADMIN: Crear orden de estudio pendiente
-app.post('/api/estudios/pendiente', async (req, res) => {
-  const { paciente_id, tipo_examen, titulo } = req.body;
-
-  if (!paciente_id || !tipo_examen || !titulo) {
-    return res.status(400).json({ error: 'Todos los campos son obligatorios' });
-  }
-
+app.get('/api/estudios/pendientes', async (req, res) => {
   try {
-    const result = await pool.query(
-      `INSERT INTO estudios (paciente_id, tipo_examen, titulo, estado) 
-       VALUES ($1, $2, $3, 'pendiente') RETURNING *`,
-      [paciente_id, tipo_examen, titulo]
-    );
-    res.status(201).json({ mensaje: 'Estudio asignado con éxito', estudio: result.rows[0] });
-  } catch (err) {
-    console.error('🔥 Error al asignar estudio:', err.message);
-    res.status(500).json({ error: err.message });
+    const result = await pool.query(`
+      SELECT e.id, e.tipo_examen, e.titulo, e.fecha_estudio, e.estado, e.ruta_archivo,
+             p.nombre_completo AS paciente_nombre, p.cedula AS paciente_cedula
+      FROM estudios e
+      JOIN pacientes p ON e.paciente_id = p.id
+      WHERE e.estado IN ('pendiente_tecnico', 'pendiente_medico')
+      ORDER BY e.fecha_estudio DESC
+    `);
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error al obtener pendientes:', error);
+    res.status(500).json({ error: 'Error en base de datos: ' + error.message });
   }
 });
 
@@ -600,15 +597,19 @@ app.post('/api/estudios/crear-orden', async (req, res) => {
   try {
     const { paciente_id, tipo_examen, titulo } = req.body;
 
+    if (!paciente_id || !titulo) {
+      return res.status(400).json({ error: 'Paciente y título son obligatorios' });
+    }
+
     await pool.query(
       'INSERT INTO estudios (paciente_id, tipo_examen, titulo, fecha_estudio, estado) VALUES ($1, $2, $3, NOW(), $4)',
-      [paciente_id, tipo_examen, titulo, 'pendiente_tecnico']
+      [paciente_id, tipo_examen || 'Tomografías y/o Radiografías', titulo, 'pendiente_tecnico']
     );
 
-    res.json({ mensaje: 'Orden de examen creada para el técnico' });
+    res.json({ mensaje: 'Orden creada correctamente' });
   } catch (error) {
     console.error('Error al crear orden:', error);
-    res.status(500).json({ error: 'Error al registrar orden' });
+    res.status(500).json({ error: 'Error al registrar la orden: ' + error.message });
   }
 });
 
