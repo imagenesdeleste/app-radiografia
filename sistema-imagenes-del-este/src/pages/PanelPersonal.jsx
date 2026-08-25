@@ -29,6 +29,8 @@ export default function PanelPersonal() {
     clave: ''
   });
 
+  const [modalPacienteExiste, setModalPacienteExiste] = useState(false);
+
   // Super usuario comprobación
   const esSuperAdmin = usuarioLogueado?.rol === 'superadmin' || usuarioLogueado?.rol === 'admin';
 
