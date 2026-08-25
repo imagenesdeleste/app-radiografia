@@ -331,39 +331,44 @@ app.put('/api/admin/usuarios/:id/clave', async (req, res) => {
 });
 
 // RUTA: Subir estudio, registrar en BD y notificar por correo
-app.post('/api/estudios', upload.single('archivo'), async (req, res) => {
-  const { paciente_id, tipo_examen, titulo } = req.body;
-  const archivo_filename = req.file ? req.file.filename : null;
+app.post('/api/estudios', upload.array('archivos'), async (req, res) => {
+  const { paciente_id, tipo_examen, titulo, notificar_correo } = req.body;
 
-  if (!archivo_filename) {
-    return res.status(400).json({ error: 'Debes adjuntar un archivo' });
+  if (!req.files || req.files.length === 0) {
+    return res.status(400).json({ error: 'Debes adjuntar al menos un archivo' });
   }
 
   try {
-    const result = await pool.query(
-      'INSERT INTO estudios (paciente_id, tipo_examen, titulo, archivo_path) VALUES ($1, $2, $3, $4) RETURNING *',
-      [paciente_id, tipo_examen, titulo, archivo_filename]
-    );
+    const estudiosGuardados = [];
 
-    const nuevoEstudio = result.rows[0];
+    // 1. Guardar cada archivo recibido en la base de datos
+    for (const file of req.files) {
+      const result = await pool.query(
+        'INSERT INTO estudios (paciente_id, tipo_examen, titulo, archivo_path) VALUES ($1, $2, $3, $4) RETURNING *',
+        [paciente_id, tipo_examen, titulo, file.filename]
+      );
+      estudiosGuardados.push(result.rows[0]);
+    }
 
-    const pacienteQuery = await pool.query(
-      'SELECT nombre_completo, correo FROM pacientes WHERE id = $1',
-      [paciente_id]
-    );
+    // 2. Responder al frontend con los registros creados
+    res.json({ mensaje: 'Estudios cargados correctamente', estudios: estudiosGuardados });
 
-    // Responder rápido al frontend
-    res.json(nuevoEstudio);
+    // 3. Correo en segundo plano (solo si notificar_correo es true)
+    if (notificar_correo === 'true' || notificar_correo === true) {
+      const pacienteQuery = await pool.query(
+        'SELECT nombre_completo, correo FROM pacientes WHERE id = $1',
+        [paciente_id]
+      );
 
-    // Correo en segundo plano
-    if (pacienteQuery.rows.length > 0 && pacienteQuery.rows[0].correo) {
-      const paciente = pacienteQuery.rows[0];
-      enviarCorreoPaciente(
-        paciente.correo,
-        paciente.nombre_completo,
-        tipo_examen || 'Radiografía',
-        titulo || 'Estudio de Imagen'
-      ).catch(err => console.error('Error enviando correo en background:', err));
+      if (pacienteQuery.rows.length > 0 && pacienteQuery.rows[0].correo) {
+        const paciente = pacienteQuery.rows[0];
+        enviarCorreoPaciente(
+          paciente.correo,
+          paciente.nombre_completo,
+          tipo_examen || 'Radiografía',
+          titulo || 'Estudio de Imagen'
+        ).catch(err => console.error('Error enviando correo en background:', err));
+      }
     }
 
   } catch (err) {
