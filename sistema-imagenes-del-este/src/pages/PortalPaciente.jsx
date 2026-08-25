@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 export default function PortalPaciente() {
   const [cedula, setCedula] = useState('');
   const [clave, setClave] = useState('');
+  const [mostrarClave, setMostrarClave] = useState(false);
   const [datosPaciente, setDatosPaciente] = useState(null);
   const [estudios, setEstudios] = useState([]);
   const [error, setError] = useState('');
@@ -12,10 +13,14 @@ export default function PortalPaciente() {
   const [categoriaAbierta, setCategoriaAbierta] = useState(null); // Formato: "Fecha-Tipo"
   const [archivoPreview, setArchivoPreview] = useState(null);
 
-  // Agrupar primero por FECHA y luego por TIPO DE EXAMEN
+  // AGRUPACIÓN: Fecha ➔ "Tomografías y/o Radiografías" o "Informe Médico"
   const estudiosAgrupados = estudios.reduce((acc, est) => {
     const fecha = new Date(est.fecha_estudio).toLocaleDateString();
-    const tipo = est.tipo_examen || 'Informe Médico';
+    let tipo = est.tipo_examen || 'Informe Médico';
+
+    if (tipo === 'Radiografía' || tipo === 'Tomografía') {
+      tipo = 'Tomografías y/o Radiografías';
+    }
 
     if (!acc[fecha]) acc[fecha] = {};
     if (!acc[fecha][tipo]) acc[fecha][tipo] = [];
@@ -64,14 +69,14 @@ export default function PortalPaciente() {
             className="w-full h-full object-contain drop-shadow-sm" 
           />
         </div>
-        <p className="text-xs text-slate-400 uppercase tracking-widest mt-0.5">Portal del Paciente</p>
+        <p className="text-xs text-slate-400 uppercase tracking-widest mt-0.5">Bienvenidos al portal de Unidad De Imagenes Del Este</p>
       </header>
 
       {/* CONTENIDO PRINCIPAL */}
       <main className="w-full max-w-sm my-auto">
         {!datosPaciente ? (
           
-          /* LOGIN */
+          /* LOGIN PACIENTE CON OJITO */
           <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-xl shadow-slate-200/40 backdrop-blur-sm">
             <form onSubmit={handleLogin} className="space-y-4">
               {error && (
@@ -94,14 +99,24 @@ export default function PortalPaciente() {
 
               <div>
                 <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Contraseña</label>
-                <input 
-                  type="password" 
-                  placeholder="••••••••" 
-                  value={clave}
-                  onChange={e => setClave(e.target.value)}
-                  className="w-full px-4 py-3 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all placeholder:text-slate-400"
-                  required 
-                />
+                <div className="relative">
+                  <input 
+                    type={mostrarClave ? 'text' : 'password'} 
+                    placeholder="••••••••" 
+                    value={clave}
+                    onChange={e => setClave(e.target.value)}
+                    className="w-full pl-4 pr-10 py-3 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all placeholder:text-slate-400"
+                    required 
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setMostrarClave(!mostrarClave)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer text-sm select-none"
+                    title={mostrarClave ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                  >
+                    {mostrarClave ? '🙈' : '👁️'}
+                  </button>
+                </div>
               </div>
 
               <button 
@@ -115,7 +130,7 @@ export default function PortalPaciente() {
 
         ) : (
 
-          /* ÁREA DE RESULTADOS AGRUPADOS (FECHA ➔ TIPO) */
+          /* RESULTADOS UNIFICADOS */
           <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xl shadow-slate-200/40">
             
             <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
@@ -154,7 +169,7 @@ export default function PortalPaciente() {
                   return (
                     <div key={fecha} className="border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-sm transition-all">
                       
-                      {/* NIVEL 1: ACORDEÓN DE FECHA */}
+                      {/* FECHA */}
                       <button
                         type="button"
                         onClick={() => setFechaAbierta(estaFechaAbierta ? null : fecha)}
@@ -177,7 +192,7 @@ export default function PortalPaciente() {
                         </span>
                       </button>
 
-                      {/* NIVEL 2: ACORDEONES POR TIPO DE EXAMEN (Radiografía, Tomografía, etc.) */}
+                      {/* CATEGORÍAS UNIFICADAS */}
                       {estaFechaAbierta && (
                         <div className="p-3 border-t border-slate-100 space-y-2 bg-slate-50/50">
                           {Object.entries(categorias).map(([tipo, listaEstudios]) => {
@@ -206,7 +221,7 @@ export default function PortalPaciente() {
                                   </span>
                                 </button>
 
-                                {/* NIVEL 3: ARCHIVOS DEL TIPO SELECCIONADO */}
+                                {/* ARCHIVOS */}
                                 {estaCatAbierta && (
                                   <div className="p-2.5 border-t border-slate-100 space-y-2 bg-white">
                                     {listaEstudios.map((e) => (
@@ -216,7 +231,6 @@ export default function PortalPaciente() {
                                         </div>
 
                                         <div className="flex items-center gap-1.5 shrink-0">
-                                          {/* VISTA PREVIA */}
                                           <button
                                             type="button"
                                             onClick={() => setArchivoPreview(`https://app-radiografia-production.up.railway.app/api/descargar/${e.id}`)}
@@ -225,7 +239,6 @@ export default function PortalPaciente() {
                                             👁️ Ver
                                           </button>
 
-                                          {/* DESCARGAR */}
                                           <a 
                                             href={`https://app-radiografia-production.up.railway.app/api/descargar/${e.id}`} 
                                             download
