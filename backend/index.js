@@ -205,16 +205,25 @@ app.post('/api/pacientes', async (req, res) => {
   const { cedula, nombre_completo, telefono, correo, clave } = req.body;
 
   try {
+    // 1. Validar si ya existe un paciente registrado con esa cédula
+    const existe = await pool.query('SELECT id FROM pacientes WHERE cedula = $1', [cedula]);
+    if (existe.rows.length > 0) {
+      return res.status(400).json({ error: 'Este paciente ya se encuentra registrado' });
+    }
+
+    // 2. Registrar el nuevo paciente
     const result = await pool.query(
       `INSERT INTO pacientes (cedula, nombre_completo, telefono, correo, clave) 
        VALUES ($1, $2, $3, $4, $5) 
        RETURNING *`,
       [cedula, nombre_completo, telefono, correo, clave]
     );
+
     res.status(201).json(result.rows[0]);
+
   } catch (err) {
-    console.error("Este paciente ya existe:", err);
-    res.status(500).json({ error: err.message });
+    console.error("🔥 Error al registrar paciente:", err);
+    res.status(500).json({ error: 'Error interno en el servidor' });
   }
 });
 

@@ -192,12 +192,15 @@ export default function PanelPersonal() {
   };
 
   const handleGuardarPaciente = async (e) => {
-    e.preventDefault();
+  e.preventDefault();
+  try {
     const res = await fetch('https://app-radiografia-production.up.railway.app/api/pacientes', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(formPaciente)
     });
+
+    const data = await res.json();
 
     if (res.ok) {
       alert('¡Paciente registrado con éxito!');
@@ -205,9 +208,18 @@ export default function PanelPersonal() {
       cargarPacientes();
       setSeccion('pacientes-lista');
     } else {
-      alert('Error al registrar paciente');
+      // Si el servidor indica que ya existe, abrimos el modal
+      if (res.status === 400 || data.error?.includes('registrado')) {
+        setModalPacienteExiste(true);
+      } else {
+        alert(data.error || 'Error al registrar paciente');
+      }
     }
-  };
+  } catch (e) {
+    console.error('Error:', e);
+    alert('Error de conexión con el servidor');
+  }
+};
 
   const handleGuardarEstudio = async (e) => {
     e.preventDefault();
@@ -1233,6 +1245,33 @@ export default function PanelPersonal() {
         </button>
 
       </div>
+
+      {/* MODAL: PACIENTE YA EXISTE */}
+        {modalPacienteExiste && (
+          <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
+            <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl border border-slate-100 text-center space-y-4">
+              
+              <div className="w-12 h-12 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold">
+                ⚠️
+              </div>
+
+              <div>
+                <h3 className="text-base font-bold text-slate-900">Éste paciente ya está registrado</h3>
+                <p className="text-xs text-slate-500 mt-1">
+                  La cédula <strong className="text-slate-800">{formPaciente.cedula}</strong> ya pertenece a un paciente que se encuentra registrado en el sistema.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setModalPacienteExiste(false)}
+                className="w-full py-2.5 bg-red-800 hover:bg-red-950 text-white text-xs font-semibold rounded-xl transition-all cursor-pointer shadow-md"
+              >
+                Entendido
+              </button>
+            </div>
+          </div>
+        )}
 
     </div>
   );
