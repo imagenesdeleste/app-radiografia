@@ -431,7 +431,7 @@ export default function PanelPersonal() {
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer text-sm select-none"
                   title={mostrarClaveAdmin ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                 >
-                  {mostrarClaveAdmin ? '🙈' : '👁️'}
+                  {mostrarClaveAdmin ? 'X' : '👁️'}
                 </button>
               </div>
             </div>

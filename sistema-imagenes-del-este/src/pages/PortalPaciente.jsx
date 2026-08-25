@@ -114,7 +114,7 @@ export default function PortalPaciente() {
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer text-sm select-none"
                     title={mostrarClave ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                   >
-                    {mostrarClave ? '🙈' : '👁️'}
+                    {mostrarClave ? 'X' : '👁️'}
                   </button>
                 </div>
               </div>
