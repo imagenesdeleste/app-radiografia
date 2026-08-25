@@ -8,24 +8,45 @@ export default function PortalPaciente() {
   const [estudios, setEstudios] = useState([]);
   const [error, setError] = useState('');
 
-  // Estados para acordeones anidados y vista previa
+  // Estados para acordeones anidados
   const [fechaAbierta, setFechaAbierta] = useState(null);
-  const [categoriaAbierta, setCategoriaAbierta] = useState(null); // Formato: "Fecha-Tipo"
+  const [categoriaAbierta, setCategoriaAbierta] = useState(null); // Formato: "Fecha-Categoria"
+  const [subcarpetaAbierta, setSubcarpetaAbierta] = useState(null); // Formato: "Fecha-Categoria-Sub"
   const [archivoPreview, setArchivoPreview] = useState(null);
 
-  // AGRUPACIÓN: Fecha ➔ "Tomografías y/o Radiografías" o "Informe Médico"
-  const estudiosAgrupados = estudios.reduce((acc, est) => {
-    const fecha = new Date(est.fecha_estudio).toLocaleDateString();
-    let tipo = est.tipo_examen || 'Informe Médico';
+  // Función para clasificar cada archivo en su sub-carpeta específica
+  const obtenerSubcarpeta = (est) => {
+    const texto = `${est.tipo_examen || ''} ${est.titulo || ''} ${est.archivo_path || ''}`.toLowerCase();
 
-    if (tipo === 'Radiografía' || tipo === 'Tomografía') {
-      tipo = 'Tomografías y/o Radiografías';
+    if (texto.includes('tomograf') || texto.includes('tac') || texto.includes('ct')) {
+      return 'Tomografías';
+    }
+    if (texto.includes('radiograf') || texto.includes('rx') || texto.includes('rayos')) {
+      return 'Radiografías';
+    }
+    if (texto.includes('informe') || est.tipo_examen === 'Informe Médico') {
+      return 'Informes Médicos';
     }
 
-    if (!acc[fecha]) acc[fecha] = {};
-    if (!acc[fecha][tipo]) acc[fecha][tipo] = [];
+    return 'Otros Archivos';
+  };
 
-    acc[fecha][tipo].push(est);
+  // AGRUPACIÓN NIVELES: Fecha ➔ Categoría ➔ Sub-carpeta (Radiografías / Tomografías / Informes)
+  const estudiosAgrupados = estudios.reduce((acc, est) => {
+    const fecha = new Date(est.fecha_estudio).toLocaleDateString();
+    let catPrincipal = est.tipo_examen || 'Informe Médico';
+
+    if (catPrincipal === 'Radiografía' || catPrincipal === 'Tomografía') {
+      catPrincipal = 'Tomografías y/o Radiografías';
+    }
+
+    const sub = obtenerSubcarpeta(est);
+
+    if (!acc[fecha]) acc[fecha] = {};
+    if (!acc[fecha][catPrincipal]) acc[fecha][catPrincipal] = {};
+    if (!acc[fecha][catPrincipal][sub]) acc[fecha][catPrincipal][sub] = [];
+
+    acc[fecha][catPrincipal][sub].push(est);
     return acc;
   }, {});
 
@@ -69,14 +90,14 @@ export default function PortalPaciente() {
             className="w-full h-full object-contain drop-shadow-sm" 
           />
         </div>
-        <p className="text-xl text-black uppercase tracking-widest mt-0.5">Bienvenido Estimado Paciente</p>
+        <p className="text-xs text-slate-400 uppercase tracking-widest mt-0.5">Portal del Paciente</p>
       </header>
 
       {/* CONTENIDO PRINCIPAL */}
       <main className="w-full max-w-sm my-auto">
         {!datosPaciente ? (
           
-          /* LOGIN PACIENTE CON OJITO */
+          /* LOGIN PACIENTE */
           <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-xl shadow-slate-200/40 backdrop-blur-sm">
             <form onSubmit={handleLogin} className="space-y-4">
               {error && (
@@ -114,7 +135,7 @@ export default function PortalPaciente() {
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer text-sm select-none"
                     title={mostrarClave ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                   >
-                    {mostrarClave ? 'X' : '👁️'}
+                    {mostrarClave ? '🙈' : '👁️'}
                   </button>
                 </div>
               </div>
@@ -130,7 +151,7 @@ export default function PortalPaciente() {
 
         ) : (
 
-          /* RESULTADOS UNIFICADOS */
+          /* RESULTADOS CON SUB-CARPETAS */
           <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xl shadow-slate-200/40">
             
             <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
@@ -164,12 +185,12 @@ export default function PortalPaciente() {
               <div className="space-y-3">
                 {Object.entries(estudiosAgrupados).map(([fecha, categorias]) => {
                   const estaFechaAbierta = fechaAbierta === fecha;
-                  const totalEstudiosFecha = Object.values(categorias).flat().length;
+                  const totalEstudiosFecha = Object.values(categorias).flatMap(c => Object.values(c).flat()).length;
 
                   return (
                     <div key={fecha} className="border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-sm transition-all">
                       
-                      {/* FECHA */}
+                      {/* NIVEL 1: FECHA */}
                       <button
                         type="button"
                         onClick={() => setFechaAbierta(estaFechaAbierta ? null : fecha)}
@@ -192,15 +213,16 @@ export default function PortalPaciente() {
                         </span>
                       </button>
 
-                      {/* CATEGORÍAS UNIFICADAS */}
+                      {/* NIVEL 2: CATEGORÍA PRINCIPAL */}
                       {estaFechaAbierta && (
                         <div className="p-3 border-t border-slate-100 space-y-2 bg-slate-50/50">
-                          {Object.entries(categorias).map(([tipo, listaEstudios]) => {
-                            const claveCat = `${fecha}-${tipo}`;
+                          {Object.entries(categorias).map(([catNombre, subcarpetas]) => {
+                            const claveCat = `${fecha}-${catNombre}`;
                             const estaCatAbierta = categoriaAbierta === claveCat;
+                            const totalEnCat = Object.values(subcarpetas).flat().length;
 
                             return (
-                              <div key={tipo} className="border border-slate-200 rounded-xl overflow-hidden bg-white">
+                              <div key={catNombre} className="border border-slate-200 rounded-xl overflow-hidden bg-white">
                                 
                                 <button
                                   type="button"
@@ -209,10 +231,10 @@ export default function PortalPaciente() {
                                 >
                                   <div className="flex items-center gap-2">
                                     <span className="text-xs font-bold text-red-900 bg-red-50 px-2 py-0.5 rounded-md">
-                                      {tipo}
+                                      {catNombre}
                                     </span>
                                     <span className="text-[10px] text-slate-400 font-semibold">
-                                      ({listaEstudios.length})
+                                      ({totalEnCat})
                                     </span>
                                   </div>
 
@@ -221,34 +243,69 @@ export default function PortalPaciente() {
                                   </span>
                                 </button>
 
-                                {/* ARCHIVOS */}
+                                {/* NIVEL 3: SUB-CARPETAS (Radiografías / Tomografías / Informes) */}
                                 {estaCatAbierta && (
-                                  <div className="p-2.5 border-t border-slate-100 space-y-2 bg-white">
-                                    {listaEstudios.map((e) => (
-                                      <div key={e.id} className="p-2.5 border border-slate-100 bg-slate-50/60 rounded-lg flex items-center justify-between hover:border-slate-200 transition-all">
-                                        <div className="pr-2">
-                                          <h6 className="text-xs font-semibold text-slate-800 leading-tight">{e.titulo}</h6>
-                                        </div>
+                                  <div className="p-2 border-t border-slate-100 space-y-2 bg-slate-50">
+                                    {Object.entries(subcarpetas).map(([subNombre, listaEstudios]) => {
+                                      const claveSub = `${fecha}-${catNombre}-${subNombre}`;
+                                      const estaSubAbierta = subcarpetaAbierta === claveSub;
 
-                                        <div className="flex items-center gap-1.5 shrink-0">
+                                      // Ícono según el tipo de sub-carpeta
+                                      const iconoSub = subNombre === 'Tomografías' ? '🧠' : subNombre === 'Radiografías' ? '🩻' : '📄';
+
+                                      return (
+                                        <div key={subNombre} className="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-2xs">
+                                          
                                           <button
                                             type="button"
-                                            onClick={() => setArchivoPreview(`https://app-radiografia-production.up.railway.app/api/descargar/${e.id}`)}
-                                            className="px-2.5 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-medium rounded-lg transition-colors cursor-pointer"
+                                            onClick={() => setSubcarpetaAbierta(estaSubAbierta ? null : claveSub)}
+                                            className="w-full p-2 flex items-center justify-between hover:bg-slate-100 transition-colors cursor-pointer text-left"
                                           >
-                                            👁️ Ver
+                                            <div className="flex items-center gap-2">
+                                              <span className="text-xs">{iconoSub}</span>
+                                              <span className="text-xs font-bold text-slate-700">{subNombre}</span>
+                                              <span className="text-[10px] text-slate-400 font-semibold">({listaEstudios.length})</span>
+                                            </div>
+
+                                            <span className={`text-slate-400 transform transition-transform duration-200 text-[9px] font-bold ${estaSubAbierta ? 'rotate-180' : ''}`}>
+                                              ▼
+                                            </span>
                                           </button>
 
-                                          <a 
-                                            href={`https://app-radiografia-production.up.railway.app/api/descargar/${e.id}`} 
-                                            download
-                                            className="px-3 py-1.5 bg-red-950 hover:bg-red-800 text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer"
-                                          >
-                                            ⬇️
-                                          </a>
+                                          {/* ARCHIVOS */}
+                                          {estaSubAbierta && (
+                                            <div className="p-2 border-t border-slate-100 space-y-1.5 bg-white">
+                                              {listaEstudios.map((e) => (
+                                                <div key={e.id} className="p-2 border border-slate-100 bg-slate-50 rounded-lg flex items-center justify-between hover:border-slate-200 transition-all">
+                                                  <div className="pr-2 truncate">
+                                                    <h6 className="text-xs font-semibold text-slate-800 leading-tight truncate">{e.titulo}</h6>
+                                                  </div>
+
+                                                  <div className="flex items-center gap-1.5 shrink-0">
+                                                    <button
+                                                      type="button"
+                                                      onClick={() => setArchivoPreview(`https://app-radiografia-production.up.railway.app/api/descargar/${e.id}`)}
+                                                      className="px-2.5 py-1 bg-slate-200 hover:bg-slate-300 text-slate-700 text-[11px] font-medium rounded-lg transition-colors cursor-pointer"
+                                                    >
+                                                      👁️ Ver
+                                                    </button>
+
+                                                    <a 
+                                                      href={`https://app-radiografia-production.up.railway.app/api/descargar/${e.id}`} 
+                                                      download
+                                                      className="px-2.5 py-1 bg-red-950 hover:bg-red-800 text-white text-[11px] font-semibold rounded-lg transition-colors cursor-pointer"
+                                                    >
+                                                      ⬇️
+                                                    </a>
+                                                  </div>
+                                                </div>
+                                              ))}
+                                            </div>
+                                          )}
+
                                         </div>
-                                      </div>
-                                    ))}
+                                      );
+                                    })}
                                   </div>
                                 )}
 
