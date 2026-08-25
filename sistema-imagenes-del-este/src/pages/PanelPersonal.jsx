@@ -30,7 +30,7 @@ export default function PanelPersonal() {
   });
 
   const [modalPacienteExiste, setModalPacienteExiste] = useState(false);
-  const [estdiosPendientes, setEstudiosPendientes] = useState([]);
+  const [estudiosPendientes, setEstudiosPendientes] = useState([]);
 
   // Super usuario comprobación
   const esSuperAdmin = usuarioLogueado?.rol === 'superadmin' || usuarioLogueado?.rol === 'admin';
