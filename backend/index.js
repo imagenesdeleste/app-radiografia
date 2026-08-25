@@ -200,30 +200,35 @@ app.get('/init-db', async (req, res) => {
   }
 });
 
-// RUTA: Crear un nuevo paciente
+// REGISTRAR PACIENTE Y OPCIONALMENTE SU PRIMERA ORDEN
 app.post('/api/pacientes', async (req, res) => {
-  const { cedula, nombre_completo, telefono, correo, clave } = req.body;
-
   try {
-    // 1. Validar si ya existe un paciente registrado con esa cédula
-    const existe = await pool.query('SELECT id FROM pacientes WHERE cedula = $1', [cedula]);
-    if (existe.rows.length > 0) {
-      return res.status(400).json({ error: 'Este paciente ya se encuentra registrado' });
+    const { cedula, nombre_completo, telefono, correo, clave, crear_orden, tipo_examen, titulo } = req.body;
+
+    if (!cedula || !nombre_completo || !clave) {
+      return res.status(400).json({ error: 'Cédula, nombre y contraseña son obligatorios' });
     }
 
-    // 2. Registrar el nuevo paciente
-    const result = await pool.query(
-      `INSERT INTO pacientes (cedula, nombre_completo, telefono, correo, clave) 
-       VALUES ($1, $2, $3, $4, $5) 
-       RETURNING *`,
+    // 1. Registrar paciente
+    const resultPaciente = await pool.query(
+      'INSERT INTO pacientes (cedula, nombre_completo, telefono, correo, clave) VALUES ($1, $2, $3, $4, $5) RETURNING id',
       [cedula, nombre_completo, telefono, correo, clave]
     );
 
-    res.status(201).json(result.rows[0]);
+    const pacienteId = resultPaciente.rows[0].id;
 
-  } catch (err) {
-    console.error("🔥 Error al registrar paciente:", err);
-    res.status(500).json({ error: 'Error interno en el servidor' });
+    // 2. Si se marcó crear orden inicial, la guardamos como pendiente_tecnico
+    if (crear_orden && titulo) {
+      await pool.query(
+        'INSERT INTO estudios (paciente_id, tipo_examen, titulo, fecha_estudio, estado) VALUES ($1, $2, $3, NOW(), $4)',
+        [pacienteId, tipo_examen || 'Informe Médico', titulo, 'pendiente_tecnico']
+      );
+    }
+
+    res.json({ mensaje: 'Paciente registrado correctamente' });
+  } catch (error) {
+    console.error('Error al crear paciente:', error);
+    res.status(500).json({ error: 'Error en base de datos: ' + error.message });
   }
 });
 

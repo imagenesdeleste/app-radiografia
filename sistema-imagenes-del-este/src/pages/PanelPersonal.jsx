@@ -35,23 +35,26 @@ export default function PanelPersonal() {
   // Comprobación de SuperAdmin
   const esSuperAdmin = usuarioLogueado?.rol === 'superadmin' || usuarioLogueado?.rol === 'admin';
 
-  // 6. Formulario Crear Paciente
+  // 6. Formulario Crear Paciente (Con opción de Orden Inicial)
   const [formPaciente, setFormPaciente] = useState({
     cedula: '',
     nombre_completo: '',
     telefono: '',
     correo: '',
-    clave: ''
+    clave: '',
+    crear_orden: false,
+    tipo_examen: 'Tomografías y/o Radiografías',
+    titulo: ''
   });
 
-  // 7. Formulario Subir Estudio
+  // 7. Formulario Crear Orden / Subir Estudio
   const [busquedaPacienteSubida, setBusquedaPacienteSubida] = useState('');
   const [pacienteSeleccionadoSubida, setPacienteSeleccionadoSubida] = useState(null);
   const [tipoExamen, setTipoExamen] = useState('Informe Médico');
   const [titulo, setTitulo] = useState('');
   const [archivos, setArchivos] = useState([]);
 
-  // 8. Gestión de Usuarios (SuperAdmin)
+  // 8. Gestión de Usuarios de la tabla PERSONA (SuperAdmin)
   const [usuariosPersonal, setUsuariosPersonal] = useState([]);
   const [cargandoUsuarios, setCargandoUsuarios] = useState(false);
   const [formNuevoUsuario, setFormNuevoUsuario] = useState({
@@ -109,7 +112,7 @@ export default function PanelPersonal() {
     }
   }, [autenticado, seccion]);
 
-  // Selección Acumulativa de Archivos
+  // Manejo de Selección Acumulativa de Archivos
   const handleArchivosChange = (e) => {
     if (e.target.files.length > 0) {
       const nuevosArchivos = Array.from(e.target.files);
@@ -144,8 +147,7 @@ export default function PanelPersonal() {
         setUsuarioLogueado(data.usuario);
         
         if (data.usuario?.rol === 'medico' || data.usuario?.rol === 'tecnico') {
-          setSeccion('subir-estudio');
-          setTipoExamen('Informe Médico');
+          setSeccion('estudios-pendientes');
         } else {
           setSeccion('pacientes-lista');
         }
@@ -212,93 +214,111 @@ export default function PanelPersonal() {
 
   const handleGuardarPaciente = async (e) => {
     e.preventDefault();
-    const res = await fetch('https://app-radiografia-production.up.railway.app/api/pacientes', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(formPaciente)
-    });
+    try {
+      const res = await fetch('https://app-radiografia-production.up.railway.app/api/pacientes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formPaciente)
+      });
 
-    if (res.ok) {
-      alert('¡Paciente registrado con éxito!');
-      setFormPaciente({ cedula: '', nombre_completo: '', telefono: '', correo: '', clave: '' });
-      cargarPacientes();
-      setSeccion('pacientes-lista');
-    } else {
-      alert('Error al registrar paciente');
+      if (res.ok) {
+        alert(
+          formPaciente.crear_orden 
+            ? '¡Paciente registrado y orden enviada al Técnico!' 
+            : '¡Paciente registrado con éxito!'
+        );
+        setFormPaciente({
+          cedula: '',
+          nombre_completo: '',
+          telefono: '',
+          correo: '',
+          clave: '',
+          crear_orden: false,
+          tipo_examen: 'Tomografías y/o Radiografías',
+          titulo: ''
+        });
+        cargarPacientes();
+        cargarEstudiosPendientes();
+        setSeccion('pacientes-lista');
+      } else {
+        alert('Error al registrar paciente');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Error de conexión');
     }
   };
 
   const handleGuardarEstudio = async (e) => {
-  e.preventDefault();
-  
-  if (!pacienteSeleccionadoSubida) {
-    return alert('Por favor, selecciona un paciente de la lista.');
-  }
+    e.preventDefault();
+    if (!pacienteSeleccionadoSubida) {
+      return alert('Selecciona un paciente de la lista');
+    }
 
-  // 1. Si es Secretaría o SuperAdmin y NO hay archivos adjuntos -> Crear Orden Inicial
-  if ((usuarioLogueado?.rol === 'secretaria' || esSuperAdmin) && archivos.length === 0) {
+    // 1. Si es Secretaría o SuperAdmin y NO adjuntó archivos -> Crear orden inicial sin archivos
+    if ((usuarioLogueado?.rol === 'secretaria' || esSuperAdmin) && archivos.length === 0) {
+      try {
+        const res = await fetch('https://app-radiografia-production.up.railway.app/api/estudios/crear-orden', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            paciente_id: pacienteSeleccionadoSubida.id,
+            tipo_examen: tipoExamen,
+            titulo: titulo
+          })
+        });
+
+        if (res.ok) {
+          alert('¡Orden de examen creada! Ya le aparece al técnico en sus pendientes.');
+          setTitulo('');
+          setPacienteSeleccionadoSubida(null);
+          setBusquedaPacienteSubida('');
+          cargarEstudiosPendientes();
+        } else {
+          alert('Error al crear la orden');
+        }
+      } catch (e) {
+        console.error('Error:', e);
+        alert('Error de conexión con el servidor');
+      }
+      return;
+    }
+
+    // 2. Carga directa con archivos
+    if (archivos.length === 0) {
+      return alert('Debes adjuntar al menos un archivo para subir el estudio.');
+    }
+
+    const formData = new FormData();
+    formData.append('paciente_id', pacienteSeleccionadoSubida.id);
+    formData.append('tipo_examen', tipoExamen);
+    formData.append('titulo', titulo);
+    formData.append('notificar_correo', usuarioLogueado?.rol !== 'tecnico');
+
+    archivos.forEach((file) => {
+      formData.append('archivos', file);
+    });
+
     try {
-      const res = await fetch('https://app-radiografia-production.up.railway.app/api/estudios/crear-orden', {
+      const res = await fetch('https://app-radiografia-production.up.railway.app/api/estudios', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          paciente_id: pacienteSeleccionadoSubida.id,
-          tipo_examen: tipoExamen,
-          titulo: titulo
-        })
+        body: formData
       });
 
       if (res.ok) {
-        alert('¡Orden de examen creada! Ya le aparece al técnico en sus pendientes.');
+        alert('¡Estudio cargado con éxito!');
         setTitulo('');
+        handleLimpiarArchivos();
         setPacienteSeleccionadoSubida(null);
         setBusquedaPacienteSubida('');
-        cargarEstudiosPendientes();
       } else {
-        alert('Error al crear la orden');
+        alert('Error al subir los archivos');
       }
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Error al conectar:', error);
       alert('Error de conexión con el servidor');
     }
-    return;
-  }
-
-  // 2. Si se están adjuntando archivos directamente (subida directa)
-  if (archivos.length === 0) {
-    return alert('Debes adjuntar al menos un archivo para subir el estudio.');
-  }
-
-  const formData = new FormData();
-  formData.append('paciente_id', pacienteSeleccionadoSubida.id);
-  formData.append('tipo_examen', tipoExamen);
-  formData.append('titulo', titulo);
-  formData.append('notificar_correo', usuarioLogueado?.rol !== 'tecnico');
-
-  archivos.forEach((file) => {
-    formData.append('archivos', file);
-  });
-
-  try {
-    const res = await fetch('https://app-radiografia-production.up.railway.app/api/estudios', {
-      method: 'POST',
-      body: formData
-    });
-
-    if (res.ok) {
-      alert('¡Estudio cargado con éxito!');
-      setTitulo('');
-      handleLimpiarArchivos();
-      setPacienteSeleccionadoSubida(null);
-      setBusquedaPacienteSubida('');
-    } else {
-      alert('Error al subir los archivos');
-    }
-  } catch (error) {
-    console.error('Error:', error);
-    alert('Error de conexión con el servidor');
-  }
-};
+  };
 
   // Crear Usuario en la tabla persona (SuperAdmin)
   const handleCrearUsuarioPersonal = async (e) => {
@@ -426,7 +446,7 @@ export default function PanelPersonal() {
     p.nombre_completo.toLowerCase().includes(busquedaPacienteSubida.toLowerCase())
   );
 
-  /* LOGIN ADMINISTRATIVO CON OJITO */
+  /* LOGIN ADMINISTRATIVO */
   if (!autenticado) {
     return (
       <div className="min-h-screen bg-rose-950 flex flex-col justify-center items-center p-4 font-sans">
@@ -562,9 +582,9 @@ export default function PanelPersonal() {
               }`}
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
               </svg>
-              <span>Subir Resultado</span>
+              <span>Crear Orden / Estudio</span>
             </button>
 
             {/* BOTÓN ESTUDIOS PENDIENTES */}
@@ -695,12 +715,12 @@ export default function PanelPersonal() {
             </div>
           )}
 
-          {/* VISTA: CREAR PACIENTE */}
+          {/* VISTA: CREAR PACIENTE CON ORDEN OPCIONAL */}
           {seccion === 'crear-paciente' && (usuarioLogueado?.rol === 'secretaria' || esSuperAdmin) && (
             <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm max-w-xl mx-auto">
               <div className="mb-6 pb-4 border-b border-slate-100">
                 <h2 className="text-lg font-bold text-slate-900">Registrar Nuevo Paciente</h2>
-                <p className="text-xs text-slate-500 mt-0.5">Asigna la cédula como usuario y define su contraseña de acceso.</p>
+                <p className="text-xs text-slate-500 mt-0.5">Ingresa los datos personales y genera su orden de examen si está en sala.</p>
               </div>
 
               <form onSubmit={handleGuardarPaciente} className="space-y-4">
@@ -728,56 +748,88 @@ export default function PanelPersonal() {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Teléfono</label>
-                  <input 
-                    type="text" 
-                    placeholder="Número de contacto" 
-                    value={formPaciente.telefono}
-                    onChange={e => setFormPaciente({...formPaciente, telefono: e.target.value})}
-                    className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
-                  />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Teléfono</label>
+                    <input 
+                      type="text" 
+                      placeholder="Número de contacto" 
+                      value={formPaciente.telefono}
+                      onChange={e => setFormPaciente({...formPaciente, telefono: e.target.value})}
+                      className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Contraseña Asignada</label>
+                    <input 
+                      type="password" 
+                      placeholder="••••••••" 
+                      value={formPaciente.clave}
+                      onChange={e => setFormPaciente({...formPaciente, clave: e.target.value})}
+                      className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none"
+                      required 
+                    />
+                  </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Correo Electrónico</label>
-                  <input 
-                    type="email" 
-                    placeholder="ejemplo@paciente.com" 
-                    value={formPaciente.correo}
-                    onChange={e => setFormPaciente({...formPaciente, correo: e.target.value})}
-                    className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
-                  />
-                </div>
+                {/* CASILLA INTELIGENTE: CREAR ORDEN AL INSTANTE */}
+                <div className="pt-3 border-t border-slate-100">
+                  <label className="flex items-center gap-2 cursor-pointer select-none mb-3">
+                    <input 
+                      type="checkbox" 
+                      checked={formPaciente.crear_orden}
+                      onChange={e => setFormPaciente({...formPaciente, crear_orden: e.target.checked})}
+                      className="w-4 h-4 text-red-800 rounded focus:ring-red-500 cursor-pointer"
+                    />
+                    <span className="text-xs font-bold text-slate-800">📋 Generar Orden de Examen Inicial de una vez</span>
+                  </label>
 
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Contraseña Asignada</label>
-                  <input 
-                    type="password" 
-                    placeholder="••••••••" 
-                    value={formPaciente.clave}
-                    onChange={e => setFormPaciente({...formPaciente, clave: e.target.value})}
-                    className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
-                    required 
-                  />
+                  {formPaciente.crear_orden && (
+                    <div className="p-4 bg-red-50/50 border border-red-100 rounded-xl space-y-3">
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-600 uppercase mb-1">Tipo de Examen</label>
+                        <select 
+                          value={formPaciente.tipo_examen}
+                          onChange={e => setFormPaciente({...formPaciente, tipo_examen: e.target.value})}
+                          className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-lg cursor-pointer"
+                        >
+                          <option value="Tomografías y/o Radiografías">Tomografías y/o Radiografías</option>
+                          <option value="Informe Médico">Informe Médico</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-600 uppercase mb-1">Título / Estudio Solicitado</label>
+                        <input 
+                          type="text" 
+                          placeholder="Ej: Radiografía Panorámica / Tórax AP" 
+                          value={formPaciente.titulo}
+                          onChange={e => setFormPaciente({...formPaciente, titulo: e.target.value})}
+                          className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-lg"
+                          required={formPaciente.crear_orden}
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <button 
                   type="submit" 
                   className="w-full py-3 bg-red-800 hover:bg-red-950 text-white text-xs font-semibold rounded-xl shadow-md transition-all cursor-pointer mt-2"
                 >
-                  Guardar Paciente
+                  {formPaciente.crear_orden ? 'Guardar Paciente y Enviar Orden' : 'Guardar Solo Paciente'}
                 </button>
               </form>
             </div>
           )}
 
-          {/* VISTA: SUBIR RESULTADO */}
+          {/* VISTA: CREAR ORDEN / SUBIR RESULTADO */}
           {seccion === 'subir-estudio' && (
             <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm max-w-xl mx-auto">
               <div className="mb-6 pb-4 border-b border-slate-100">
-                <h2 className="text-lg font-bold text-slate-900">Cargar Resultado Médico</h2>
-                <p className="text-xs text-slate-500 mt-0.5">Busca al paciente por nombre o cédula para asociar el examen.</p>
+                <h2 className="text-lg font-bold text-slate-900">Crear Orden o Cargar Resultado</h2>
+                <p className="text-xs text-slate-500 mt-0.5">Selecciona un paciente registrado para enviarlo a la bandeja de pendientes o adjuntar archivos directamente.</p>
               </div>
 
               <form onSubmit={handleGuardarEstudio} className="space-y-4">
@@ -837,10 +889,8 @@ export default function PanelPersonal() {
                     onChange={e => setTipoExamen(e.target.value)}
                     className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 cursor-pointer"
                   >
+                    <option value="Tomografías y/o Radiografías">Tomografías y/o Radiografías</option>
                     <option value="Informe Médico">Informe Médico</option>
-                    {(usuarioLogueado?.rol === 'tecnico' || usuarioLogueado?.rol === 'secretaria' || esSuperAdmin) && (
-                      <option value="Tomografías y/o Radiografías">Tomografías y/o Radiografías</option>
-                    )}
                   </select>
                 </div>
 
@@ -860,7 +910,7 @@ export default function PanelPersonal() {
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
-                    Archivos de Examen (Selección Múltiple Acumulativa)
+                    Archivos de Examen <span className="text-[10px] text-slate-400 font-normal">(Opcional si solo deseas enviar la orden al técnico)</span>
                   </label>
                   
                   <div className="flex items-center gap-2">
@@ -1406,9 +1456,9 @@ export default function PanelPersonal() {
           }`}
         >
           <svg className="w-5 h-5 mb-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
           </svg>
-          <span className="text-[10px]">Cargar</span>
+          <span className="text-[10px]">Crear Orden</span>
         </button>
 
         {/* BOTÓN ESTUDIOS PENDIENTES (MÓVIL) */}
