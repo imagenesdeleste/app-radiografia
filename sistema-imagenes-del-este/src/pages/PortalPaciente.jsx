@@ -6,7 +6,6 @@ export default function PortalPaciente() {
   const [datosPaciente, setDatosPaciente] = useState(null);
   const [estudios, setEstudios] = useState([]);
   const [error, setError] = useState('');
-  const [mostrarClave, setMostrarClave] = useState(false);
 
   // Estados para acordeones anidados y vista previa
   const [fechaAbierta, setFechaAbierta] = useState(null);
@@ -95,24 +94,14 @@ export default function PortalPaciente() {
 
               <div>
                 <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Contraseña</label>
-                <div className="relative">
-                  <input 
-                    type={mostrarClave ? 'text' : 'password'} 
-                    placeholder="••••••••" 
-                    value={clave}
-                    onChange={e => setClave(e.target.value)}
-                    className="w-full pl-4 pr-10 py-3 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all placeholder:text-slate-400"
-                    required 
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setMostrarClave(!mostrarClave)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer text-sm select-none"
-                    title={mostrarClave ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-                  >
-                    {mostrarClave ? '🙈' : '👁️'}
-                  </button>
-                </div>
+                <input 
+                  type="password" 
+                  placeholder="••••••••" 
+                  value={clave}
+                  onChange={e => setClave(e.target.value)}
+                  className="w-full px-4 py-3 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all placeholder:text-slate-400"
+                  required 
+                />
               </div>
 
               <button 
