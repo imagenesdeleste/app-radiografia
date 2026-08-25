@@ -51,7 +51,7 @@ export default function PanelPersonal() {
   const [titulo, setTitulo] = useState('');
   const [archivos, setArchivos] = useState([]);
 
-  // 8. Gestión de Usuarios de la tabla PERSONA (SuperAdmin)
+  // 8. Gestión de Usuarios (SuperAdmin)
   const [usuariosPersonal, setUsuariosPersonal] = useState([]);
   const [cargandoUsuarios, setCargandoUsuarios] = useState(false);
   const [formNuevoUsuario, setFormNuevoUsuario] = useState({
@@ -61,6 +61,7 @@ export default function PanelPersonal() {
     rol: 'tecnico'
   });
 
+  // CARGAR PACIENTES
   const cargarPacientes = async () => {
     try {
       const res = await fetch('https://app-radiografia-production.up.railway.app/api/pacientes');
@@ -71,6 +72,7 @@ export default function PanelPersonal() {
     }
   };
 
+  // CARGAR USUARIOS
   const cargarUsuariosPersonal = async () => {
     setCargandoUsuarios(true);
     try {
@@ -84,16 +86,30 @@ export default function PanelPersonal() {
     }
   };
 
+  // CARGAR ESTUDIOS PENDIENTES
+  const cargarEstudiosPendientes = async () => {
+    try {
+      const res = await fetch('https://app-radiografia-production.up.railway.app/api/estudios/pendientes');
+      const data = await res.json();
+      if (Array.isArray(data)) setEstudiosPendientes(data);
+    } catch (e) {
+      console.error("Error al obtener pendientes", e);
+    }
+  };
+
   useEffect(() => {
     if (autenticado) {
       cargarPacientes();
       if (seccion === 'gestion-usuarios' && esSuperAdmin) {
         cargarUsuariosPersonal();
       }
+      if (seccion === 'estudios-pendientes') {
+        cargarEstudiosPendientes();
+      }
     }
   }, [autenticado, seccion]);
 
-  // Manejo de Selección Acumulativa de Archivos
+  // Selección Acumulativa de Archivos
   const handleArchivosChange = (e) => {
     if (e.target.files.length > 0) {
       const nuevosArchivos = Array.from(e.target.files);
@@ -381,7 +397,7 @@ export default function PanelPersonal() {
     p.nombre_completo.toLowerCase().includes(busquedaPacienteSubida.toLowerCase())
   );
 
-  /* LOGIN ADMINISTRATIVO */
+  /* LOGIN ADMINISTRATIVO CON OJITO */
   if (!autenticado) {
     return (
       <div className="min-h-screen bg-rose-950 flex flex-col justify-center items-center p-4 font-sans">
@@ -878,32 +894,128 @@ export default function PanelPersonal() {
             </div>
           )}
 
-          {/* VISTA: ESTUDIOS PENDIENTES */}
+          {/* VISTA: ESTUDIOS PENDIENTES CON FLUJO POR ROL */}
           {seccion === 'estudios-pendientes' && (
             <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
               <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-100">
                 <div>
-                  <h2 className="text-lg font-bold text-slate-900">Estudios Pendientes</h2>
-                  <p className="text-xs text-slate-500 mt-0.5">Listado de exámenes pendientes por procesar o revisar.</p>
+                  <h2 className="text-lg font-bold text-slate-900">Bandeja de Estudios Pendientes</h2>
+                  <p className="text-xs text-slate-500 mt-0.5">Seguimiento de exámenes por procesar o informar.</p>
                 </div>
-                <span className="px-3 py-1 bg-amber-100 text-amber-800 text-xs font-bold rounded-xl">
-                  {estudiosPendientes.length} pendientes
-                </span>
+                <button 
+                  onClick={cargarEstudiosPendientes}
+                  className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition-all cursor-pointer"
+                >
+                  🔄 Actualizar
+                </button>
               </div>
 
               {estudiosPendientes.length === 0 ? (
-                <p className="text-xs text-center text-slate-400 py-10">No hay estudios pendientes por el momento.</p>
+                <div className="text-center py-12 text-slate-400">
+                  <p className="text-xs">🎉 ¡Todo al día! No hay estudios pendientes.</p>
+                </div>
               ) : (
                 <div className="space-y-3">
-                  {estudiosPendientes.map((est) => (
-                    <div key={est.id} className="p-4 border border-slate-200 rounded-xl bg-slate-50 flex justify-between items-center">
-                      <div>
-                        <h4 className="text-xs font-bold text-slate-800">{est.titulo || 'Estudio sin título'}</h4>
-                        <p className="text-[11px] text-slate-500">Paciente: {est.paciente_nombre || 'N/A'}</p>
+                  {estudiosPendientes.map((est) => {
+                    const esMiTurnoTecnico = usuarioLogueado?.rol === 'tecnico' && est.estado === 'pendiente_tecnico';
+                    const esMiTurnoMedico = usuarioLogueado?.rol === 'medico' && est.estado === 'pendiente_medico';
+
+                    return (
+                      <div key={est.id} className="p-4 border border-slate-200 rounded-2xl bg-slate-50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-red-100 text-red-800">
+                              {est.tipo_examen}
+                            </span>
+                            
+                            {/* BADGES DE ESTADO */}
+                            {est.estado === 'pendiente_tecnico' && (
+                              <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-amber-100 text-amber-800">
+                                ⌛ Esperando Placas (Técnico)
+                              </span>
+                            )}
+                            {est.estado === 'pendiente_medico' && (
+                              <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-blue-100 text-blue-800">
+                                🩺 Esperando Informe (Médico)
+                              </span>
+                            )}
+                          </div>
+
+                          <h4 className="text-sm font-bold text-slate-900">{est.titulo}</h4>
+                          <p className="text-xs text-slate-600">Paciente: <strong>{est.paciente_nombre}</strong> (C.I: {est.paciente_cedula})</p>
+                          <span className="text-[10px] text-slate-400">Fecha de orden: {new Date(est.fecha_estudio).toLocaleDateString()}</span>
+                        </div>
+
+                        {/* ACCIONES SEGÚN EL ROL */}
+                        <div className="flex items-center gap-2">
+                          
+                          {/* SI EL TÉCNICO DEBE SUBIR LA IMAGEN */}
+                          {(esMiTurnoTecnico || esSuperAdmin) && (
+                            <button
+                              onClick={() => {
+                                const input = document.createElement('input');
+                                input.type = 'file';
+                                input.multiple = true;
+                                input.onchange = async (e) => {
+                                  const files = Array.from(e.target.files);
+                                  if (files.length === 0) return;
+                                  
+                                  const formData = new FormData();
+                                  files.forEach(f => formData.append('archivos', f));
+
+                                  const res = await fetch(`https://app-radiografia-production.up.railway.app/api/estudios/${est.id}/cargar-imagenes`, {
+                                    method: 'PUT',
+                                    body: formData
+                                  });
+
+                                  if (res.ok) {
+                                    alert('¡Imágenes subidas! Orden enviada al médico.');
+                                    cargarEstudiosPendientes();
+                                  }
+                                };
+                                input.click();
+                              }}
+                              className="px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-xl shadow-sm transition-all cursor-pointer"
+                            >
+                              📸 Subir Placas / Radiografía
+                            </button>
+                          )}
+
+                          {/* SI EL MÉDICO DEBE SUBIR EL INFORME */}
+                          {(esMiTurnoMedico || esSuperAdmin) && (
+                            <button
+                              onClick={() => {
+                                const input = document.createElement('input');
+                                input.type = 'file';
+                                input.onchange = async (e) => {
+                                  const file = e.target.files[0];
+                                  if (!file) return;
+
+                                  const formData = new FormData();
+                                  formData.append('archivos', file);
+
+                                  const res = await fetch(`https://app-radiografia-production.up.railway.app/api/estudios/${est.id}/cargar-informe`, {
+                                    method: 'PUT',
+                                    body: formData
+                                  });
+
+                                  if (res.ok) {
+                                    alert('¡Informe adjuntado! Examen finalizado.');
+                                    cargarEstudiosPendientes();
+                                  }
+                                };
+                                input.click();
+                              }}
+                              className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl shadow-sm transition-all cursor-pointer"
+                            >
+                              📝 Adjuntar Informe Médico
+                            </button>
+                          )}
+
+                        </div>
                       </div>
-                      <span className="text-xs font-semibold text-amber-600 bg-amber-50 px-2.5 py-1 rounded-lg">Pendiente</span>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>

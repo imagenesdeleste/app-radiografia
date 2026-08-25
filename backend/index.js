@@ -572,20 +572,87 @@ app.post('/api/estudios/pendiente', async (req, res) => {
 });
 
 // 2. TÉCNICOS / MÉDICOS: Obtener lista de estudios pendientes
+// 1. OBTENER ESTUDIOS PENDIENTES (Con información del paciente)
 app.get('/api/estudios/pendientes', async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT e.id, e.paciente_id, e.tipo_examen, e.titulo, e.fecha_estudio,
+      SELECT e.id, e.tipo_examen, e.titulo, e.fecha_estudio, e.estado, e.ruta_archivo,
              p.nombre_completo AS paciente_nombre, p.cedula AS paciente_cedula
       FROM estudios e
       JOIN pacientes p ON e.paciente_id = p.id
-      WHERE e.estado = 'pendiente'
+      WHERE e.estado != 'completado'
       ORDER BY e.fecha_estudio DESC
     `);
     res.json(result.rows);
-  } catch (err) {
-    console.error('🔥 Error al obtener estudios pendientes:', err.message);
-    res.status(500).json({ error: err.message });
+  } catch (error) {
+    console.error('Error al obtener pendientes:', error);
+    res.status(500).json({ error: 'Error al consultar pendientes' });
+  }
+});
+
+// 2. SECRETARÍA: CREAR ORDEN DE ESTUDIO (Estado: pendiente_tecnico)
+app.post('/api/estudios/crear-orden', async (req, res) => {
+  try {
+    const { paciente_id, tipo_examen, titulo } = req.body;
+
+    await pool.query(
+      'INSERT INTO estudios (paciente_id, tipo_examen, titulo, fecha_estudio, estado) VALUES ($1, $2, $3, NOW(), $4)',
+      [paciente_id, tipo_examen, titulo, 'pendiente_tecnico']
+    );
+
+    res.json({ mensaje: 'Orden de examen creada para el técnico' });
+  } catch (error) {
+    console.error('Error al crear orden:', error);
+    res.status(500).json({ error: 'Error al registrar orden' });
+  }
+});
+
+// 3. TÉCNICO: CARGAR IMÁGENES/PLACAS (Pasa a: pendiente_medico)
+app.put('/api/estudios/:id/cargar-imagenes', upload.array('archivos'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ error: 'Debes adjuntar al menos una imagen' });
+    }
+
+    const rutas = req.files.map(f => f.filename || f.path).join(',');
+
+    await pool.query(
+      'UPDATE estudios SET ruta_archivo = $1, estado = $2 WHERE id = $3',
+      [rutas, 'pendiente_medico', id]
+    );
+
+    res.json({ mensaje: 'Imágenes cargadas. Orden enviada al médico.' });
+  } catch (error) {
+    console.error('Error al cargar imágenes:', error);
+    res.status(500).json({ error: 'Error al actualizar estudio' });
+  }
+});
+
+// 4. MÉDICO: CARGAR INFORME Y COMPLETAR (Pasa a: completado)
+app.put('/api/estudios/:id/cargar-informe', upload.array('archivos'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ error: 'Debes adjuntar el informe en PDF o imagen' });
+    }
+
+    // Obtenemos archivos previos (imágenes del técnico) para conservar todo en la columna
+    const estudioActual = await pool.query('SELECT ruta_archivo FROM estudios WHERE id = $1', [id]);
+    const archivosPrevios = estudioActual.rows[0]?.ruta_archivo || '';
+    
+    const nuevasRutas = req.files.map(f => f.filename || f.path).join(',');
+    const rutasTotales = archivosPrevios ? `${archivosPrevios},${nuevasRutas}` : nuevasRutas;
+
+    await pool.query(
+      'UPDATE estudios SET ruta_archivo = $1, estado = $2 WHERE id = $3',
+      [rutasTotales, 'completado', id]
+    );
+
+    res.json({ mensaje: 'Informe médico adjuntado. Examen completado.' });
+  } catch (error) {
+    console.error('Error al cargar informe:', error);
+    res.status(500).json({ error: 'Error al finalizar estudio' });
   }
 });
 
