@@ -550,6 +550,101 @@ app.put('/api/admin/usuarios/:id/rol', async (req, res) => {
   }
 });
 
+// 1. SECRETARÍA / SUPERADMIN: Crear orden de estudio pendiente
+app.post('/api/estudios/pendiente', async (req, res) => {
+  const { paciente_id, tipo_examen, titulo } = req.body;
+
+  if (!paciente_id || !tipo_examen || !titulo) {
+    return res.status(400).json({ error: 'Todos los campos son obligatorios' });
+  }
+
+  try {
+    const result = await pool.query(
+      `INSERT INTO estudios (paciente_id, tipo_examen, titulo, estado) 
+       VALUES ($1, $2, $3, 'pendiente') RETURNING *`,
+      [paciente_id, tipo_examen, titulo]
+    );
+    res.status(201).json({ mensaje: 'Estudio asignado con éxito', estudio: result.rows[0] });
+  } catch (err) {
+    console.error('🔥 Error al asignar estudio:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 2. TÉCNICOS / MÉDICOS: Obtener lista de estudios pendientes
+app.get('/api/estudios/pendientes', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT e.id, e.paciente_id, e.tipo_examen, e.titulo, e.fecha_estudio,
+             p.nombre_completo AS paciente_nombre, p.cedula AS paciente_cedula
+      FROM estudios e
+      JOIN pacientes p ON e.paciente_id = p.id
+      WHERE e.estado = 'pendiente'
+      ORDER BY e.fecha_estudio DESC
+    `);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('🔥 Error al obtener estudios pendientes:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 3. TÉCNICO / MÉDICO / SUPERADMIN: Adjuntar resultados y completar la orden
+app.put('/api/estudios/:id/completar', upload.array('archivos'), async (req, res) => {
+  const { id } = req.params;
+  const { notificar_correo } = req.body;
+
+  if (!req.files || req.files.length === 0) {
+    return res.status(400).json({ error: 'Debes adjuntar al menos un archivo' });
+  }
+
+  try {
+    // Actualiza la orden pendiente asignando el archivo y cambiando el estado a completado
+    for (let i = 0; i < req.files.length; i++) {
+      const file = req.files[i];
+
+      if (i === 0) {
+        await pool.query(
+          `UPDATE estudios 
+           SET archivo_path = $1, estado = 'completado', fecha_estudio = NOW() 
+           WHERE id = $2`,
+          [file.filename, id]
+        );
+      } else {
+        // Si subió más de un archivo para la misma orden, creamos registros completados adicionales
+        const ordenBase = await pool.query('SELECT paciente_id, tipo_examen FROM estudios WHERE id = $1', [id]);
+        const { paciente_id, tipo_examen } = ordenBase.rows[0];
+
+        await pool.query(
+          `INSERT INTO estudios (paciente_id, tipo_examen, titulo, archivo_path, estado) 
+           VALUES ($1, $2, $3, $4, 'completado')`,
+          [paciente_id, tipo_examen, file.originalname, file.filename]
+        );
+      }
+    }
+
+    res.json({ mensaje: 'Resultados cargados y orden completada con éxito' });
+
+    // Notificación en segundo plano si aplica
+    if (String(notificar_correo) === 'true') {
+      const pacienteQuery = await pool.query(
+        `SELECT p.correo, p.nombre_completo, e.tipo_examen, e.titulo 
+         FROM estudios e JOIN pacientes p ON e.paciente_id = p.id WHERE e.id = $1`,
+        [id]
+      );
+
+      if (pacienteQuery.rows.length > 0 && pacienteQuery.rows[0].correo) {
+        const { correo, nombre_completo, tipo_examen, titulo } = pacienteQuery.rows[0];
+        enviarCorreoPaciente(correo, nombre_completo, tipo_examen, titulo).catch(console.error);
+      }
+    }
+
+  } catch (err) {
+    console.error('🔥 Error al completar estudio:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // =============================================================
 // 5. INICIAR SERVIDOR
 // =============================================================

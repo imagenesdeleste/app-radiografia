@@ -60,6 +60,31 @@ export default function PanelPersonal() {
     rol: 'tecnico'
   });
 
+  const handleAsignarOrden = async (e) => {
+  e.preventDefault();
+  if (!pacienteSeleccionadoSubida) return alert('Selecciona un paciente');
+
+  try {
+    const res = await fetch('https://app-radiografia-production.up.railway.app/api/estudios/pendiente', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        paciente_id: pacienteSeleccionadoSubida.id,
+        tipo_examen: tipoExamen,
+        titulo: titulo
+      })
+    });
+
+    if (res.ok) {
+      alert('¡Orden de estudio asignada correctamente!');
+      setTitulo('');
+      setPacienteSeleccionadoSubida(null);
+    }
+  } catch (e) {
+    console.error(e);
+  }
+};
+
   const cargarPacientes = async () => {
     try {
       const res = await fetch('https://app-radiografia-production.up.railway.app/api/pacientes');
@@ -502,6 +527,33 @@ export default function PanelPersonal() {
               </svg>
               <span>Pacientes ({pacientes.length})</span>
             </button>
+
+            {/* SECCIÓN: ESTUDIOS PENDIENTES DE CARGA */}
+            <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm mb-6">
+              <h3 className="text-base font-bold text-slate-900 mb-1">Órdenes Pendientes por Cargar</h3>
+              <p className="text-xs text-slate-500 mb-4">Selecciona una orden asignada por Secretaría para subir sus archivos.</p>
+
+              <div className="space-y-2">
+                {estudiosPendientes.map((orden) => (
+                  <div key={orden.id} className="p-3 border border-amber-200 bg-amber-50/50 rounded-xl flex items-center justify-between">
+                    <div>
+                      <span className="inline-block px-2 py-0.5 text-[9px] font-bold text-amber-800 bg-amber-100 rounded mb-1">
+                        {orden.tipo_examen}
+                      </span>
+                      <h5 className="text-xs font-bold text-slate-800">{orden.paciente_nombre} (C.I: {orden.paciente_cedula})</h5>
+                      <p className="text-[11px] text-slate-600">{orden.titulo}</p>
+                    </div>
+
+                    <button
+                      onClick={() => seleccionarOrdenParaCargar(orden)}
+                      className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg cursor-pointer"
+                    >
+                      📤 Cargar Resultado
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
 
             {(usuarioLogueado?.rol === 'secretaria' || esSuperAdmin) && (
               <button
