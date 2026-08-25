@@ -391,8 +391,8 @@ export default function PanelPersonal() {
                 className="w-full h-full object-contain drop-shadow-sm" 
               />
             </div>
-            <h2 className="text-lg font-bold text-slate-900">Acceso Personal</h2>
-            <p className="text-xs text-slate-400">Ingresa con tus credenciales de personal</p>
+            <h2 className="text-lg font-bold text-slate-900">Acceso Administrativo</h2>
+            <p className="text-xs text-slate-400">Ingresa con tus credenciales</p>
           </div>
 
           <form onSubmit={handleAdminLogin} className="space-y-4">

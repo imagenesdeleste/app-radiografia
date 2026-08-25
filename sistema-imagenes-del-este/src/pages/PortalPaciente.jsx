@@ -69,7 +69,7 @@ export default function PortalPaciente() {
             className="w-full h-full object-contain drop-shadow-sm" 
           />
         </div>
-        <p className="text-xs text-slate-400 uppercase tracking-widest mt-0.5">Bienvenido Estimado Paciente</p>
+        <p className="text-xl text-black uppercase tracking-widest mt-0.5">Bienvenido Estimado Paciente</p>
       </header>
 
       {/* CONTENIDO PRINCIPAL */}
