@@ -249,45 +249,41 @@ export default function PanelPersonal() {
     }
   };
 
-  const handleGuardarEstudio = async (e) => {
-    e.preventDefault();
-    if (!pacienteSeleccionadoSubida) {
-      return alert('Selecciona un paciente de la lista');
-    }
+  // FUNCIONES PARA CREAR ORDEN Y SUBIR ARCHIVOS
+  const handleCrearOrdenSinArchivos = async () => {
+    if (!pacienteSeleccionadoSubida) return alert('Selecciona un paciente de la lista');
+    if (!titulo.trim()) return alert('Ingresa el título del estudio');
 
-    // 1. Si es Secretaría o SuperAdmin y NO adjuntó archivos -> Crear orden inicial sin archivos
-    if ((usuarioLogueado?.rol === 'secretaria' || esSuperAdmin) && archivos.length === 0) {
-      try {
-        const res = await fetch('https://app-radiografia-production.up.railway.app/api/estudios/crear-orden', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            paciente_id: pacienteSeleccionadoSubida.id,
-            tipo_examen: tipoExamen,
-            titulo: titulo
-          })
-        });
+    try {
+      const res = await fetch('https://app-radiografia-production.up.railway.app/api/estudios/crear-orden', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          paciente_id: pacienteSeleccionadoSubida.id,
+          tipo_examen: tipoExamen,
+          titulo: titulo
+        })
+      });
 
-        if (res.ok) {
-          alert('¡Orden de examen creada! Ya le aparece al técnico en sus pendientes.');
-          setTitulo('');
-          setPacienteSeleccionadoSubida(null);
-          setBusquedaPacienteSubida('');
-          cargarEstudiosPendientes();
-        } else {
-          alert('Error al crear la orden');
-        }
-      } catch (e) {
-        console.error('Error:', e);
-        alert('Error de conexión con el servidor');
+      if (res.ok) {
+        alert('¡Orden de examen creada! Ya le aparece al técnico en sus pendientes.');
+        setTitulo('');
+        setPacienteSeleccionadoSubida(null);
+        setBusquedaPacienteSubida('');
+        cargarEstudiosPendientes();
+      } else {
+        alert('Error al crear la orden');
       }
-      return;
+    } catch (e) {
+      console.error('Error:', e);
+      alert('Error de conexión con el servidor');
     }
+  };
 
-    // 2. Carga directa con archivos
-    if (archivos.length === 0) {
-      return alert('Debes adjuntar al menos un archivo para subir el estudio.');
-    }
+  const handleSubirEstudioConArchivos = async () => {
+    if (!pacienteSeleccionadoSubida) return alert('Selecciona un paciente de la lista');
+    if (!titulo.trim()) return alert('Ingresa el título del estudio');
+    if (archivos.length === 0) return alert('Debes adjuntar al menos un archivo para subir el estudio.');
 
     const formData = new FormData();
     formData.append('paciente_id', pacienteSeleccionadoSubida.id);
@@ -311,12 +307,22 @@ export default function PanelPersonal() {
         handleLimpiarArchivos();
         setPacienteSeleccionadoSubida(null);
         setBusquedaPacienteSubida('');
+        cargarEstudiosPendientes();
       } else {
         alert('Error al subir los archivos');
       }
     } catch (error) {
       console.error('Error al conectar:', error);
       alert('Error de conexión con el servidor');
+    }
+  };
+
+  const handleGuardarEstudio = (e) => {
+    e.preventDefault();
+    if (archivos.length > 0) {
+      handleSubirEstudioConArchivos();
+    } else {
+      handleCrearOrdenSinArchivos();
     }
   };
 
@@ -452,7 +458,7 @@ export default function PanelPersonal() {
       <div className="min-h-screen bg-rose-950 flex flex-col justify-center items-center p-4 font-sans">
         <div className="w-full max-w-sm bg-white border border-slate-800 rounded-2xl p-6 shadow-2xl">
           <div className="text-center mb-6">
-            <div className="w-50 h-50 mx-auto mb-3 flex items-center justify-center">
+            <div className="w-24 h-24 mx-auto mb-3 flex items-center justify-center">
               <img 
                 src="/logo.png" 
                 alt="Logo Unidad de Imágenes" 
@@ -524,7 +530,7 @@ export default function PanelPersonal() {
       <aside className="hidden md:flex w-64 bg-red-950 text-slate-300 flex-col justify-between p-4 shrink-0 shadow-xl">
         <div>
           <div className="flex items-center space-x-3 px-2 py-4 mb-6 border-b border-slate-800">
-            <div className="w-25 h-25 flex items-center justify-center shrink-0">
+            <div className="w-16 h-16 flex items-center justify-center shrink-0">
               <img 
                 src="/logo.png" 
                 alt="Logo Unidad de Imágenes" 
@@ -715,7 +721,7 @@ export default function PanelPersonal() {
             </div>
           )}
 
-          {/* VISTA: CREAR PACIENTE (INCLUYE CAMPO CORREO Y ORDEN OPCIONAL) */}
+          {/* VISTA: CREAR PACIENTES */}
           {seccion === 'crear-paciente' && (usuarioLogueado?.rol === 'secretaria' || esSuperAdmin) && (
             <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm max-w-xl mx-auto">
               <div className="mb-6 pb-4 border-b border-slate-100">
@@ -748,7 +754,6 @@ export default function PanelPersonal() {
                   />
                 </div>
 
-                {/* TELÉFONO Y CORREO ELECTRÓNICO */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Teléfono</label>
@@ -785,7 +790,6 @@ export default function PanelPersonal() {
                   />
                 </div>
 
-                {/* CASILLA INTELIGENTE: CREAR ORDEN AL INSTANTE */}
                 <div className="pt-3 border-t border-slate-100">
                   <label className="flex items-center gap-2 cursor-pointer select-none mb-3">
                     <input 
@@ -974,22 +978,40 @@ export default function PanelPersonal() {
                   )}
                 </div>
 
-                <button 
-                  type="submit" 
-                  className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shadow-md transition-all cursor-pointer mt-2"
-                >
-                  {usuarioLogueado?.rol === 'secretaria' && archivos.length === 0 
-                    ? '📋 Crear Orden para el Técnico' 
-                    : usuarioLogueado?.rol === 'tecnico' 
-                    ? 'Subir Resultado' 
-                    : 'Subir y Notificar'}
-                </button>
+                {/* BOTONES DE ACCIÓN */}
+                {(usuarioLogueado?.rol === 'secretaria' || esSuperAdmin) ? (
+                  <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
+                    <button 
+                      type="button" 
+                      onClick={handleCrearOrdenSinArchivos}
+                      className="w-full sm:w-1/2 py-3 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-xl shadow-md transition-all cursor-pointer"
+                    >
+                      📋 Crear Orden (Para el Técnico)
+                    </button>
+
+                    <button 
+                      type="button" 
+                      onClick={handleSubirEstudioConArchivos}
+                      className="w-full sm:w-1/2 py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shadow-md transition-all cursor-pointer"
+                    >
+                      📤 Subir y Notificar
+                    </button>
+                  </div>
+                ) : (
+                  <button 
+                    type="button" 
+                    onClick={handleSubirEstudioConArchivos}
+                    className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shadow-md transition-all cursor-pointer mt-2"
+                  >
+                    📸 Subir Resultado
+                  </button>
+                )}
 
               </form>
             </div>
           )}
 
-          {/* VISTA: ESTUDIOS PENDIENTES CON FLUJO POR ROL */}
+          {/* VISTA: ESTUDIOS PENDIENTES */}
           {seccion === 'estudios-pendientes' && (
             <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
               <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-100">
@@ -1023,7 +1045,6 @@ export default function PanelPersonal() {
                               {est.tipo_examen}
                             </span>
                             
-                            {/* BADGES DE ESTADO */}
                             {est.estado === 'pendiente_tecnico' && (
                               <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-amber-100 text-amber-800">
                                 ⌛ Esperando Placas (Técnico)
@@ -1041,10 +1062,7 @@ export default function PanelPersonal() {
                           <span className="text-[10px] text-slate-400">Fecha de orden: {new Date(est.fecha_estudio).toLocaleDateString()}</span>
                         </div>
 
-                        {/* ACCIONES SEGÚN EL ROL */}
                         <div className="flex items-center gap-2">
-                          
-                          {/* SI EL TÉCNICO DEBE SUBIR LA IMAGEN */}
                           {(esMiTurnoTecnico || esSuperAdmin) && (
                             <button
                               onClick={() => {
@@ -1076,7 +1094,6 @@ export default function PanelPersonal() {
                             </button>
                           )}
 
-                          {/* SI EL MÉDICO DEBE SUBIR EL INFORME */}
                           {(esMiTurnoMedico || esSuperAdmin) && (
                             <button
                               onClick={() => {
@@ -1106,7 +1123,6 @@ export default function PanelPersonal() {
                               📝 Adjuntar Informe Médico
                             </button>
                           )}
-
                         </div>
                       </div>
                     );
@@ -1116,11 +1132,9 @@ export default function PanelPersonal() {
             </div>
           )}
 
-          {/* VISTA: GESTIÓN Y CREACIÓN DE USUARIOS DEL PERSONAL (SUPERADMIN) */}
+          {/* VISTA: GESTIÓN DE USUARIOS */}
           {seccion === 'gestion-usuarios' && esSuperAdmin && (
             <div className="space-y-6">
-              
-              {/* FORMULARIO: REGISTRAR NUEVO USUARIO EN TABLA PERSONA */}
               <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm max-w-2xl mx-auto">
                 <div className="mb-4 pb-3 border-b border-slate-100">
                   <h2 className="text-base font-bold text-slate-900">Registrar Nuevo Usuario del Personal</h2>
@@ -1189,7 +1203,6 @@ export default function PanelPersonal() {
                 </form>
               </div>
 
-              {/* TABLA: DIRECTORIO DE PERSONA, ROLES Y ACCIONES */}
               <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
                 <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
                   <div>
@@ -1233,7 +1246,6 @@ export default function PanelPersonal() {
                               </span>
                             </td>
                             <td className="py-3 px-2 text-right space-x-1.5">
-                              {/* CAMBIAR ROL */}
                               <select 
                                 value={u.rol}
                                 onChange={(e) => handleCambiarRol(u.id, e.target.value)}
@@ -1245,7 +1257,6 @@ export default function PanelPersonal() {
                                 <option value="superadmin">SuperAdmin</option>
                               </select>
 
-                              {/* CAMBIAR CLAVE */}
                               <button
                                 type="button"
                                 onClick={() => handleCambiarClaveUsuarioPersonal(u.id)}
@@ -1255,7 +1266,6 @@ export default function PanelPersonal() {
                                 🔑
                               </button>
 
-                              {/* ELIMINAR USUARIO */}
                               <button
                                 type="button"
                                 onClick={() => handleEliminarUsuarioPersonal(u.id)}
@@ -1473,7 +1483,6 @@ export default function PanelPersonal() {
           <span className="text-[10px]">Crear Orden</span>
         </button>
 
-        {/* BOTÓN ESTUDIOS PENDIENTES (MÓVIL) */}
         <button
           onClick={() => setSeccion('estudios-pendientes')}
           className={`relative flex flex-col items-center justify-center w-full py-1 cursor-pointer transition-colors ${
