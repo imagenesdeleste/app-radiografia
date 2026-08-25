@@ -9,17 +9,20 @@ export default function PanelPersonal() {
   const [mostrarClaveAdmin, setMostrarClaveAdmin] = useState(false);
   const [errorLogin, setErrorLogin] = useState('');
 
-  // 2. Estados del Panel
+  // 2. Estado de Estudios Pendientes
+  const [estudiosPendientes, setEstudiosPendientes] = useState([]);
+
+  // 3. Estados del Panel
   const [seccion, setSeccion] = useState('pacientes-lista');
   const [pacientes, setPacientes] = useState([]);
   const [busquedaLista, setBusquedaLista] = useState('');
 
-  // 3. Modal de Expediente
+  // 4. Modal de Expediente
   const [pacienteSeleccionado, setPacienteSeleccionado] = useState(null);
   const [estudiosPaciente, setEstudiosPaciente] = useState([]);
   const [cargandoEstudios, setCargandoEstudios] = useState(false);
 
-  // 4. Modal de Editar Paciente
+  // 5. Modal de Editar Paciente
   const [pacienteAEditar, setPacienteAEditar] = useState(null);
   const [formEditPaciente, setFormEditPaciente] = useState({
     cedula: '',
@@ -29,13 +32,10 @@ export default function PanelPersonal() {
     clave: ''
   });
 
-  const [modalPacienteExiste, setModalPacienteExiste] = useState(false);
-  const [estudiosPendientes, setEstudiosPendientes] = useState([]);
-
-  // Super usuario comprobación
+  // Comprobación de SuperAdmin
   const esSuperAdmin = usuarioLogueado?.rol === 'superadmin' || usuarioLogueado?.rol === 'admin';
 
-  // 5. Formulario Crear Paciente
+  // 6. Formulario Crear Paciente
   const [formPaciente, setFormPaciente] = useState({
     cedula: '',
     nombre_completo: '',
@@ -44,14 +44,14 @@ export default function PanelPersonal() {
     clave: ''
   });
 
-  // 6. Formulario Subir Estudio
+  // 7. Formulario Subir Estudio
   const [busquedaPacienteSubida, setBusquedaPacienteSubida] = useState('');
   const [pacienteSeleccionadoSubida, setPacienteSeleccionadoSubida] = useState(null);
   const [tipoExamen, setTipoExamen] = useState('Informe Médico');
   const [titulo, setTitulo] = useState('');
   const [archivos, setArchivos] = useState([]);
 
-  // 7. Gestión de Usuarios (SuperAdmin)
+  // 8. Gestión de Usuarios de la tabla PERSONA (SuperAdmin)
   const [usuariosPersonal, setUsuariosPersonal] = useState([]);
   const [cargandoUsuarios, setCargandoUsuarios] = useState(false);
   const [formNuevoUsuario, setFormNuevoUsuario] = useState({
@@ -60,31 +60,6 @@ export default function PanelPersonal() {
     clave: '',
     rol: 'tecnico'
   });
-
-  const handleAsignarOrden = async (e) => {
-  e.preventDefault();
-  if (!pacienteSeleccionadoSubida) return alert('Selecciona un paciente');
-
-  try {
-    const res = await fetch('https://app-radiografia-production.up.railway.app/api/estudios/pendiente', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        paciente_id: pacienteSeleccionadoSubida.id,
-        tipo_examen: tipoExamen,
-        titulo: titulo
-      })
-    });
-
-    if (res.ok) {
-      alert('¡Orden de estudio asignada correctamente!');
-      setTitulo('');
-      setPacienteSeleccionadoSubida(null);
-    }
-  } catch (e) {
-    console.error(e);
-  }
-};
 
   const cargarPacientes = async () => {
     try {
@@ -118,7 +93,7 @@ export default function PanelPersonal() {
     }
   }, [autenticado, seccion]);
 
-  // Selección acumulativa de archivos
+  // Manejo de Selección Acumulativa de Archivos
   const handleArchivosChange = (e) => {
     if (e.target.files.length > 0) {
       const nuevosArchivos = Array.from(e.target.files);
@@ -220,15 +195,12 @@ export default function PanelPersonal() {
   };
 
   const handleGuardarPaciente = async (e) => {
-  e.preventDefault();
-  try {
+    e.preventDefault();
     const res = await fetch('https://app-radiografia-production.up.railway.app/api/pacientes', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(formPaciente)
     });
-
-    const data = await res.json();
 
     if (res.ok) {
       alert('¡Paciente registrado con éxito!');
@@ -236,18 +208,9 @@ export default function PanelPersonal() {
       cargarPacientes();
       setSeccion('pacientes-lista');
     } else {
-      // Si el servidor indica que ya existe, abrimos el modal
-      if (res.status === 400 || data.error?.includes('registrado')) {
-        setModalPacienteExiste(true);
-      } else {
-        alert(data.error || 'Error al registrar paciente');
-      }
+      alert('Error al registrar paciente');
     }
-  } catch (e) {
-    console.error('Error:', e);
-    alert('Error de conexión con el servidor');
-  }
-};
+  };
 
   const handleGuardarEstudio = async (e) => {
     e.preventDefault();
@@ -277,7 +240,7 @@ export default function PanelPersonal() {
         alert(
           esTecnico
           ? '¡Estudio(s) cargado(s) con éxito en la base de datos!'
-          :'¡Estudio(s) cargado(s) y notificación enviada al paciente!'
+          : '¡Estudio(s) cargado(s) y notificación enviada al paciente!'
         );
         setTitulo('');
         handleLimpiarArchivos();
@@ -305,7 +268,7 @@ export default function PanelPersonal() {
       const data = await res.json();
 
       if (res.ok) {
-        alert('¡Usuario del personal registrado con éxito!');
+        alert('¡Usuario registrado con éxito!');
         setFormNuevoUsuario({ cedula: '', nombre_completo: '', clave: '', rol: 'tecnico' });
         cargarUsuariosPersonal();
       } else {
@@ -418,7 +381,7 @@ export default function PanelPersonal() {
     p.nombre_completo.toLowerCase().includes(busquedaPacienteSubida.toLowerCase())
   );
 
-  /* LOGIN ADMINISTRATIVO CON OJITO */
+  /* LOGIN ADMINISTRATIVO */
   if (!autenticado) {
     return (
       <div className="min-h-screen bg-rose-950 flex flex-col justify-center items-center p-4 font-sans">
@@ -432,7 +395,7 @@ export default function PanelPersonal() {
               />
             </div>
             <h2 className="text-lg font-bold text-slate-900">Acceso Administrativo</h2>
-            <p className="text-xs text-slate-400">Ingresa con tus credenciales</p>
+            <p className="text-xs text-slate-400">Ingresa con tus credenciales de personal</p>
           </div>
 
           <form onSubmit={handleAdminLogin} className="space-y-4">
@@ -471,7 +434,7 @@ export default function PanelPersonal() {
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer text-sm select-none"
                   title={mostrarClaveAdmin ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                 >
-                  {mostrarClaveAdmin ? 'X' : '👁️'}
+                  {mostrarClaveAdmin ? '🙈' : '👁️'}
                 </button>
               </div>
             </div>
@@ -505,7 +468,7 @@ export default function PanelPersonal() {
             </div>
             <div>
               <h2 className="text-sm font-bold text-white leading-tight">{usuarioLogueado?.nombre_completo || 'Panel Interno'}</h2>
-              <p className="text-[11px] text-slate-400">Unidad de Imágenes del este</p>
+              <p className="text-[11px] text-slate-400">Unidad de Imágenes del Este</p>
               {usuarioLogueado?.rol && (
                 <span className="inline-block px-2 py-0.5 mt-1 text-[9px] font-bold uppercase tracking-wider bg-red-900 text-red-200 border border-red-700/50 rounded-md">
                   {usuarioLogueado.rol}
@@ -528,33 +491,6 @@ export default function PanelPersonal() {
               </svg>
               <span>Pacientes ({pacientes.length})</span>
             </button>
-
-            {/* SECCIÓN: ESTUDIOS PENDIENTES DE CARGA */}
-            <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm mb-6">
-              <h3 className="text-base font-bold text-slate-900 mb-1">Órdenes Pendientes por Cargar</h3>
-              <p className="text-xs text-slate-500 mb-4">Selecciona una orden asignada por Secretaría para subir sus archivos.</p>
-
-              <div className="space-y-2">
-                {estudiosPendientes.map((orden) => (
-                  <div key={orden.id} className="p-3 border border-amber-200 bg-amber-50/50 rounded-xl flex items-center justify-between">
-                    <div>
-                      <span className="inline-block px-2 py-0.5 text-[9px] font-bold text-amber-800 bg-amber-100 rounded mb-1">
-                        {orden.tipo_examen}
-                      </span>
-                      <h5 className="text-xs font-bold text-slate-800">{orden.paciente_nombre} (C.I: {orden.paciente_cedula})</h5>
-                      <p className="text-[11px] text-slate-600">{orden.titulo}</p>
-                    </div>
-
-                    <button
-                      onClick={() => seleccionarOrdenParaCargar(orden)}
-                      className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg cursor-pointer"
-                    >
-                      📤 Cargar Resultado
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
 
             {(usuarioLogueado?.rol === 'secretaria' || esSuperAdmin) && (
               <button
@@ -584,6 +520,29 @@ export default function PanelPersonal() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
               </svg>
               <span>Subir Resultado</span>
+            </button>
+
+            {/* BOTÓN ESTUDIOS PENDIENTES */}
+            <button
+              onClick={() => setSeccion('estudios-pendientes')}
+              className={`w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                seccion === 'estudios-pendientes'
+                  ? 'bg-red-800 text-white shadow-lg shadow-red-600/30'
+                  : 'hover:bg-red-900 text-red-200 hover:text-slate-200'
+              }`}
+            >
+              <div className="flex items-center space-x-3">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>Estudios Pendientes</span>
+              </div>
+
+              {estudiosPendientes.length > 0 && (
+                <span className="px-2 py-0.5 text-[10px] font-bold bg-amber-500 text-white rounded-full">
+                  {estudiosPendientes.length}
+                </span>
+              )}
             </button>
 
             {/* BOTÓN SUPERADMIN */}
@@ -842,14 +801,15 @@ export default function PanelPersonal() {
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
-                    Título del estudio
+                    Título del Estudio
                   </label>
                   <input 
                     type="text" 
-                    placeholder="Ej: Radiografía de Tórax AP - Resultados Disponibles" 
+                    placeholder="Ej: Radiografía de Tórax AP" 
                     value={titulo}
-                    onChange={e => setTipoExamen ? setTitulo(e.target.value) : setTitulo(e.target.value)}
+                    onChange={e => setTitulo(e.target.value)}
                     className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
+                    required 
                   />
                 </div>
 
@@ -915,6 +875,37 @@ export default function PanelPersonal() {
                 </button>
 
               </form>
+            </div>
+          )}
+
+          {/* VISTA: ESTUDIOS PENDIENTES */}
+          {seccion === 'estudios-pendientes' && (
+            <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+              <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-100">
+                <div>
+                  <h2 className="text-lg font-bold text-slate-900">Estudios Pendientes</h2>
+                  <p className="text-xs text-slate-500 mt-0.5">Listado de exámenes pendientes por procesar o revisar.</p>
+                </div>
+                <span className="px-3 py-1 bg-amber-100 text-amber-800 text-xs font-bold rounded-xl">
+                  {estudiosPendientes.length} pendientes
+                </span>
+              </div>
+
+              {estudiosPendientes.length === 0 ? (
+                <p className="text-xs text-center text-slate-400 py-10">No hay estudios pendientes por el momento.</p>
+              ) : (
+                <div className="space-y-3">
+                  {estudiosPendientes.map((est) => (
+                    <div key={est.id} className="p-4 border border-slate-200 rounded-xl bg-slate-50 flex justify-between items-center">
+                      <div>
+                        <h4 className="text-xs font-bold text-slate-800">{est.titulo || 'Estudio sin título'}</h4>
+                        <p className="text-[11px] text-slate-500">Paciente: {est.paciente_nombre || 'N/A'}</p>
+                      </div>
+                      <span className="text-xs font-semibold text-amber-600 bg-amber-50 px-2.5 py-1 rounded-lg">Pendiente</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
@@ -1084,7 +1075,7 @@ export default function PanelPersonal() {
       {/* MODAL EXPEDIENTE */}
       {pacienteSeleccionado && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl p-6 max-w-lg w-full shadow-2xl border border-slate-100 animate-fadeIn">
+          <div className="bg-white rounded-2xl p-6 max-w-lg w-full shadow-2xl border border-slate-100">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
               <div>
                 <h3 className="text-base font-bold text-slate-900">{pacienteSeleccionado.nombre_completo}</h3>
@@ -1150,7 +1141,7 @@ export default function PanelPersonal() {
         </div>
       )}
 
-      {/* MODAL PARA EDITAR PACIENTE (CON CAMPO DE CONTRASEÑA OPCIONAL) */}
+      {/* MODAL EDITAR PACIENTE */}
       {pacienteAEditar && (usuarioLogueado?.rol === 'secretaria' || esSuperAdmin) && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-slate-100">
@@ -1275,6 +1266,24 @@ export default function PanelPersonal() {
           <span className="text-[10px]">Cargar</span>
         </button>
 
+        {/* BOTÓN ESTUDIOS PENDIENTES (MÓVIL) */}
+        <button
+          onClick={() => setSeccion('estudios-pendientes')}
+          className={`relative flex flex-col items-center justify-center w-full py-1 cursor-pointer transition-colors ${
+            seccion === 'estudios-pendientes' ? 'text-red-900 font-bold' : 'text-slate-400'
+          }`}
+        >
+          {estudiosPendientes.length > 0 && (
+            <span className="absolute top-0 right-3 w-4 h-4 bg-amber-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+              {estudiosPendientes.length}
+            </span>
+          )}
+          <svg className="w-5 h-5 mb-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span className="text-[10px]">Pendientes</span>
+        </button>
+
         {esSuperAdmin && (
           <button
             onClick={() => setSeccion('gestion-usuarios')}
@@ -1300,33 +1309,6 @@ export default function PanelPersonal() {
         </button>
 
       </div>
-
-      {/* MODAL: PACIENTE YA EXISTE */}
-        {modalPacienteExiste && (
-          <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
-            <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl border border-slate-100 text-center space-y-4">
-              
-              <div className="w-12 h-12 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold">
-                ⚠️
-              </div>
-
-              <div>
-                <h3 className="text-base font-bold text-slate-900">Éste paciente ya está registrado</h3>
-                <p className="text-xs text-slate-500 mt-1">
-                  La cédula <strong className="text-slate-800">{formPaciente.cedula}</strong> ya pertenece a un paciente que se encuentra registrado en el sistema.
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setModalPacienteExiste(false)}
-                className="w-full py-2.5 bg-red-800 hover:bg-red-950 text-white text-xs font-semibold rounded-xl transition-all cursor-pointer shadow-md"
-              >
-                Entendido
-              </button>
-            </div>
-          </div>
-        )}
 
     </div>
   );
