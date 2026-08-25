@@ -229,47 +229,76 @@ export default function PanelPersonal() {
   };
 
   const handleGuardarEstudio = async (e) => {
-    e.preventDefault();
-    if (archivos.length === 0 || !pacienteSeleccionadoSubida) {
-      return alert('Selecciona un paciente y adjunta al menos un archivo');
-    }
+  e.preventDefault();
+  
+  if (!pacienteSeleccionadoSubida) {
+    return alert('Por favor, selecciona un paciente de la lista.');
+  }
 
-    const esTecnico = usuarioLogueado?.rol === 'tecnico';
-
-    const formData = new FormData();
-    formData.append('paciente_id', pacienteSeleccionadoSubida.id);
-    formData.append('tipo_examen', tipoExamen);
-    formData.append('titulo', titulo);
-    formData.append('notificar_correo', !esTecnico);
-
-    archivos.forEach((file) => {
-      formData.append('archivos', file);
-    });
-
+  // 1. Si es Secretaría o SuperAdmin y NO hay archivos adjuntos -> Crear Orden Inicial
+  if ((usuarioLogueado?.rol === 'secretaria' || esSuperAdmin) && archivos.length === 0) {
     try {
-      const res = await fetch('https://app-radiografia-production.up.railway.app/api/estudios', {
+      const res = await fetch('https://app-radiografia-production.up.railway.app/api/estudios/crear-orden', {
         method: 'POST',
-        body: formData
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          paciente_id: pacienteSeleccionadoSubida.id,
+          tipo_examen: tipoExamen,
+          titulo: titulo
+        })
       });
 
       if (res.ok) {
-        alert(
-          esTecnico
-          ? '¡Estudio(s) cargado(s) con éxito en la base de datos!'
-          : '¡Estudio(s) cargado(s) y notificación enviada al paciente!'
-        );
+        alert('¡Orden de examen creada! Ya le aparece al técnico en sus pendientes.');
         setTitulo('');
-        handleLimpiarArchivos();
         setPacienteSeleccionadoSubida(null);
         setBusquedaPacienteSubida('');
+        cargarEstudiosPendientes();
       } else {
-        alert('Error al subir los archivos');
+        alert('Error al crear la orden');
       }
     } catch (error) {
-      console.error('Error al conectar:', error);
+      console.error('Error:', error);
       alert('Error de conexión con el servidor');
     }
-  };
+    return;
+  }
+
+  // 2. Si se están adjuntando archivos directamente (subida directa)
+  if (archivos.length === 0) {
+    return alert('Debes adjuntar al menos un archivo para subir el estudio.');
+  }
+
+  const formData = new FormData();
+  formData.append('paciente_id', pacienteSeleccionadoSubida.id);
+  formData.append('tipo_examen', tipoExamen);
+  formData.append('titulo', titulo);
+  formData.append('notificar_correo', usuarioLogueado?.rol !== 'tecnico');
+
+  archivos.forEach((file) => {
+    formData.append('archivos', file);
+  });
+
+  try {
+    const res = await fetch('https://app-radiografia-production.up.railway.app/api/estudios', {
+      method: 'POST',
+      body: formData
+    });
+
+    if (res.ok) {
+      alert('¡Estudio cargado con éxito!');
+      setTitulo('');
+      handleLimpiarArchivos();
+      setPacienteSeleccionadoSubida(null);
+      setBusquedaPacienteSubida('');
+    } else {
+      alert('Error al subir los archivos');
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    alert('Error de conexión con el servidor');
+  }
+};
 
   // Crear Usuario en la tabla persona (SuperAdmin)
   const handleCrearUsuarioPersonal = async (e) => {
@@ -887,7 +916,11 @@ export default function PanelPersonal() {
                   type="submit" 
                   className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shadow-md transition-all cursor-pointer mt-2"
                 >
-                  {usuarioLogueado?.rol === 'tecnico' ? 'Subir Resultado' : 'Subir y Notificar'}
+                  {usuarioLogueado?.rol === 'secretaria' && archivos.length === 0 
+                    ? '📋 Crear Orden para el Técnico' 
+                    : usuarioLogueado?.rol === 'tecnico' 
+                    ? 'Subir Resultado' 
+                    : 'Subir y Notificar'}
                 </button>
 
               </form>
