@@ -79,7 +79,9 @@ export const enviarCorreoPaciente = async (
   correoPaciente,
   nombrePaciente,
   tipoExamen = 'Estudio',
-  tituloEstudio = 'Radiografía'
+  tituloEstudio = 'Radiografía',
+  cedula = 'cedula',
+  clave = 'clave'
 ) => {
   try {
     const { data, error } = await resend.emails.send({
