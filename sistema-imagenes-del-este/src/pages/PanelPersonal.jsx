@@ -1,9 +1,20 @@
 import React, { useState, useEffect } from 'react';
 
 export default function PanelPersonal() {
-  // 1. Autenticación y Rol
-  const [autenticado, setAutenticado] = useState(false);
-  const [usuarioLogueado, setUsuarioLogueado] = useState(null);
+  // 1. Autenticación y Rol (Mantiene sesión activa al refrescar F5)
+  const [usuarioLogueado, setUsuarioLogueado] = useState(() => {
+    try {
+      const guardado = localStorage.getItem('usuarioLogueado');
+      return guardado ? JSON.parse(guardado) : null;
+    } catch (e) {
+      return null;
+    }
+  });
+
+  const [autenticado, setAutenticado] = useState(() => {
+    return !!localStorage.getItem('usuarioLogueado');
+  });
+
   const [adminCedula, setAdminCedula] = useState('');
   const [adminClave, setAdminClave] = useState('');
   const [mostrarClaveAdmin, setMostrarClaveAdmin] = useState(false);
@@ -13,7 +24,19 @@ export default function PanelPersonal() {
   const [estudiosPendientes, setEstudiosPendientes] = useState([]);
 
   // 3. Estados del Panel
-  const [seccion, setSeccion] = useState('pacientes-lista');
+  const [seccion, setSeccion] = useState(() => {
+    try {
+      const guardado = localStorage.getItem('usuarioLogueado');
+      if (guardado) {
+        const user = JSON.parse(guardado);
+        if (user?.rol === 'medico' || user?.rol === 'tecnico') {
+          return 'estudios-pendientes';
+        }
+      }
+    } catch (e) {}
+    return 'pacientes-lista';
+  });
+
   const [pacientes, setPacientes] = useState([]);
   const [busquedaLista, setBusquedaLista] = useState('');
 
@@ -38,7 +61,7 @@ export default function PanelPersonal() {
   // Comprobación de SuperAdmin
   const esSuperAdmin = usuarioLogueado?.rol === 'superadmin' || usuarioLogueado?.rol === 'admin';
 
-  // 6. Formulario Crear Paciente (CON CAMPO DE CORREO Y ORDEN OPCIONAL)
+  // 6. Formulario Crear Paciente
   const [formPaciente, setFormPaciente] = useState({
     cedula: '',
     nombre_completo: '',
@@ -57,7 +80,7 @@ export default function PanelPersonal() {
   const [titulo, setTitulo] = useState('');
   const [archivos, setArchivos] = useState([]);
 
-  // 8. Gestión de Usuarios de la tabla PERSONA (SuperAdmin)
+  // 8. Gestión de Usuarios
   const [usuariosPersonal, setUsuariosPersonal] = useState([]);
   const [cargandoUsuarios, setCargandoUsuarios] = useState(false);
   const [formNuevoUsuario, setFormNuevoUsuario] = useState({
@@ -146,9 +169,12 @@ export default function PanelPersonal() {
       });
       const data = await res.json();
       if (res.ok) {
+        localStorage.setItem('usuarioLogueado', JSON.stringify(data.usuario));
         setAutenticado(true);
         setUsuarioLogueado(data.usuario);
-        
+        setAdminCedula('');
+        setAdminClave('');
+
         if (data.usuario?.rol === 'medico' || data.usuario?.rol === 'tecnico') {
           setSeccion('estudios-pendientes');
         } else {
@@ -160,6 +186,61 @@ export default function PanelPersonal() {
     } catch {
       setErrorLogin('Error de conexión con el servidor');
     }
+  };
+
+  // Cerrar Sesión
+  const handleCerrarSesion = () => {
+    localStorage.removeItem('usuarioLogueado');
+    setAutenticado(false);
+    setUsuarioLogueado(null);
+    setAdminCedula('');
+    setAdminClave('');
+  };
+
+  // 📩 NOTIFICAR POR CORREO
+  const handleNotificarCorreo = async (estudioId, correoPaciente) => {
+    if (!correoPaciente || !correoPaciente.trim()) {
+      return alert('El paciente no tiene un correo electrónico registrado.');
+    }
+
+    if (!estudioId) {
+      return alert('Selecciona o crea un estudio previamente para notificar al paciente.');
+    }
+
+    try {
+      const res = await fetch(`https://app-radiografia-production.up.railway.app/api/estudios/${estudioId}/notificar-correo`, {
+        method: 'POST'
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        alert('📧 ¡Correo enviado con éxito al paciente!');
+      } else {
+        alert(`⚠️ ${data.error || 'No se pudo enviar el correo'}`);
+      }
+    } catch (error) {
+      alert('Error de conexión al intentar enviar el correo');
+    }
+  };
+
+  // 💬 NOTIFICAR POR WHATSAPP
+  const handleNotificarWhatsApp = (pacienteNombre, pacienteTelefono, pacienteCedula, tituloEstudio) => {
+    if (!pacienteTelefono || !pacienteTelefono.trim()) {
+      return alert('El paciente no tiene un número de teléfono registrado.');
+    }
+
+    let num = pacienteTelefono.replace(/\D/g, ''); 
+    if (num.startsWith('0')) {
+      num = '58' + num.substring(1); 
+    } else if (!num.startsWith('58') && num.length === 10) {
+      num = '58' + num;
+    }
+
+    const mensaje = encodeURIComponent(
+      `¡Hola, ${pacienteNombre}! 👋\n\nTe saludamos de *Unidad de Imágenes Del Este*.\n\nLe informamos que su estudio *${tituloEstudio || 'Médico'}* ya se encuentra disponible en nuestro portal web.\n\nPuedes consultar y descargar tus resultados ingresando en:\nhttps://www.unidaddeimagenesdeleste.com/pacientes\n\n🔑 *Datos de acceso:*\n- *Cédula:* ${pacienteCedula}\n- *Clave:* Tu cédula`
+    );
+
+    window.open(`https://wa.me/${num}?text=${mensaje}`, '_blank');
   };
 
   const handleAbrirEditar = (paciente) => {
@@ -252,7 +333,6 @@ export default function PanelPersonal() {
     }
   };
 
-  // FUNCIONES PARA CREAR ORDEN Y SUBIR ARCHIVOS
   const handleCrearOrdenSinArchivos = async () => {
     if (!pacienteSeleccionadoSubida) return alert('Selecciona un paciente de la lista');
     if (!titulo.trim()) return alert('Ingresa el título del estudio');
@@ -282,69 +362,62 @@ export default function PanelPersonal() {
       alert('Error de conexión con el servidor');
     }
   };
-const handleSubirEstudioConArchivos = async () => {
-  if (!pacienteSeleccionadoSubida) return alert('Selecciona un paciente de la lista');
-  if (!titulo.trim()) return alert('Ingresa el título del estudio');
-  if (archivos.length === 0) return alert('Debes adjuntar al menos un archivo para subir el estudio.');
 
-  const formData = new FormData();
-  archivos.forEach((file) => {
-    formData.append('archivos', file);
-  });
+  const handleSubirEstudioConArchivos = async () => {
+    if (!pacienteSeleccionadoSubida) return alert('Selecciona un paciente de la lista');
+    if (!titulo.trim()) return alert('Ingresa el título del estudio');
+    if (archivos.length === 0) return alert('Debes adjuntar al menos un archivo para subir el estudio.');
 
-  try {
-    let res;
+    const formData = new FormData();
+    archivos.forEach((file) => {
+      formData.append('archivos', file);
+    });
 
-    // A) Si venimos redirigidos desde un PENDIENTE:
-    if (estudioPendienteSeleccionado) {
-      const rolUser = usuarioLogueado?.rol?.toLowerCase();
-      const esTecnico = rolUser === 'tecnico' || estudioPendienteSeleccionado.estado === 'pendiente_tecnico';
+    try {
+      let res;
 
-      const endpoint = esTecnico
-        ? `https://app-radiografia-production.up.railway.app/api/estudios/${estudioPendienteSeleccionado.id}/cargar-imagenes`
-        : `https://app-radiografia-production.up.railway.app/api/estudios/${estudioPendienteSeleccionado.id}/cargar-informe`;
+      if (estudioPendienteSeleccionado) {
+        const rolUser = usuarioLogueado?.rol?.toLowerCase();
+        const esTecnico = rolUser === 'tecnico' || estudioPendienteSeleccionado.estado === 'pendiente_tecnico';
 
-      res = await fetch(endpoint, {
-        method: 'PUT',
-        body: formData
-      });
-    } 
-    // B) Si es un registro directo desde CERO:
-    else {
-      formData.append('paciente_id', pacienteSeleccionadoSubida.id);
-      formData.append('tipo_examen', tipoExamen);
-      formData.append('titulo', titulo);
-      formData.append('notificar_correo', usuarioLogueado?.rol !== 'tecnico');
+        const endpoint = esTecnico
+          ? `https://app-radiografia-production.up.railway.app/api/estudios/${estudioPendienteSeleccionado.id}/cargar-imagenes`
+          : `https://app-radiografia-production.up.railway.app/api/estudios/${estudioPendienteSeleccionado.id}/cargar-informe`;
 
-      res = await fetch('https://app-radiografia-production.up.railway.app/api/estudios', {
-        method: 'POST',
-        body: formData
-      });
+        res = await fetch(endpoint, {
+          method: 'PUT',
+          body: formData
+        });
+      } else {
+        formData.append('paciente_id', pacienteSeleccionadoSubida.id);
+        formData.append('tipo_examen', tipoExamen);
+        formData.append('titulo', titulo);
+        formData.append('notificar_correo', usuarioLogueado?.rol !== 'tecnico');
+
+        res = await fetch('https://app-radiografia-production.up.railway.app/api/estudios', {
+          method: 'POST',
+          body: formData
+        });
+      }
+
+      if (res.ok) {
+        alert(estudioPendienteSeleccionado ? '¡Orden actualizada y procesada con éxito!' : '¡Estudio cargado con éxito!');
+        setTitulo('');
+        handleLimpiarArchivos();
+        setPacienteSeleccionadoSubida(null);
+        setBusquedaPacienteSubida('');
+        setEstudioPendienteSeleccionado(null);
+        cargarEstudiosPendientes();
+        setSeccion('estudios-pendientes');
+      } else {
+        alert('Error al subir los archivos');
+      }
+    } catch (error) {
+      console.error('Error al conectar:', error);
+      alert('Error de conexión con el servidor');
     }
+  };
 
-    if (res.ok) {
-      alert(estudioPendienteSeleccionado ? '¡Orden actualizada y procesada con éxito!' : '¡Estudio cargado con éxito!');
-      
-      // Limpiamos todo al terminar
-      setTitulo('');
-      handleLimpiarArchivos();
-      setPacienteSeleccionadoSubida(null);
-      setBusquedaPacienteSubida('');
-      setEstudioPendienteSeleccionado(null);
-      cargarEstudiosPendientes();
-      
-      // Te devuelve a la bandeja de pendientes para ver cómo quedó
-      setSeccion('estudios-pendientes');
-    } else {
-      alert('Error al subir los archivos');
-    }
-  } catch (error) {
-    console.error('Error al conectar:', error);
-    alert('Error de conexión con el servidor');
-  }
-};
-
-  // CANCELAR / ELIMINAR ORDEN PENDIENTE
   const handleCancelarOrdenPendiente = async (estudioId) => {
     if (!confirm('¿Seguro que deseas cancelar y eliminar esta orden pendiente?')) return;
 
@@ -355,7 +428,7 @@ const handleSubirEstudioConArchivos = async () => {
 
       if (res.ok) {
         alert('¡Orden cancelada y eliminada con éxito!');
-        cargarEstudiosPendientes(); // Recarga la lista en vivo
+        cargarEstudiosPendientes();
       } else {
         alert('Error al eliminar la orden');
       }
@@ -374,7 +447,6 @@ const handleSubirEstudioConArchivos = async () => {
     }
   };
 
-  // Crear Usuario en la tabla persona (SuperAdmin)
   const handleCrearUsuarioPersonal = async (e) => {
     e.preventDefault();
     try {
@@ -399,7 +471,6 @@ const handleSubirEstudioConArchivos = async () => {
     }
   };
 
-  // Cambiar rol de usuario personal
   const handleCambiarRol = async (usuarioId, nuevoRol) => {
     try {
       const res = await fetch(`https://app-radiografia-production.up.railway.app/api/admin/usuarios/${usuarioId}/rol`, {
@@ -420,7 +491,6 @@ const handleSubirEstudioConArchivos = async () => {
     }
   };
 
-  // Cambiar contraseña de usuario personal
   const handleCambiarClaveUsuarioPersonal = async (usuarioId) => {
     const nuevaClave = prompt('Ingresa la nueva contraseña para este usuario:');
     if (!nuevaClave || nuevaClave.trim() === '') return;
@@ -443,7 +513,6 @@ const handleSubirEstudioConArchivos = async () => {
     }
   };
 
-  // Borrar usuario personal
   const handleEliminarUsuarioPersonal = async (usuarioId) => {
     if (!confirm('¿Seguro que deseas eliminar este usuario? Perderá el acceso al sistema.')) return;
 
@@ -517,7 +586,7 @@ const handleSubirEstudioConArchivos = async () => {
             <p className="text-xs text-slate-400">Ingresa con tus credenciales de personal</p>
           </div>
 
-          <form onSubmit={handleAdminLogin} className="space-y-4">
+          <form onSubmit={handleAdminLogin} autoComplete="off" className="space-y-4">
             {errorLogin && (
               <div className="p-2.5 text-xs text-red-600 bg-red-50 border border-red-100 rounded-xl text-center font-medium">
                 {errorLogin}
@@ -528,6 +597,7 @@ const handleSubirEstudioConArchivos = async () => {
               <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Usuario o Cédula</label>
               <input 
                 type="text" 
+                autoComplete="off"
                 placeholder="Ingrese su usuario o cédula" 
                 value={adminCedula}
                 onChange={e => setAdminCedula(e.target.value)}
@@ -541,6 +611,7 @@ const handleSubirEstudioConArchivos = async () => {
               <div className="relative">
                 <input 
                   type={mostrarClaveAdmin ? 'text' : 'password'} 
+                  autoComplete="new-password"
                   placeholder="••••••••" 
                   value={adminClave}
                   onChange={e => setAdminClave(e.target.value)}
@@ -687,7 +758,7 @@ const handleSubirEstudioConArchivos = async () => {
         <div className="pt-4 border-t border-slate-800 flex items-center justify-between">
           <span className="text-[11px] text-white">MedicsWeb v1.0</span>
           <button 
-            onClick={() => { setAutenticado(false); setUsuarioLogueado(null); }} 
+            onClick={handleCerrarSesion} 
             className="text-xs text-red-400 hover:text-red-300 transition-colors font-medium cursor-pointer"
           >
             Salir
@@ -892,8 +963,14 @@ const handleSubirEstudioConArchivos = async () => {
           {seccion === 'subir-estudio' && (
             <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm max-w-xl mx-auto">
               <div className="mb-6 pb-4 border-b border-slate-100">
-                <h2 className="text-lg font-bold text-slate-900">Crear Orden o Cargar Resultado</h2>
-                <p className="text-xs text-slate-500 mt-0.5">Selecciona un paciente registrado para enviarlo a la bandeja de pendientes o adjuntar archivos directamente.</p>
+                <h2 className="text-lg font-bold text-slate-900">
+                  {estudioPendienteSeleccionado ? 'Cargar Resultado de Orden Pendiente' : 'Crear Orden o Cargar Resultado'}
+                </h2>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {estudioPendienteSeleccionado 
+                    ? `Adjuntando archivos para la orden pendiente: ${estudioPendienteSeleccionado.titulo}`
+                    : 'Selecciona un paciente registrado para enviarlo a la bandeja de pendientes o adjuntar archivos directamente.'}
+                </p>
               </div>
 
               <form onSubmit={handleGuardarEstudio} className="space-y-4">
@@ -903,18 +980,48 @@ const handleSubirEstudioConArchivos = async () => {
                   </label>
                   
                   {pacienteSeleccionadoSubida ? (
-                    <div className="p-3 bg-sky-50 border border-sky-200 rounded-xl flex items-center justify-between">
-                      <div>
-                        <strong className="text-xs text-sky-900 block">{pacienteSeleccionadoSubida.nombre_completo}</strong>
-                        <span className="text-[11px] text-sky-600">C.I: {pacienteSeleccionadoSubida.cedula}</span>
+                    <div className="p-3.5 bg-sky-50 border border-sky-200 rounded-xl space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <strong className="text-xs text-sky-900 block">{pacienteSeleccionadoSubida.nombre_completo}</strong>
+                          <span className="text-[11px] text-sky-600">C.I: {pacienteSeleccionadoSubida.cedula}</span>
+                        </div>
+                        {!estudioPendienteSeleccionado && (
+                          <button 
+                            type="button" 
+                            onClick={() => { setPacienteSeleccionadoSubida(null); setBusquedaPacienteSubida(''); }}
+                            className="text-xs text-red-500 hover:underline font-medium cursor-pointer"
+                          >
+                            Cambiar
+                          </button>
+                        )}
                       </div>
-                      <button 
-                        type="button" 
-                        onClick={() => { setPacienteSeleccionadoSubida(null); setBusquedaPacienteSubida(''); }}
-                        className="text-xs text-red-500 hover:underline font-medium cursor-pointer"
-                      >
-                        Cambiar
-                      </button>
+
+                      {/* BOTONES DE NOTIFICACIÓN DIRECTA AL PACIENTE */}
+                      <div className="pt-2 border-t border-sky-200/60 flex items-center gap-2 flex-wrap">
+                        <span className="text-[10px] font-bold text-sky-800 uppercase">Notificar al paciente:</span>
+                        
+                        <button
+                          type="button"
+                          onClick={() => handleNotificarCorreo(estudioPendienteSeleccionado?.id, pacienteSeleccionadoSubida.correo)}
+                          className="px-2.5 py-1 bg-white hover:bg-sky-100 text-sky-700 border border-sky-300 text-[11px] font-semibold rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
+                        >
+                          📧 Correo
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleNotificarWhatsApp(
+                            pacienteSeleccionadoSubida.nombre_completo,
+                            pacienteSeleccionadoSubida.telefono,
+                            pacienteSeleccionadoSubida.cedula,
+                            titulo || 'Estudio Médico'
+                          )}
+                          className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold rounded-lg transition-colors flex items-center gap-1 cursor-pointer shadow-sm"
+                        >
+                          💬 WhatsApp
+                        </button>
+                      </div>
                     </div>
                   ) : (
                     <>
@@ -951,7 +1058,8 @@ const handleSubirEstudioConArchivos = async () => {
                   <select 
                     value={tipoExamen} 
                     onChange={e => setTipoExamen(e.target.value)}
-                    className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 cursor-pointer"
+                    disabled={!!estudioPendienteSeleccionado}
+                    className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 cursor-pointer disabled:opacity-75"
                   >
                     <option value="Tomografías y/o Radiografías">Tomografías y/o Radiografías</option>
                     <option value="Informe Médico">Informe Médico</option>
@@ -967,7 +1075,8 @@ const handleSubirEstudioConArchivos = async () => {
                     placeholder="Ej: Radiografía de Tórax AP" 
                     value={titulo}
                     onChange={e => setTitulo(e.target.value)}
-                    className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
+                    readOnly={!!estudioPendienteSeleccionado}
+                    className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 read-only:bg-slate-100"
                     required 
                   />
                 </div>
@@ -1027,20 +1136,22 @@ const handleSubirEstudioConArchivos = async () => {
                 </div>
 
                 {/* BOTONES DE ACCIÓN */}
-                {(usuarioLogueado?.rol === 'secretaria', 'medico' || esSuperAdmin ) ? (
+                {['secretaria', 'medico', 'médico', 'admin', 'superadmin'].includes(usuarioLogueado?.rol?.toLowerCase()) || esSuperAdmin ? (
                   <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
-                    <button 
-                      type="button" 
-                      onClick={handleCrearOrdenSinArchivos}
-                      className="w-full sm:w-1/2 py-3 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-xl shadow-md transition-all cursor-pointer"
-                    >
-                      📋 Crear Orden (Para el Técnico)
-                    </button>
+                    {!estudioPendienteSeleccionado && (
+                      <button 
+                        type="button" 
+                        onClick={handleCrearOrdenSinArchivos}
+                        className="w-full sm:w-1/2 py-3 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-xl shadow-md transition-all cursor-pointer"
+                      >
+                        📋 Crear Orden (Para el Técnico)
+                      </button>
+                    )}
 
                     <button 
                       type="button" 
                       onClick={handleSubirEstudioConArchivos}
-                      className="w-full sm:w-1/2 py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shadow-md transition-all cursor-pointer"
+                      className={`w-full ${!estudioPendienteSeleccionado ? 'sm:w-1/2' : 'w-full'} py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shadow-md transition-all cursor-pointer`}
                     >
                       📤 Subir y Notificar
                     </button>
@@ -1127,7 +1238,7 @@ const handleSubirEstudioConArchivos = async () => {
                             </button>
                           )}
 
-                          {/* 2. SUBIR PLACAS (Redirige a la sección de cargar resultado) */}
+                          {/* 2. SUBIR PLACAS */}
                           {esMiTurnoTecnico && (
                             <button
                               onClick={() => {
@@ -1144,11 +1255,11 @@ const handleSubirEstudioConArchivos = async () => {
                               }}
                               className="px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-xl shadow-sm transition-all cursor-pointer"
                             >
-                              📸 Subir Estudios
+                              📸 Cargar Placas
                             </button>
                           )}
 
-                          {/* 3. ADJUNTAR INFORME (Redirige a la sección de cargar resultado) */}
+                          {/* 3. ADJUNTAR INFORME */}
                           {esMiTurnoMedico && (
                             <button
                               onClick={() => {
@@ -1338,8 +1449,8 @@ const handleSubirEstudioConArchivos = async () => {
       {/* MODAL EXPEDIENTE */}
       {pacienteSeleccionado && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl p-6 max-w-lg w-full shadow-2xl border border-slate-100">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+          <div className="bg-white rounded-2xl p-6 max-w-lg w-full shadow-2xl border border-slate-100 max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4 shrink-0">
               <div>
                 <h3 className="text-base font-bold text-slate-900">{pacienteSeleccionado.nombre_completo}</h3>
                 <p className="text-xs text-slate-400">C.I: {pacienteSeleccionado.cedula}</p>
@@ -1355,7 +1466,9 @@ const handleSubirEstudioConArchivos = async () => {
               </button>
             </div>
 
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Estudios Cargados</h4>
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 shrink-0">
+              Estudios e Historial Cargado
+            </h4>
 
             {cargandoEstudios ? (
               <div className="py-8 text-center text-slate-400 flex flex-col items-center gap-2">
@@ -1365,39 +1478,95 @@ const handleSubirEstudioConArchivos = async () => {
             ) : estudiosPaciente.length === 0 ? (
               <p className="text-xs text-center text-slate-400 py-6">Este paciente aún no tiene exámenes registrados.</p>
             ) : (
-              <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
-                {estudiosPaciente.map(e => (
-                  <div key={e.id} className="p-3 border border-slate-100 bg-slate-50 rounded-xl flex items-center justify-between">
-                    <div>
-                      <span className="inline-block px-2 py-0.5 text-[9px] font-bold text-red-800 bg-red-50 rounded mb-1">
-                        {e.tipo_examen}
-                      </span>
-                      <h5 className="text-xs font-semibold text-slate-800">{e.titulo}</h5>
-                      <span className="text-[10px] text-slate-400">{new Date(e.fecha_estudio).toLocaleDateString()}</span>
-                    </div>
+              <div className="space-y-3 overflow-y-auto pr-1 flex-1">
+                {estudiosPaciente.map(e => {
+                  const archivosLista = e.archivo_path 
+                    ? e.archivo_path.split(',').map(a => a.trim()).filter(Boolean) 
+                    : [];
 
-                    <div className="flex items-center space-x-2">
-                      <a 
-                        href={`https://app-radiografia-production.up.railway.app/api/descargar/${e.id}`} 
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="px-3 py-1.5 bg-red-950 hover:bg-red-800 text-white text-xs font-medium rounded-lg transition-colors inline-block"
-                      >
-                        Descargar
-                      </a>
+                  const rolUser = usuarioLogueado?.rol?.toLowerCase();
+                  const puedeNotificar = ['medico', 'médico', 'secretaria', 'admin', 'superadmin'].includes(rolUser) || esSuperAdmin;
 
-                      {esSuperAdmin && (
-                        <button 
-                          onClick={() => handleEliminarEstudio(e.id)}
-                          className="px-2.5 py-1.5 bg-red-100 text-red-700 hover:bg-red-200 text-xs font-semibold rounded-lg transition-colors cursor-pointer"
-                          title="Eliminar este estudio"
-                        >
-                          🗑️
-                        </button>
+                  return (
+                    <div key={e.id} className="p-3.5 border border-slate-200 bg-slate-50 rounded-xl space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className="inline-block px-2 py-0.5 text-[9px] font-bold text-red-800 bg-red-50 rounded mb-1">
+                            {e.tipo_examen}
+                          </span>
+                          <h5 className="text-xs font-bold text-slate-800">{e.titulo}</h5>
+                          <span className="text-[10px] text-slate-400">
+                            {new Date(e.fecha_estudio).toLocaleDateString()}
+                          </span>
+                        </div>
+
+                        {esSuperAdmin && (
+                          <button 
+                            onClick={() => handleEliminarEstudio(e.id)}
+                            className="px-2 py-1 bg-red-100 text-red-700 hover:bg-red-200 text-xs font-semibold rounded-lg transition-colors cursor-pointer"
+                            title="Eliminar este estudio"
+                          >
+                            🗑️
+                          </button>
+                        )}
+                      </div>
+
+                      {/* BOTONES DE NOTIFICACIÓN DIRECTA DESDE EXPEDIENTE */}
+                      {puedeNotificar && (
+                        <div className="pt-2 border-t border-slate-200 flex items-center gap-2 flex-wrap">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase">Notificar:</span>
+                          
+                          <button
+                            type="button"
+                            onClick={() => handleNotificarCorreo(e.id, pacienteSeleccionado.correo)}
+                            className="px-2.5 py-1 bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 text-[11px] font-semibold rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
+                          >
+                            📧 Correo
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleNotificarWhatsApp(
+                              pacienteSeleccionado.nombre_completo,
+                              pacienteSeleccionado.telefono,
+                              pacienteSeleccionado.cedula,
+                              e.titulo
+                            )}
+                            className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-[11px] font-semibold rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
+                          >
+                            💬 WhatsApp
+                          </button>
+                        </div>
+                      )}
+
+                      {/* LISTA INDIVIDUAL DE CADA ARCHIVO ADJUNTO */}
+                      {archivosLista.length > 0 ? (
+                        <div className="pt-2 border-t border-slate-200/60 space-y-1.5">
+                          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Archivos del estudio:</p>
+                          <div className="space-y-1">
+                            {archivosLista.map((arch, idx) => (
+                              <div key={idx} className="flex items-center justify-between p-2 bg-white border border-slate-200 rounded-lg text-xs">
+                                <span className="truncate max-w-[200px] sm:max-w-[260px] text-slate-700 font-medium">
+                                  📄 {arch}
+                                </span>
+                                <a 
+                                  href={`https://app-radiografia-production.up.railway.app/api/descargar-archivo/${encodeURIComponent(arch)}`} 
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="px-2.5 py-1 bg-red-950 hover:bg-red-800 text-white text-[11px] font-semibold rounded-lg transition-colors inline-block shrink-0"
+                                >
+                                  Descargar
+                                </a>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-[11px] text-slate-400 italic pt-1">Sin archivos adjuntos registrados.</p>
                       )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -1561,7 +1730,7 @@ const handleSubirEstudioConArchivos = async () => {
         )}
 
         <button
-          onClick={() => { setAutenticado(false); setUsuarioLogueado(null); }}
+          onClick={handleCerrarSesion}
           className="flex flex-col items-center justify-center w-full py-1 text-red-500 cursor-pointer"
         >
           <svg className="w-5 h-5 mb-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

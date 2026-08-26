@@ -36,7 +36,7 @@ const pool = new pg.Pool({
 export default pool;
 
 // =============================================================
-// 2. RUTA ABSOLUTA DE ARCHIVOS (Railway / Local)
+// 2. RUTA ABSOLUTA DE ARCHIVOS Y CONFIGURACIÓN DE MULTER
 // =============================================================
 const uploadDir = path.join(process.cwd(), 'uploads');
 
@@ -47,7 +47,7 @@ if (!fs.existsSync(uploadDir)) {
 // Servir la carpeta estática públicamente
 app.use('/uploads', express.static(uploadDir));
 
-// CONFIGURACIÓN DE MULTER
+// MULTER: Reemplaza espacios por guiones bajos SIN agregar timestamps o prefijos
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     if (!fs.existsSync(uploadDir)) {
@@ -56,13 +56,14 @@ const storage = multer.diskStorage({
     cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
-    cb(null, file.originalname);
+    const nombreLimpio = file.originalname.replace(/\s+/g, '_');
+    cb(null, nombreLimpio);
   }
 });
 
 const upload = multer({ 
   storage: storage,
-  limits: { fileSize: 200 * 1024 * 1024 } // 200MB
+  limits: { fileSize: 200 * 1024 * 1024 } // Límite de 200MB
 });
 
 // =============================================================
@@ -166,7 +167,7 @@ export const enviarCorreoPaciente = async (
 // 4. RUTAS DE LA API
 // =============================================================
 
-// RUTA: Inicializar Tablas en la Base de Datos
+// Inicializar base de datos
 app.get('/init-db', async (req, res) => {
   try {
     await pool.query(`
@@ -205,7 +206,9 @@ app.get('/init-db', async (req, res) => {
   }
 });
 
-// REGISTRAR PACIENTE Y OPCIONALMENTE SU PRIMERA ORDEN
+// --- PACIENTES ---
+
+// Registrar paciente y orden opcional
 app.post('/api/pacientes', async (req, res) => {
   try {
     const { cedula, nombre_completo, telefono, correo, clave, crear_orden, tipo_examen, titulo } = req.body;
@@ -235,7 +238,7 @@ app.post('/api/pacientes', async (req, res) => {
   }
 });
 
-// RUTA: Obtener la lista de todos los pacientes
+// Obtener pacientes
 app.get('/api/pacientes', async (req, res) => {
   try {
     const result = await pool.query('SELECT id, cedula, nombre_completo, correo, telefono FROM pacientes ORDER BY created_at DESC');
@@ -245,7 +248,7 @@ app.get('/api/pacientes', async (req, res) => {
   }
 });
 
-// RUTA: Editar paciente
+// Editar paciente
 app.put('/api/pacientes/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -269,7 +272,7 @@ app.put('/api/pacientes/:id', async (req, res) => {
   }
 });
 
-// ELIMINAR UN PACIENTE
+// Eliminar paciente
 app.delete('/api/pacientes/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -281,11 +284,9 @@ app.delete('/api/pacientes/:id', async (req, res) => {
   }
 });
 
-// =============================================================
-// GESTIÓN DE PERSONAL ADMINISTRATIVO (TABLA: personal)
-// =============================================================
+// --- PERSONAL ADMINISTRATIVO ---
 
-// OBTENER USUARIOS DEL PERSONAL
+// Obtener usuarios del personal
 app.get('/api/admin/usuarios', async (req, res) => {
   try {
     const result = await pool.query('SELECT id, cedula, nombre_completo, rol FROM personal ORDER BY id ASC');
@@ -296,7 +297,7 @@ app.get('/api/admin/usuarios', async (req, res) => {
   }
 });
 
-// CREAR USUARIO DEL PERSONAL
+// Crear usuario del personal
 app.post('/api/admin/usuarios', async (req, res) => {
   try {
     const { cedula, nombre_completo, clave, rol } = req.body;
@@ -322,7 +323,7 @@ app.post('/api/admin/usuarios', async (req, res) => {
   }
 });
 
-// ACTUALIZAR ROL DE UN USUARIO DEL PERSONAL
+// Actualizar rol
 app.put('/api/admin/usuarios/:id/rol', async (req, res) => {
   try {
     const { id } = req.params;
@@ -335,7 +336,7 @@ app.put('/api/admin/usuarios/:id/rol', async (req, res) => {
   }
 });
 
-// ACTUALIZAR CONTRASEÑA DE UN USUARIO DEL PERSONAL
+// Actualizar contraseña de personal
 app.put('/api/admin/usuarios/:id/clave', async (req, res) => {
   try {
     const { id } = req.params;
@@ -353,7 +354,7 @@ app.put('/api/admin/usuarios/:id/clave', async (req, res) => {
   }
 });
 
-// ELIMINAR UN USUARIO DEL PERSONAL
+// Eliminar usuario de personal
 app.delete('/api/admin/usuarios/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -365,7 +366,7 @@ app.delete('/api/admin/usuarios/:id', async (req, res) => {
   }
 });
 
-// RUTA: Login de Personal Administrativo
+// Login de personal
 app.post('/api/admin/login', async (req, res) => {
   const { cedula, clave } = req.body;
 
@@ -389,11 +390,9 @@ app.post('/api/admin/login', async (req, res) => {
   }
 });
 
-// =============================================================
-// GESTIÓN DE ESTUDIOS Y ORDENES
-// =============================================================
+// --- GESTIÓN DE ESTUDIOS Y ÓRDENES ---
 
-// SUBIR ESTUDIO DIRECTO CON ARCHIVOS
+// Subir estudio directo (Soporta múltiples archivos guardando la lista concatenada por comas)
 app.post('/api/estudios', upload.array('archivos'), async (req, res) => {
   const { paciente_id, tipo_examen, titulo, notificar_correo } = req.body;
 
@@ -402,20 +401,16 @@ app.post('/api/estudios', upload.array('archivos'), async (req, res) => {
   }
 
   try {
-    const estudiosGuardados = [];
+    // Guarda los nombres limpios separados por coma en la misma columna archivo_path
+    const rutas = req.files.map(f => f.filename).join(',');
 
-    for (const file of req.files) {
-      const nombreReal = file.originalname;
+    const result = await pool.query(
+      `INSERT INTO estudios (paciente_id, tipo_examen, titulo, archivo_path, estado) 
+       VALUES ($1, $2, $3, $4, 'completado') RETURNING *`,
+      [paciente_id, tipo_examen, titulo, rutas]
+    );
 
-      const result = await pool.query(
-        `INSERT INTO estudios (paciente_id, tipo_examen, titulo, archivo_path, estado) 
-         VALUES ($1, $2, $3, $4, 'completado') RETURNING *`,
-        [paciente_id, tipo_examen, nombreReal, file.filename]
-      );
-      estudiosGuardados.push(result.rows[0]);
-    }
-
-    res.json({ mensaje: 'Estudios cargados correctamente', estudios: estudiosGuardados });
+    res.json({ mensaje: 'Estudios cargados correctamente', estudio: result.rows[0] });
 
     const debeNotificar = String(notificar_correo) === 'true' || notificar_correo === true;
 
@@ -448,12 +443,12 @@ app.post('/api/estudios', upload.array('archivos'), async (req, res) => {
   }
 });
 
-// OBTENER ESTUDIOS PENDIENTES
+// Obtener ordenes / estudios pendientes
 app.get('/api/estudios/pendientes', async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT e.id, e.tipo_examen, e.titulo, e.fecha_estudio, e.estado, e.archivo_path,
-             p.nombre_completo AS paciente_nombre, p.cedula AS paciente_cedula
+             p.nombre_completo AS paciente_nombre, p.cedula AS paciente_cedula, e.paciente_id
       FROM estudios e
       JOIN pacientes p ON e.paciente_id = p.id
       WHERE e.estado != 'completado'
@@ -466,7 +461,7 @@ app.get('/api/estudios/pendientes', async (req, res) => {
   }
 });
 
-// CREAR ORDEN DE ESTUDIO PENDIENTE (Secretaría)
+// Crear orden de estudio (Secretaría)
 app.post('/api/estudios/crear-orden', async (req, res) => {
   try {
     const { paciente_id, tipo_examen, titulo } = req.body;
@@ -487,7 +482,7 @@ app.post('/api/estudios/crear-orden', async (req, res) => {
   }
 });
 
-// CARGAR IMÁGENES/PLACAS (Técnico -> pasa a pendiente_medico)
+// Técnico: Cargar imágenes/placas (concatena si ya existía algo y pasa a pendiente_medico)
 app.put('/api/estudios/:id/cargar-imagenes', upload.array('archivos'), async (req, res) => {
   try {
     const { id } = req.params;
@@ -495,11 +490,15 @@ app.put('/api/estudios/:id/cargar-imagenes', upload.array('archivos'), async (re
       return res.status(400).json({ error: 'Debes adjuntar al menos una imagen' });
     }
 
-    const rutas = req.files.map(f => f.filename || f.path).join(',');
+    const estudioActual = await pool.query('SELECT archivo_path FROM estudios WHERE id = $1', [id]);
+    const archivosPrevios = estudioActual.rows[0]?.archivo_path || '';
+
+    const nuevasRutas = req.files.map(f => f.filename).join(',');
+    const rutasTotales = archivosPrevios ? `${archivosPrevios},${nuevasRutas}` : nuevasRutas;
 
     await pool.query(
       'UPDATE estudios SET archivo_path = $1, estado = $2 WHERE id = $3',
-      [rutas, 'pendiente_medico', id]
+      [rutasTotales, 'pendiente_medico', id]
     );
 
     res.json({ mensaje: 'Imágenes cargadas. Orden enviada al médico.' });
@@ -509,7 +508,7 @@ app.put('/api/estudios/:id/cargar-imagenes', upload.array('archivos'), async (re
   }
 });
 
-// CARGAR INFORME Y COMPLETAR (Médico -> pasa a completado)
+// Médico: Cargar informe y completar (concatena imágenes del técnico con el informe médico)
 app.put('/api/estudios/:id/cargar-informe', upload.array('archivos'), async (req, res) => {
   try {
     const { id } = req.params;
@@ -520,7 +519,7 @@ app.put('/api/estudios/:id/cargar-informe', upload.array('archivos'), async (req
     const estudioActual = await pool.query('SELECT archivo_path FROM estudios WHERE id = $1', [id]);
     const archivosPrevios = estudioActual.rows[0]?.archivo_path || '';
     
-    const nuevasRutas = req.files.map(f => f.filename || f.path).join(',');
+    const nuevasRutas = req.files.map(f => f.filename).join(',');
     const rutasTotales = archivosPrevios ? `${archivosPrevios},${nuevasRutas}` : nuevasRutas;
 
     await pool.query(
@@ -535,7 +534,7 @@ app.put('/api/estudios/:id/cargar-informe', upload.array('archivos'), async (req
   }
 });
 
-// OBTENER LOS ESTUDIOS DE UN PACIENTE ESPECÍFICO
+// Obtener expediente de un paciente
 app.get('/api/estudios/paciente/:paciente_id', async (req, res) => {
   const { paciente_id } = req.params;
 
@@ -552,7 +551,7 @@ app.get('/api/estudios/paciente/:paciente_id', async (req, res) => {
   }
 });
 
-// CANCELAR / ELIMINAR UN ESTUDIO O ORDEN PENDIENTE
+// Cancelar/Eliminar una orden o estudio
 app.delete('/api/estudios/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -564,7 +563,7 @@ app.delete('/api/estudios/:id', async (req, res) => {
   }
 });
 
-// RUTA: Login del paciente y sus exámenes
+// --- PACIENTES (LOGIN PACIENTE) ---
 app.post('/api/paciente/login', async (req, res) => {
   const { cedula, clave } = req.body;
 
@@ -594,7 +593,7 @@ app.post('/api/paciente/login', async (req, res) => {
   }
 });
 
-// DESCARGAR ARCHIVO DE UN ESTUDIO
+// Descargar el primer archivo de un estudio
 app.get('/api/descargar/:id', async (req, res) => {
   const { id } = req.params;
 
@@ -606,8 +605,6 @@ app.get('/api/descargar/:id', async (req, res) => {
     }
 
     const estudio = result.rows[0];
-    
-    // Si hay múltiples archivos separados por coma, toma el primero para la descarga directa
     const primerArchivo = estudio.archivo_path ? estudio.archivo_path.split(',')[0] : '';
     const soloNombreArchivo = path.basename(primerArchivo);
     const filePath = path.join(uploadDir, soloNombreArchivo);
@@ -622,6 +619,62 @@ app.get('/api/descargar/:id', async (req, res) => {
   } catch (err) {
     console.error('🔥 Error en descarga:', err.message);
     res.status(500).json({ error: 'Error del servidor al descargar el archivo' });
+  }
+});
+
+// Descargar un archivo individual por su nombre de archivo
+app.get('/api/descargar-archivo/:filename', async (req, res) => {
+  try {
+    const { filename } = req.params;
+    const soloNombreArchivo = path.basename(filename);
+    const filePath = path.join(uploadDir, soloNombreArchivo);
+
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'Archivo físico no encontrado en el servidor' });
+    }
+
+    res.download(filePath, soloNombreArchivo);
+  } catch (err) {
+    console.error('🔥 Error en descarga individual:', err.message);
+    res.status(500).json({ error: 'Error al descargar el archivo' });
+  }
+});
+
+// NOTIFICAR AL PACIENTE POR CORREO MANUALMENTE DESDE EL PANEL
+app.post('/api/estudios/:id/notificar-correo', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Consultar datos del estudio y del paciente
+    const estudioQuery = await pool.query(
+      `SELECT e.titulo, e.tipo_examen, p.nombre_completo, p.correo 
+       FROM estudios e 
+       JOIN pacientes p ON e.paciente_id = p.id 
+       WHERE e.id = $1`, 
+      [id]
+    );
+
+    if (estudioQuery.rows.length === 0) {
+      return res.status(404).json({ error: 'Estudio no encontrado' });
+    }
+
+    const { titulo, tipo_examen, nombre_completo, correo } = estudioQuery.rows[0];
+
+    if (!correo || !correo.trim()) {
+      return res.status(400).json({ error: 'El paciente no tiene un correo electrónico registrado' });
+    }
+
+    // Enviar el correo usando la función de Resend que ya tenemos
+    const enviado = await enviarCorreoPaciente(correo, nombre_completo, tipo_examen, titulo);
+
+    if (enviado) {
+      res.json({ mensaje: 'Correo enviado exitosamente al paciente' });
+    } else {
+      res.status(500).json({ error: 'Error al enviar el correo a través de Resend' });
+    }
+  } catch (error) {
+    console.error('Error al notificar por correo:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
 
