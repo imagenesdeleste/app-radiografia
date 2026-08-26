@@ -138,6 +138,14 @@ export default function PanelPersonal() {
     }
   }, [autenticado, seccion]);
 
+  // FORZAR AUTOMÁTICAMENTE 'Informe Médico' PARA EL ROL DE MÉDICO
+  useEffect(() => {
+    const rolUser = usuarioLogueado?.rol?.toLowerCase();
+    if (rolUser === 'medico' || rolUser === 'médico') {
+      setTipoExamen('Informe Médico');
+    }
+  }, [seccion, usuarioLogueado]);
+
   // Selección Acumulativa de Archivos
   const handleArchivosChange = (e) => {
     if (e.target.files.length > 0) {
@@ -1058,11 +1066,14 @@ export default function PanelPersonal() {
                   <select 
                     value={tipoExamen} 
                     onChange={e => setTipoExamen(e.target.value)}
-                    disabled={!!estudioPendienteSeleccionado}
-                    className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 cursor-pointer disabled:opacity-75"
+                    disabled={
+                      !!estudioPendienteSeleccionado || 
+                      ['medico', 'médico'].includes(usuarioLogueado?.rol?.toLowerCase())
+                    }
+                    className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 cursor-pointer disabled:opacity-75 disabled:bg-slate-100"
                   >
-                    <option value="Tomografías y/o Radiografías">Tomografías y/o Radiografías</option>
                     <option value="Informe Médico">Informe Médico</option>
+                    <option value="Tomografías y/o Radiografías">Tomografías y/o Radiografías</option>
                   </select>
                 </div>
 
