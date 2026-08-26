@@ -73,6 +73,21 @@ export default function PanelPersonal() {
     titulo: ''
   });
 
+  // Nombres dinámicos para el Sidebar y Barra Móvil
+  const getLabelSubir = () => {
+    const rol = usuarioLogueado?.rol?.toLowerCase();
+    if (['medico', 'médico'].includes(rol)) return 'Subir Informes';
+    if (['tecnico', 'técnico', 'tecnico_radiologico'].includes(rol)) return 'Subir Estudios';
+    return 'Crear Estudio / Notificar';
+  };
+
+  const getLabelSubirMobile = () => {
+    const rol = usuarioLogueado?.rol?.toLowerCase();
+    if (['medico', 'médico'].includes(rol)) return 'Informes';
+    if (['tecnico', 'técnico', 'tecnico_radiologico'].includes(rol)) return 'Estudios';
+    return 'Crear Orden';
+  };
+
   // 7. Formulario Crear Orden / Subir Estudio
   const [busquedaPacienteSubida, setBusquedaPacienteSubida] = useState('');
   const [pacienteSeleccionadoSubida, setPacienteSeleccionadoSubida] = useState(null);
@@ -372,59 +387,93 @@ export default function PanelPersonal() {
   };
 
   const handleSubirEstudioConArchivos = async () => {
-    if (!pacienteSeleccionadoSubida) return alert('Selecciona un paciente de la lista');
-    if (!titulo.trim()) return alert('Ingresa el título del estudio');
-    if (archivos.length === 0) return alert('Debes adjuntar al menos un archivo para subir el estudio.');
+  if (!pacienteSeleccionadoSubida) return alert('Selecciona un paciente de la lista.');
+  if (!titulo.trim()) return alert('Ingresa el título del estudio.');
+  if (archivos.length === 0) return alert('Debes adjuntar al menos un archivo para subir.');
 
-    const formData = new FormData();
-    archivos.forEach((file) => {
-      formData.append('archivos', file);
-    });
+  const formData = new FormData();
+  archivos.forEach((file) => {
+    formData.append('archivos', file);
+  });
 
-    try {
-      let res;
+  const rolUser = usuarioLogueado?.rol?.toLowerCase();
+  const esMedico = ['medico', 'médico'].includes(rolUser);
+  const esTecnico = ['tecnico', 'técnico', 'tecnico_radiologico'].includes(rolUser) || estudioPendienteSeleccionado?.estado === 'pendiente_tecnico';
 
-      if (estudioPendienteSeleccionado) {
-        const rolUser = usuarioLogueado?.rol?.toLowerCase();
-        const esTecnico = rolUser === 'tecnico' || estudioPendienteSeleccionado.estado === 'pendiente_tecnico';
+  try {
+    let res;
+    let estudioIdProcesado = estudioPendienteSeleccionado?.id;
 
-        const endpoint = esTecnico
-          ? `https://app-radiografia-production.up.railway.app/api/estudios/${estudioPendienteSeleccionado.id}/cargar-imagenes`
-          : `https://app-radiografia-production.up.railway.app/api/estudios/${estudioPendienteSeleccionado.id}/cargar-informe`;
+    // A) Si estamos respondiendo a una ORDEN PENDIENTE:
+    if (estudioPendienteSeleccionado) {
+      const endpoint = esTecnico
+        ? `https://app-radiografia-production.up.railway.app/api/estudios/${estudioPendienteSeleccionado.id}/cargar-imagenes`
+        : `https://app-radiografia-production.up.railway.app/api/estudios/${estudioPendienteSeleccionado.id}/cargar-informe`;
 
-        res = await fetch(endpoint, {
-          method: 'PUT',
-          body: formData
-        });
-      } else {
-        formData.append('paciente_id', pacienteSeleccionadoSubida.id);
-        formData.append('tipo_examen', tipoExamen);
-        formData.append('titulo', titulo);
-        formData.append('notificar_correo', usuarioLogueado?.rol !== 'tecnico');
+      res = await fetch(endpoint, {
+        method: 'PUT',
+        body: formData
+      });
+    } 
+    // B) Si estamos cargando un ESTUDIO/INFORME DIRECTO desde cero:
+    else {
+      formData.append('paciente_id', pacienteSeleccionadoSubida.id);
+      formData.append('tipo_examen', tipoExamen);
+      formData.append('titulo', titulo);
+      formData.append('notificar_correo', esMedico);
 
-        res = await fetch('https://app-radiografia-production.up.railway.app/api/estudios', {
-          method: 'POST',
-          body: formData
-        });
-      }
-
-      if (res.ok) {
-        alert(estudioPendienteSeleccionado ? '¡Orden actualizada y procesada con éxito!' : '¡Estudio cargado con éxito!');
-        setTitulo('');
-        handleLimpiarArchivos();
-        setPacienteSeleccionadoSubida(null);
-        setBusquedaPacienteSubida('');
-        setEstudioPendienteSeleccionado(null);
-        cargarEstudiosPendientes();
-        setSeccion('estudios-pendientes');
-      } else {
-        alert('Error al subir los archivos');
-      }
-    } catch (error) {
-      console.error('Error al conectar:', error);
-      alert('Error de conexión con el servidor');
+      res = await fetch('https://app-radiografia-production.up.railway.app/api/estudios', {
+        method: 'POST',
+        body: formData
+      });
     }
-  };
+
+    if (res.ok) {
+      const responseData = await res.json().catch(() => ({}));
+      if (!estudioIdProcesado) {
+        estudioIdProcesado = responseData.id || responseData.estudioId;
+      }
+
+      // 📧 SI ES MÉDICO: Enviar correo automáticamente en segundo plano al terminar de subir
+      let correoEnviado = false;
+      if (esMedico && pacienteSeleccionadoSubida?.correo && estudioIdProcesado) {
+        try {
+          const resCorreo = await fetch(`https://app-radiografia-production.up.railway.app/api/estudios/${estudioIdProcesado}/notificar-correo`, {
+            method: 'POST'
+          });
+          if (resCorreo.ok) correoEnviado = true;
+        } catch (errCorreo) {
+          console.error('Error al notificar correo automáticamente:', errCorreo);
+        }
+      }
+
+      // Mensaje personalizado según el rol
+      if (esMedico) {
+        alert(
+          correoEnviado
+            ? '📧 ¡Informe cargado con éxito y correo enviado al paciente!'
+            : '✅ ¡Informe cargado con éxito! (Nota: Revisa si el paciente tiene un correo válido registrado).'
+        );
+      } else {
+        alert(estudioPendienteSeleccionado ? '¡Orden actualizada y procesada con éxito!' : '¡Estudio cargado con éxito!');
+      }
+
+      // Limpieza de estados y retorno a la lista de pendientes
+      setTitulo('');
+      handleLimpiarArchivos();
+      setPacienteSeleccionadoSubida(null);
+      setBusquedaPacienteSubida('');
+      setEstudioPendienteSeleccionado(null);
+      cargarEstudiosPendientes();
+      setSeccion('estudios-pendientes');
+    } else {
+      alert('Error al subir los archivos al servidor.');
+    }
+  } catch (error) {
+    console.error('Error al conectar:', error);
+    alert('Error de conexión con el servidor.');
+  }
+};
 
   const handleCancelarOrdenPendiente = async (estudioId) => {
     if (!confirm('¿Seguro que deseas cancelar y eliminar esta orden pendiente?')) return;
@@ -717,7 +766,7 @@ export default function PanelPersonal() {
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
               </svg>
-              <span>Crear Estudio / Notificar</span>
+              <span>{getLabelSubir()}</span>
             </button>
 
             {/* BOTÓN ESTUDIOS PENDIENTES */}
@@ -1147,7 +1196,7 @@ export default function PanelPersonal() {
                 </div>
 
                 {/* BOTONES DE ACCIÓN */}
-                {['secretaria', 'medico', 'médico', 'admin', 'superadmin'].includes(usuarioLogueado?.rol?.toLowerCase()) || esSuperAdmin ? (
+                {(['secretaria', 'admin', 'superadmin'].includes(usuarioLogueado?.rol?.toLowerCase()) || esSuperAdmin) ? (
                   <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
                     {!estudioPendienteSeleccionado && (
                       <button 
@@ -1164,17 +1213,23 @@ export default function PanelPersonal() {
                       onClick={handleSubirEstudioConArchivos}
                       className={`w-full ${!estudioPendienteSeleccionado ? 'sm:w-1/2' : 'w-full'} py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shadow-md transition-all cursor-pointer`}
                     >
-                      📤 Subir Archivo
+                      📤 Subir y Notificar
                     </button>
                   </div>
                 ) : (
-                  <button 
-                    type="button" 
-                    onClick={handleSubirEstudioConArchivos}
-                    className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shadow-md transition-all cursor-pointer mt-2"
-                  >
-                    📸 Subir Resultado
-                  </button>
+                  <div className="pt-2">
+                    <button 
+                      type="button" 
+                      onClick={handleSubirEstudioConArchivos}
+                      className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-2"
+                    >
+                      {['medico', 'médico'].includes(usuarioLogueado?.rol?.toLowerCase()) ? (
+                        <>📧 Subir Informe y Notificar por Correo</>
+                      ) : (
+                        <>📤 Subir y Procesar Estudio</>
+                      )}
+                    </button>
+                  </div>
                 )}
 
               </form>
@@ -1354,6 +1409,7 @@ export default function PanelPersonal() {
                       className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500/20 cursor-pointer"
                     >
                       <option value="tecnico">Técnico</option>
+                      <option value="tecnico_radiologico">Técnico Radiológico</option>
                       <option value="secretaria">Secretaría</option>
                       <option value="medico">Médico</option>
                       <option value="superadmin">SuperAdmin</option>
@@ -1706,7 +1762,7 @@ export default function PanelPersonal() {
           <svg className="w-5 h-5 mb-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
           </svg>
-          <span className="text-[10px]">Crear Orden</span>
+          <span className="text-[10px]">{getLabelSubirMobile()}</span>
         </button>
 
         <button
