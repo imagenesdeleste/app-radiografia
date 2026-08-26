@@ -1112,18 +1112,38 @@ export default function PanelPersonal() {
                   <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
                     Tipo de Examen
                   </label>
-                  <select 
-                    value={tipoExamen} 
-                    onChange={e => setTipoExamen(e.target.value)}
-                    disabled={
-                      !!estudioPendienteSeleccionado || 
-                      ['medico', 'médico'].includes(usuarioLogueado?.rol?.toLowerCase())
-                    }
-                    className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 cursor-pointer disabled:opacity-75 disabled:bg-slate-100"
-                  >
-                    <option value="Informe Médico">Informe Médico</option>
-                    <option value="Tomografías y/o Radiografías">Tomografías y/o Radiografías</option>
-                  </select>
+                  {(() => {
+                    const rolUser = usuarioLogueado?.rol?.toLowerCase();
+                    const esMedico = ['medico', 'médico'].includes(rolUser);
+                    const esTecnico = ['tecnico', 'técnico', 'tecnico_radiologico'].includes(rolUser);
+
+                    return (
+                      <select 
+                        value={tipoExamen} 
+                        onChange={e => setTipoExamen(e.target.value)}
+                        disabled={!!estudioPendienteSeleccionado || esMedico || esTecnico}
+                        className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 cursor-pointer disabled:opacity-75 disabled:bg-slate-100"
+                      >
+                        {/* TÉCNICOS: Solo ven la opción de imágenes */}
+                        {esTecnico && (
+                          <option value="Tomografías y/o Radiografías">Tomografías y/o Radiografías</option>
+                        )}
+
+                        {/* MÉDICOS: Solo ven la opción de informe médico */}
+                        {esMedico && (
+                          <option value="Informe Médico">Informe Médico</option>
+                        )}
+
+                        {/* SECRETARÍA Y ADMINS: Ven ambas opciones */}
+                        {!esTecnico && !esMedico && (
+                          <>
+                            <option value="Tomografías y/o Radiografías">Tomografías y/o Radiografías</option>
+                            <option value="Informe Médico">Informe Médico</option>
+                          </>
+                        )}
+                      </select>
+                    );
+                  })()}
                 </div>
 
                 <div>
