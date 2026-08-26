@@ -14,6 +14,10 @@ export default function PortalPaciente() {
   const [subcarpetaAbierta, setSubcarpetaAbierta] = useState(null); // Formato: "Fecha-Categoria-Sub"
   const [archivoPreview, setArchivoPreview] = useState(null);
 
+  // Estado para la animación de carga con el logo
+  const [cargandoModal, setCargandoModal] = useState(false);
+  const [mensajeCargandoModal, setMensajeCargandoModal] = useState('');
+
   // Función para clasificar cada archivo en su sub-carpeta específica
   const obtenerSubcarpeta = (est) => {
     const texto = `${est.tipo_examen || ''} ${est.titulo || ''} ${est.archivo_path || ''}`.toLowerCase();
@@ -51,28 +55,53 @@ export default function PortalPaciente() {
   }, {});
 
   const handleLogin = async (e) => {
-    e.preventDefault();
-    setError('');
+  e.preventDefault();
+  setError('');
 
-    try {
-      const res = await fetch('https://app-radiografia-production.up.railway.app/api/paciente/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cedula, clave })
-      });
+  // Activa el modal animado con el logo
+  setCargandoModal(true);
+  setMensajeCargandoModal('Iniciando sesión y buscando tus estudios...');
 
-      const data = await res.json();
+  try {
+    const res = await fetch('https://app-radiografia-production.up.railway.app/api/paciente/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cedula, clave })
+    });
 
-      if (res.ok) {
-        setDatosPaciente(data.paciente);
-        setEstudios(data.estudios || []);
-      } else {
-        setError(data.error || 'Cédula o contraseña incorrectas');
-      }
-    } catch {
-      setError('Error al conectar con el servidor');
+    const data = await res.json();
+
+    if (res.ok) {
+      setDatosPaciente(data.paciente);
+      setEstudios(data.estudios || []);
+    } else {
+      setError(data.error || 'Cédula o contraseña incorrectas');
     }
-  };
+  } catch {
+    setError('Error al conectar con el servidor');
+  } finally {
+    setCargandoModal(false); // Apaga la animación al terminar
+  }
+};
+
+const handleActualizarEstudios = async () => {
+  if (!datosPaciente?.id) return;
+  
+  setCargandoModal(true);
+  setMensajeCargandoModal('Actualizando tu historial de estudios...');
+
+  try {
+    const res = await fetch(`https://app-radiografia-production.up.railway.app/api/estudios/paciente/${datosPaciente.id}`);
+    if (res.ok) {
+      const data = await res.json();
+      setEstudios(Array.isArray(data) ? data : []);
+    }
+  } catch (e) {
+    console.error('Error actualizando:', e);
+  } finally {
+    setCargandoModal(false);
+  }
+};
 
   const mensajeWhatsApp = datosPaciente
     ? `Hola, soy ${datosPaciente.nombre_completo} (C.I: ${datosPaciente.cedula}) y necesito ayuda con mis resultados médicos.`
@@ -393,6 +422,40 @@ export default function PortalPaciente() {
       <footer className="py-4 text-center text-[11px] text-slate-400">
         © {new Date().getFullYear()} Unidad de Imágenes del Este - By Axell Peraza
       </footer>
+
+      {/* OVERLAY ANIMADO CON EL LOGO DE LA EMPRESA */}
+{cargandoModal && (
+  <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md flex flex-col items-center justify-center p-4 z-[100] font-sans">
+    <div className="bg-white rounded-3xl p-8 shadow-2xl flex flex-col items-center max-w-sm w-full text-center border border-slate-100">
+      
+      {/* CONTENEDOR DEL LOGO CON ANILLO GIRATORIO */}
+      <div className="relative w-28 h-28 mb-5 flex items-center justify-center">
+        {/* Círculo giratorio borgoña/rojo */}
+        <div className="absolute inset-0 rounded-full border-4 border-red-100 border-t-red-900 animate-spin"></div>
+        
+        {/* Logo con efecto de pulso suave */}
+        <img 
+          src="/logo.png" 
+          alt="Logo Unidad de Imágenes" 
+          className="w-20 h-20 object-contain animate-pulse drop-shadow-sm" 
+        />
+      </div>
+
+      <h3 className="text-base font-bold text-slate-900 mb-1">
+        Unidad de Imágenes Del Este
+      </h3>
+      
+      <p className="text-xs text-slate-600 font-medium leading-relaxed animate-pulse">
+        {mensajeCargandoModal}
+      </p>
+
+      <div className="mt-5 pt-4 border-t border-slate-100 w-full flex items-center justify-center gap-2 text-[10px] text-slate-400">
+        <span className="w-1.5 h-1.5 bg-red-800 rounded-full animate-ping"></span>
+        Cargando tu expediente médico seguro...
+      </div>
+    </div>
+  </div>
+)}
     </div>
   );
 }

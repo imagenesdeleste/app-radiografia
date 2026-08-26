@@ -11,6 +11,10 @@ export default function PanelPersonal() {
     }
   });
 
+  // Estados para la animación global de carga
+  const [cargandoEnvio, setCargandoEnvio] = useState(false);
+  const [mensajeCargando, setMensajeCargando] = useState('');
+
   const [autenticado, setAutenticado] = useState(() => {
     return !!localStorage.getItem('usuarioLogueado');
   });
@@ -178,6 +182,19 @@ export default function PanelPersonal() {
     setArchivos([]);
     const fileInput = document.getElementById('input-archivos');
     if (fileInput) fileInput.value = '';
+  };
+
+  // Genera el mensaje dinámico para la animación de carga
+  const getMensajeCargandoSubida = () => {
+    const rol = usuarioLogueado?.rol?.toLowerCase();
+
+    if (['medico', 'médico'].includes(rol)) {
+      return 'Subiendo informe médico y enviando notificación al paciente...';
+    }
+    if (['tecnico', 'técnico', 'tecnico_radiologico'].includes(rol)) {
+      return 'Subiendo placas y estudios radiológicos...';
+    }
+    return 'Subiendo archivos y procesando solicitud...';
   };
 
   // Login del Personal
@@ -357,34 +374,40 @@ export default function PanelPersonal() {
   };
 
   const handleCrearOrdenSinArchivos = async () => {
-    if (!pacienteSeleccionadoSubida) return alert('Selecciona un paciente de la lista');
-    if (!titulo.trim()) return alert('Ingresa el título del estudio');
+  if (!pacienteSeleccionadoSubida) return alert('Selecciona un paciente de la lista');
+  if (!titulo.trim()) return alert('Ingresa el título del estudio');
 
-    try {
-      const res = await fetch('https://app-radiografia-production.up.railway.app/api/estudios/crear-orden', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          paciente_id: pacienteSeleccionadoSubida.id,
-          tipo_examen: tipoExamen,
-          titulo: titulo
-        })
-      });
+  // Activa la animación para la orden
+  setCargandoEnvio(true);
+  setMensajeCargando('Creando orden de examen para el técnico...');
 
-      if (res.ok) {
-        alert('¡Orden de examen creada! Ya le aparece al técnico en sus pendientes.');
-        setTitulo('');
-        setPacienteSeleccionadoSubida(null);
-        setBusquedaPacienteSubida('');
-        cargarEstudiosPendientes();
-      } else {
-        alert('Error al crear la orden');
-      }
-    } catch (e) {
-      console.error('Error:', e);
-      alert('Error de conexión con el servidor');
+  try {
+    const res = await fetch('https://app-radiografia-production.up.railway.app/api/estudios/crear-orden', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        paciente_id: pacienteSeleccionadoSubida.id,
+        tipo_examen: tipoExamen,
+        titulo: titulo
+      })
+    });
+
+    if (res.ok) {
+      alert('¡Orden de examen creada! Ya le aparece al técnico en sus pendientes.');
+      setTitulo('');
+      setPacienteSeleccionadoSubida(null);
+      setBusquedaPacienteSubida('');
+      cargarEstudiosPendientes();
+    } else {
+      alert('Error al crear la orden');
     }
-  };
+  } catch (e) {
+    console.error('Error:', e);
+    alert('Error de conexión con el servidor');
+  } finally {
+    setCargandoEnvio(false); // Desactiva la animación
+  }
+};
 
   const handleSubirEstudioConArchivos = async () => {
   if (!pacienteSeleccionadoSubida) return alert('Selecciona un paciente de la lista.');
@@ -400,11 +423,14 @@ export default function PanelPersonal() {
   const esMedico = ['medico', 'médico'].includes(rolUser);
   const esTecnico = ['tecnico', 'técnico', 'tecnico_radiologico'].includes(rolUser) || estudioPendienteSeleccionado?.estado === 'pendiente_tecnico';
 
+  // Activa la animación con mensaje dinámico
+  setCargandoEnvio(true);
+  setMensajeCargando(getMensajeCargandoSubida());
+
   try {
     let res;
     let estudioIdProcesado = estudioPendienteSeleccionado?.id;
 
-    // A) Si estamos respondiendo a una ORDEN PENDIENTE:
     if (estudioPendienteSeleccionado) {
       const endpoint = esTecnico
         ? `https://app-radiografia-production.up.railway.app/api/estudios/${estudioPendienteSeleccionado.id}/cargar-imagenes`
@@ -414,9 +440,7 @@ export default function PanelPersonal() {
         method: 'PUT',
         body: formData
       });
-    } 
-    // B) Si estamos cargando un ESTUDIO/INFORME DIRECTO desde cero:
-    else {
+    } else {
       formData.append('paciente_id', pacienteSeleccionadoSubida.id);
       formData.append('tipo_examen', tipoExamen);
       formData.append('titulo', titulo);
@@ -434,7 +458,6 @@ export default function PanelPersonal() {
         estudioIdProcesado = responseData.id || responseData.estudioId;
       }
 
-      // 📧 SI ES MÉDICO: Enviar correo automáticamente en segundo plano al terminar de subir
       let correoEnviado = false;
       if (esMedico && pacienteSeleccionadoSubida?.correo && estudioIdProcesado) {
         try {
@@ -447,18 +470,16 @@ export default function PanelPersonal() {
         }
       }
 
-      // Mensaje personalizado según el rol
       if (esMedico) {
         alert(
           correoEnviado
             ? '📧 ¡Informe cargado con éxito y correo enviado al paciente!'
-            : '✅ ¡Informe cargado con éxito! (Nota: Revisa si el paciente tiene un correo válido registrado).'
+            : '✅ ¡Informe cargado con éxito! (Verifica si el paciente tiene un correo válido).'
         );
       } else {
         alert(estudioPendienteSeleccionado ? '¡Orden actualizada y procesada con éxito!' : '¡Estudio cargado con éxito!');
       }
 
-      // Limpieza de estados y retorno a la lista de pendientes
       setTitulo('');
       handleLimpiarArchivos();
       setPacienteSeleccionadoSubida(null);
@@ -472,6 +493,8 @@ export default function PanelPersonal() {
   } catch (error) {
     console.error('Error al conectar:', error);
     alert('Error de conexión con el servidor.');
+  } finally {
+    setCargandoEnvio(false); // Desactiva la animación al terminar
   }
 };
 
@@ -1827,6 +1850,40 @@ export default function PanelPersonal() {
         </button>
 
       </div>
+
+      {/* OVERLAY / ANIMACIÓN DE CARGA DINÁMICA DE PROCESAMIENTO */}
+{cargandoEnvio && (
+  <div className="fixed inset-0 bg-slate-900/75 backdrop-blur-md flex flex-col items-center justify-center p-4 z-[100] font-sans">
+    <div className="bg-white rounded-3xl p-8 shadow-2xl flex flex-col items-center max-w-sm w-full text-center border border-slate-100">
+      
+      {/* SPINNER ANIMADO CON ÍCONO SEGÚN ROL */}
+      <div className="relative w-20 h-20 mb-5 flex items-center justify-center">
+        <div className="absolute inset-0 rounded-full border-4 border-red-100 border-t-red-800 animate-spin"></div>
+        <div className="w-11 h-11 bg-red-50 rounded-full flex items-center justify-center text-2xl shadow-inner">
+          {(() => {
+            const rol = usuarioLogueado?.rol?.toLowerCase();
+            if (['medico', 'médico'].includes(rol)) return '🩺';
+            if (['tecnico', 'técnico', 'tecnico_radiologico'].includes(rol)) return '📸';
+            return '📋';
+          })()}
+        </div>
+      </div>
+
+      <h3 className="text-base font-bold text-slate-900 mb-1">
+        Procesando Archivos
+      </h3>
+      
+      <p className="text-xs text-slate-600 font-medium leading-relaxed animate-pulse">
+        {mensajeCargando}
+      </p>
+
+      <div className="mt-5 pt-4 border-t border-slate-100 w-full flex items-center justify-center gap-2 text-[10px] text-slate-400">
+        <span className="w-1.5 h-1.5 bg-red-800 rounded-full animate-ping"></span>
+        Por favor, espere un momento sin cerrar la ventana...
+      </div>
+    </div>
+  </div>
+)}
 
     </div>
   );
