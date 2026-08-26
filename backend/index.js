@@ -53,15 +53,10 @@ const storage = multer.diskStorage({
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
-    cb(null, uploadDir); // Guarda usando la ruta absoluta
+    cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
-    // Reemplaza espacios por guiones bajos pero SIN agregar Date.now()
-    const nombreLimpio = file.originalname.replace(/\s+/g, '_');
     cb(null, file.originalname);
-
-    // Si prefieres el nombre 100% exacto original (incluso con sus espacios intactos):
-    // cb(null, file.originalname);
   }
 });
 
@@ -185,13 +180,23 @@ app.get('/init-db', async (req, res) => {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
 
+      CREATE TABLE IF NOT EXISTS personal (
+        id SERIAL PRIMARY KEY,
+        cedula VARCHAR(20) UNIQUE NOT NULL,
+        nombre_completo VARCHAR(150) NOT NULL,
+        clave VARCHAR(255) NOT NULL,
+        rol VARCHAR(50) DEFAULT 'tecnico',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+
       CREATE TABLE IF NOT EXISTS estudios (
         id SERIAL PRIMARY KEY,
         paciente_id INT REFERENCES pacientes(id) ON DELETE CASCADE,
         tipo_examen VARCHAR(50) NOT NULL,
         titulo VARCHAR(150) NOT NULL,
-        archivo_path TEXT NOT NULL,
-        fecha_estudio DATE DEFAULT CURRENT_DATE
+        archivo_path TEXT,
+        estado VARCHAR(50) DEFAULT 'pendiente_tecnico',
+        fecha_estudio TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
     res.send("Base de datos e historial médico listos");
@@ -209,7 +214,6 @@ app.post('/api/pacientes', async (req, res) => {
       return res.status(400).json({ error: 'Cédula, nombre y contraseña son obligatorios' });
     }
 
-    // 1. Registrar paciente
     const resultPaciente = await pool.query(
       'INSERT INTO pacientes (cedula, nombre_completo, telefono, correo, clave) VALUES ($1, $2, $3, $4, $5) RETURNING id',
       [cedula, nombre_completo, telefono, correo, clave]
@@ -217,7 +221,6 @@ app.post('/api/pacientes', async (req, res) => {
 
     const pacienteId = resultPaciente.rows[0].id;
 
-    // 2. Si se marcó crear orden inicial, la guardamos como pendiente_tecnico
     if (crear_orden && titulo) {
       await pool.query(
         'INSERT INTO estudios (paciente_id, tipo_examen, titulo, fecha_estudio, estado) VALUES ($1, $2, $3, NOW(), $4)',
@@ -249,13 +252,11 @@ app.put('/api/pacientes/:id', async (req, res) => {
     const { cedula, nombre_completo, telefono, correo, clave } = req.body;
 
     if (clave && clave.trim() !== '') {
-      // Si se envió una contraseña nueva, la actualiza
       await pool.query(
         'UPDATE pacientes SET cedula = $1, nombre_completo = $2, telefono = $3, correo = $4, clave = $5 WHERE id = $6',
         [cedula, nombre_completo, telefono, correo, clave, id]
       );
     } else {
-      // Si se dejó en blanco, mantiene la clave anterior
       await pool.query(
         'UPDATE pacientes SET cedula = $1, nombre_completo = $2, telefono = $3, correo = $4 WHERE id = $5',
         [cedula, nombre_completo, telefono, correo, id]
@@ -267,6 +268,22 @@ app.put('/api/pacientes/:id', async (req, res) => {
     res.status(500).json({ error: 'Error al actualizar paciente' });
   }
 });
+
+// ELIMINAR UN PACIENTE
+app.delete('/api/pacientes/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await pool.query('DELETE FROM estudios WHERE paciente_id = $1', [id]);
+    await pool.query('DELETE FROM pacientes WHERE id = $1', [id]);
+    res.json({ mensaje: 'Paciente eliminado correctamente' });
+  } catch (error) {
+    res.status(500).json({ error: 'Error al eliminar el paciente' });
+  }
+});
+
+// =============================================================
+// GESTIÓN DE PERSONAL ADMINISTRATIVO (TABLA: personal)
+// =============================================================
 
 // OBTENER USUARIOS DEL PERSONAL
 app.get('/api/admin/usuarios', async (req, res) => {
@@ -305,7 +322,7 @@ app.post('/api/admin/usuarios', async (req, res) => {
   }
 });
 
-// ACTUALIZAR ROL DE UN USUARIO
+// ACTUALIZAR ROL DE UN USUARIO DEL PERSONAL
 app.put('/api/admin/usuarios/:id/rol', async (req, res) => {
   try {
     const { id } = req.params;
@@ -315,6 +332,24 @@ app.put('/api/admin/usuarios/:id/rol', async (req, res) => {
   } catch (error) {
     console.error('Error al actualizar rol:', error);
     res.status(500).json({ error: 'Error al actualizar el rol' });
+  }
+});
+
+// ACTUALIZAR CONTRASEÑA DE UN USUARIO DEL PERSONAL
+app.put('/api/admin/usuarios/:id/clave', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { clave } = req.body;
+
+    if (!clave || clave.trim() === '') {
+      return res.status(400).json({ error: 'La nueva contraseña no puede estar vacía' });
+    }
+
+    await pool.query('UPDATE personal SET clave = $1 WHERE id = $2', [clave.trim(), id]);
+    res.json({ mensaje: 'Contraseña actualizada correctamente' });
+  } catch (error) {
+    console.error('Error al cambiar contraseña:', error);
+    res.status(500).json({ error: 'Error al actualizar la contraseña' });
   }
 });
 
@@ -330,7 +365,35 @@ app.delete('/api/admin/usuarios/:id', async (req, res) => {
   }
 });
 
-// ACTUALIZAR CONTRASEÑA DE UN USUARIO DEL PERSONAL
+// RUTA: Login de Personal Administrativo
+app.post('/api/admin/login', async (req, res) => {
+  const { cedula, clave } = req.body;
+
+  const cedulaLimpia = String(cedula).trim();
+  const claveLimpia = String(clave).trim();
+
+  try {
+    const result = await pool.query(
+      'SELECT id, cedula, nombre_completo, rol FROM personal WHERE TRIM(cedula) = $1 AND TRIM(clave) = $2',
+      [cedulaLimpia, claveLimpia]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(401).json({ error: 'Credenciales inválidas' });
+    }
+
+    res.json({ mensaje: 'Login exitoso', usuario: result.rows[0] });
+  } catch (err) {
+    console.error("Error en login:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// =============================================================
+// GESTIÓN DE ESTUDIOS Y ORDENES
+// =============================================================
+
+// SUBIR ESTUDIO DIRECTO CON ARCHIVOS
 app.post('/api/estudios', upload.array('archivos'), async (req, res) => {
   const { paciente_id, tipo_examen, titulo, notificar_correo } = req.body;
 
@@ -341,29 +404,20 @@ app.post('/api/estudios', upload.array('archivos'), async (req, res) => {
   try {
     const estudiosGuardados = [];
 
-    // 1. Guardar cada archivo usando su nombre original como título en la BD
     for (const file of req.files) {
       const nombreReal = file.originalname;
 
       const result = await pool.query(
-        'INSERT INTO estudios (paciente_id, tipo_examen, titulo, archivo_path) VALUES ($1, $2, $3, $4) RETURNING *',
-        [
-          paciente_id, 
-          tipo_examen, 
-          nombreReal,   // En la BD se guarda el nombre real del archivo
-          file.filename // Nombre guardado en el servidor
-        ]
+        `INSERT INTO estudios (paciente_id, tipo_examen, titulo, archivo_path, estado) 
+         VALUES ($1, $2, $3, $4, 'completado') RETURNING *`,
+        [paciente_id, tipo_examen, nombreReal, file.filename]
       );
       estudiosGuardados.push(result.rows[0]);
     }
 
-    // 2. Responder al frontend con los registros creados
     res.json({ mensaje: 'Estudios cargados correctamente', estudios: estudiosGuardados });
 
-    // 3. Conversión segura del flag notificar_correo
     const debeNotificar = String(notificar_correo) === 'true' || notificar_correo === true;
-
-    console.log(`📧 Evaluando envío de correo... (notificar_correo recibido: "${notificar_correo}", evaluado: ${debeNotificar})`);
 
     if (debeNotificar) {
       const pacienteQuery = await pool.query(
@@ -373,35 +427,140 @@ app.post('/api/estudios', upload.array('archivos'), async (req, res) => {
 
       if (pacienteQuery.rows.length > 0) {
         const paciente = pacienteQuery.rows[0];
-        
         if (paciente.correo && paciente.correo.trim() !== '') {
-          console.log(`📩 Intentando enviar correo a: ${paciente.correo}`);
-          
           try {
             await enviarCorreoPaciente(
               paciente.correo,
               paciente.nombre_completo,
               tipo_examen || 'Radiografía',
-              titulo || 'Nuevo Estudio de Imagen' // Asunto enviado al correo
+              titulo || 'Nuevo Estudio de Imagen'
             );
-            console.log(`✅ Correo enviado exitosamente a ${paciente.correo}`);
           } catch (emailErr) {
-            console.error('❌ Error en el servidor de correo (Nodemailer/SMTP):', emailErr.message);
+            console.error('❌ Error enviando correo:', emailErr.message);
           }
-
-        } else {
-          console.log(`⚠️ El paciente "${paciente.nombre_completo}" no tiene correo electrónico registrado.`);
         }
-      } else {
-        console.log(`⚠️ No se encontró al paciente con ID: ${paciente_id}`);
       }
-    } else {
-      console.log('ℹ️ Se omitió el envío de correo (el usuario activo tiene rol técnico o notificar_correo es false).');
     }
 
   } catch (err) {
     console.error('🔥 Error al registrar estudio:', err.message);
     res.status(500).json({ error: err.message });
+  }
+});
+
+// OBTENER ESTUDIOS PENDIENTES
+app.get('/api/estudios/pendientes', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT e.id, e.tipo_examen, e.titulo, e.fecha_estudio, e.estado, e.archivo_path,
+             p.nombre_completo AS paciente_nombre, p.cedula AS paciente_cedula
+      FROM estudios e
+      JOIN pacientes p ON e.paciente_id = p.id
+      WHERE e.estado != 'completado'
+      ORDER BY e.fecha_estudio DESC
+    `);
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error al obtener pendientes:', error);
+    res.status(500).json({ error: 'Error al consultar pendientes: ' + error.message });
+  }
+});
+
+// CREAR ORDEN DE ESTUDIO PENDIENTE (Secretaría)
+app.post('/api/estudios/crear-orden', async (req, res) => {
+  try {
+    const { paciente_id, tipo_examen, titulo } = req.body;
+
+    if (!paciente_id || !titulo) {
+      return res.status(400).json({ error: 'Paciente y título son obligatorios' });
+    }
+
+    await pool.query(
+      'INSERT INTO estudios (paciente_id, tipo_examen, titulo, fecha_estudio, estado) VALUES ($1, $2, $3, NOW(), $4)',
+      [paciente_id, tipo_examen || 'Tomografías y/o Radiografías', titulo, 'pendiente_tecnico']
+    );
+
+    res.json({ mensaje: 'Orden creada correctamente' });
+  } catch (error) {
+    console.error('Error al crear orden:', error);
+    res.status(500).json({ error: 'Error al registrar la orden: ' + error.message });
+  }
+});
+
+// CARGAR IMÁGENES/PLACAS (Técnico -> pasa a pendiente_medico)
+app.put('/api/estudios/:id/cargar-imagenes', upload.array('archivos'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ error: 'Debes adjuntar al menos una imagen' });
+    }
+
+    const rutas = req.files.map(f => f.filename || f.path).join(',');
+
+    await pool.query(
+      'UPDATE estudios SET archivo_path = $1, estado = $2 WHERE id = $3',
+      [rutas, 'pendiente_medico', id]
+    );
+
+    res.json({ mensaje: 'Imágenes cargadas. Orden enviada al médico.' });
+  } catch (error) {
+    console.error('Error al cargar imágenes:', error);
+    res.status(500).json({ error: 'Error al actualizar estudio: ' + error.message });
+  }
+});
+
+// CARGAR INFORME Y COMPLETAR (Médico -> pasa a completado)
+app.put('/api/estudios/:id/cargar-informe', upload.array('archivos'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ error: 'Debes adjuntar el informe en PDF o imagen' });
+    }
+
+    const estudioActual = await pool.query('SELECT archivo_path FROM estudios WHERE id = $1', [id]);
+    const archivosPrevios = estudioActual.rows[0]?.archivo_path || '';
+    
+    const nuevasRutas = req.files.map(f => f.filename || f.path).join(',');
+    const rutasTotales = archivosPrevios ? `${archivosPrevios},${nuevasRutas}` : nuevasRutas;
+
+    await pool.query(
+      'UPDATE estudios SET archivo_path = $1, estado = $2 WHERE id = $3',
+      [rutasTotales, 'completado', id]
+    );
+
+    res.json({ mensaje: 'Informe médico adjuntado. Examen completado.' });
+  } catch (error) {
+    console.error('Error al cargar informe:', error);
+    res.status(500).json({ error: 'Error al finalizar estudio: ' + error.message });
+  }
+});
+
+// OBTENER LOS ESTUDIOS DE UN PACIENTE ESPECÍFICO
+app.get('/api/estudios/paciente/:paciente_id', async (req, res) => {
+  const { paciente_id } = req.params;
+
+  try {
+    const result = await pool.query(
+      'SELECT id, tipo_examen, titulo, archivo_path, fecha_estudio FROM estudios WHERE paciente_id = $1 ORDER BY fecha_estudio DESC',
+      [paciente_id]
+    );
+
+    res.json(result.rows);
+  } catch (err) {
+    console.error('🔥 Error al consultar expediente del paciente:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// CANCELAR / ELIMINAR UN ESTUDIO O ORDEN PENDIENTE
+app.delete('/api/estudios/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await pool.query('DELETE FROM estudios WHERE id = $1', [id]);
+    res.json({ mensaje: 'Orden o estudio eliminado correctamente' });
+  } catch (error) {
+    console.error('Error al borrar la orden:', error);
+    res.status(500).json({ error: 'Error al eliminar la orden de la base de datos' });
   }
 });
 
@@ -435,31 +594,7 @@ app.post('/api/paciente/login', async (req, res) => {
   }
 });
 
-// RUTA: Login de Personal Administrativo
-app.post('/api/admin/login', async (req, res) => {
-  const { cedula, clave } = req.body;
-
-  const cedulaLimpia = String(cedula).trim();
-  const claveLimpia = String(clave).trim();
-
-  try {
-    const result = await pool.query(
-      'SELECT id, cedula, nombre_completo, rol FROM personal WHERE TRIM(cedula) = $1 AND TRIM(clave) = $2',
-      [cedulaLimpia, claveLimpia]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(401).json({ error: 'Credenciales inválidas' });
-    }
-
-    res.json({ mensaje: 'Login exitoso', usuario: result.rows[0] });
-  } catch (err) {
-    console.error("Error en login:", err);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// 🟢 RUTA CORREGIDA: Descargar archivo buscando directamente en uploadDir
+// DESCARGAR ARCHIVO DE UN ESTUDIO
 app.get('/api/descargar/:id', async (req, res) => {
   const { id } = req.params;
 
@@ -472,14 +607,12 @@ app.get('/api/descargar/:id', async (req, res) => {
 
     const estudio = result.rows[0];
     
-    // Extraemos solo el nombre limpio del archivo
-    const soloNombreArchivo = path.basename(estudio.archivo_path);
+    // Si hay múltiples archivos separados por coma, toma el primero para la descarga directa
+    const primerArchivo = estudio.archivo_path ? estudio.archivo_path.split(',')[0] : '';
+    const soloNombreArchivo = path.basename(primerArchivo);
     const filePath = path.join(uploadDir, soloNombreArchivo);
 
-    console.log("🔍 Buscando archivo físico en:", filePath);
-
     if (!fs.existsSync(filePath)) {
-      console.error("❌ Archivo físico no encontrado en:", filePath);
       return res.status(404).json({ error: 'Archivo físico no encontrado en el servidor' });
     }
 
@@ -489,170 +622,6 @@ app.get('/api/descargar/:id', async (req, res) => {
   } catch (err) {
     console.error('🔥 Error en descarga:', err.message);
     res.status(500).json({ error: 'Error del servidor al descargar el archivo' });
-  }
-});
-
-// RUTA: Obtener los estudios de un paciente específico (Para el PanelPersonal)
-app.get('/api/estudios/paciente/:paciente_id', async (req, res) => {
-  const { paciente_id } = req.params;
-
-  try {
-    const result = await pool.query(
-      'SELECT id, tipo_examen, titulo, archivo_path, fecha_estudio FROM estudios WHERE paciente_id = $1 ORDER BY fecha_estudio DESC',
-      [paciente_id]
-    );
-
-    res.json(result.rows);
-  } catch (err) {
-    console.error('🔥 Error al consultar expediente del paciente:', err.message);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// ELIMINAR UN ESTUDIO
-app.delete('/api/estudios/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    await pool.query('DELETE FROM estudios WHERE id = $1', [id]);
-    res.json({ mensaje: 'Estudio eliminado correctamente' });
-  } catch (error) {
-    res.status(500).json({ error: 'Error al eliminar el estudio' });
-  }
-});
-
-// ELIMINAR UN PACIENTE
-app.delete('/api/pacientes/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    // Borra primero los estudios asociados para mantener integridad
-    await pool.query('DELETE FROM estudios WHERE paciente_id = $1', [id]);
-    await pool.query('DELETE FROM pacientes WHERE id = $1', [id]);
-    res.json({ mensaje: 'Paciente eliminado correctamente' });
-  } catch (error) {
-    res.status(500).json({ error: 'Error al eliminar el paciente' });
-  }
-});
-
-// OBTENER TODOS LOS USUARIOS DEL PERSONAL
-app.get('/api/admin/usuarios', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT id, cedula, nombre_completo, rol FROM usuarios_personal ORDER BY id ASC');
-    res.json(result.rows);
-  } catch (error) {
-    res.status(500).json({ error: 'Error al obtener usuarios' });
-  }
-});
-
-// ACTUALIZAR ROL DE UN USUARIO
-app.put('/api/admin/usuarios/:id/rol', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { rol } = req.body;
-    await pool.query('UPDATE usuarios_personal SET rol = $1 WHERE id = $2', [rol, id]);
-    res.json({ mensaje: 'Rol actualizado correctamente' });
-  } catch (error) {
-    res.status(500).json({ error: 'Error al actualizar el rol' });
-  }
-});
-
-// 1. SECRETARÍA / SUPERADMIN: Crear orden de estudio pendiente
-// 1. OBTENER ESTUDIOS PENDIENTES (Con información del paciente)
-app.get('/api/estudios/pendientes', async (req, res) => {
-  try {
-    const result = await pool.query(`
-      SELECT e.id, e.tipo_examen, e.titulo, e.fecha_estudio, e.estado, e.archivo_path,
-             p.nombre_completo AS paciente_nombre, p.cedula AS paciente_cedula
-      FROM estudios e
-      JOIN pacientes p ON e.paciente_id = p.id
-      WHERE e.estado != 'completado'
-      ORDER BY e.fecha_estudio DESC
-    `);
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error al obtener pendientes:', error);
-    res.status(500).json({ error: 'Error al consultar pendientes: ' + error.message });
-  }
-});
-
-// 2. SECRETARÍA: CREAR ORDEN DE ESTUDIO (Estado: pendiente_tecnico)
-app.post('/api/estudios/crear-orden', async (req, res) => {
-  try {
-    const { paciente_id, tipo_examen, titulo } = req.body;
-
-    if (!paciente_id || !titulo) {
-      return res.status(400).json({ error: 'Paciente y título son obligatorios' });
-    }
-
-    await pool.query(
-      'INSERT INTO estudios (paciente_id, tipo_examen, titulo, fecha_estudio, estado) VALUES ($1, $2, $3, NOW(), $4)',
-      [paciente_id, tipo_examen || 'Tomografías y/o Radiografías', titulo, 'pendiente_tecnico']
-    );
-
-    res.json({ mensaje: 'Orden creada correctamente' });
-  } catch (error) {
-    console.error('Error al crear orden:', error);
-    res.status(500).json({ error: 'Error al registrar la orden: ' + error.message });
-  }
-});
-
-// 3. TÉCNICO: CARGAR IMÁGENES/PLACAS (Pasa a: pendiente_medico)
-app.put('/api/estudios/:id/cargar-imagenes', upload.array('archivos'), async (req, res) => {
-  try {
-    const { id } = req.params;
-    if (!req.files || req.files.length === 0) {
-      return res.status(400).json({ error: 'Debes adjuntar al menos una imagen' });
-    }
-
-    const rutas = req.files.map(f => f.filename || f.path).join(',');
-
-    await pool.query(
-      'UPDATE estudios SET archivo_path = $1, estado = $2 WHERE id = $3',
-      [rutas, 'pendiente_medico', id]
-    );
-
-    res.json({ mensaje: 'Imágenes cargadas. Orden enviada al médico.' });
-  } catch (error) {
-    console.error('Error al cargar imágenes:', error);
-    res.status(500).json({ error: 'Error al actualizar estudio: ' + error.message });
-  }
-});
-
-// 4. MÉDICO: CARGAR INFORME Y COMPLETAR (Pasa a: completado)
-app.put('/api/estudios/:id/cargar-informe', upload.array('archivos'), async (req, res) => {
-  try {
-    const { id } = req.params;
-    if (!req.files || req.files.length === 0) {
-      return res.status(400).json({ error: 'Debes adjuntar el informe en PDF o imagen' });
-    }
-
-    // Obtenemos archivos previos (imágenes del técnico) para conservar todo en la columna
-    const estudioActual = await pool.query('SELECT archivo_path FROM estudios WHERE id = $1', [id]);
-    const archivosPrevios = estudioActual.rows[0]?.archivo_path || '';
-    
-    const nuevasRutas = req.files.map(f => f.filename || f.path).join(',');
-    const rutasTotales = archivosPrevios ? `${archivosPrevios},${nuevasRutas}` : nuevasRutas;
-
-    await pool.query(
-      'UPDATE estudios SET archivo_path = $1, estado = $2 WHERE id = $3',
-      [rutasTotales, 'completado', id]
-    );
-
-    res.json({ mensaje: 'Informe médico adjuntado. Examen completado.' });
-  } catch (error) {
-    console.error('Error al cargar informe:', error);
-    res.status(500).json({ error: 'Error al finalizar estudio: ' + error.message });
-  }
-});
-
-// ELIMINAR / CANCELAR ORDEN O ESTUDIO
-app.delete('/api/estudios/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    await pool.query('DELETE FROM estudios WHERE id = $1', [id]);
-    res.json({ mensaje: 'Orden eliminada correctamente' });
-  } catch (error) {
-    console.error('Error al borrar la orden:', error);
-    res.status(500).json({ error: 'Error al eliminar la orden de la base de datos' });
   }
 });
 
