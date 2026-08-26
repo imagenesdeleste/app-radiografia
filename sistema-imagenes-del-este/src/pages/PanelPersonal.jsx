@@ -199,34 +199,43 @@ export default function PanelPersonal() {
 
   // Login del Personal
   const handleAdminLogin = async (e) => {
-    e.preventDefault();
-    setErrorLogin('');
-    try {
-      const res = await fetch('https://app-radiografia-production.up.railway.app/api/admin/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cedula: adminCedula, clave: adminClave })
-      });
-      const data = await res.json();
-      if (res.ok) {
-        localStorage.setItem('usuarioLogueado', JSON.stringify(data.usuario));
-        setAutenticado(true);
-        setUsuarioLogueado(data.usuario);
-        setAdminCedula('');
-        setAdminClave('');
+  e.preventDefault();
+  setErrorLogin('');
 
-        if (data.usuario?.rol === 'medico' || data.usuario?.rol === 'tecnico') {
-          setSeccion('estudios-pendientes');
-        } else {
-          setSeccion('pacientes-lista');
-        }
+  // Activa la animación con el logo
+  setCargandoEnvio(true);
+  setMensajeCargando('Verificando credenciales e iniciando sesión...');
+
+  try {
+    const res = await fetch('https://app-radiografia-production.up.railway.app/api/admin/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cedula: adminCedula, clave: adminClave })
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      localStorage.setItem('usuarioLogueado', JSON.stringify(data.usuario));
+      setAutenticado(true);
+      setUsuarioLogueado(data.usuario);
+      setAdminCedula('');
+      setAdminClave('');
+
+      if (data.usuario?.rol === 'medico' || data.usuario?.rol === 'tecnico') {
+        setSeccion('estudios-pendientes');
       } else {
-        setErrorLogin(data.error || 'Credenciales inválidas');
+        setSeccion('pacientes-lista');
       }
-    } catch {
-      setErrorLogin('Error de conexión con el servidor');
+    } else {
+      setErrorLogin(data.error || 'Credenciales inválidas');
     }
-  };
+  } catch {
+    setErrorLogin('Error de conexión con el servidor');
+  } finally {
+    setCargandoEnvio(false); // Apaga la animación al terminar
+  }
+};
 
   // Cerrar Sesión
   const handleCerrarSesion = () => {
@@ -1851,39 +1860,39 @@ export default function PanelPersonal() {
 
       </div>
 
-      {/* OVERLAY / ANIMACIÓN DE CARGA DINÁMICA DE PROCESAMIENTO */}
-{cargandoEnvio && (
-  <div className="fixed inset-0 bg-slate-900/75 backdrop-blur-md flex flex-col items-center justify-center p-4 z-[100] font-sans">
-    <div className="bg-white rounded-3xl p-8 shadow-2xl flex flex-col items-center max-w-sm w-full text-center border border-slate-100">
-      
-      {/* SPINNER ANIMADO CON ÍCONO SEGÚN ROL */}
-      <div className="relative w-20 h-20 mb-5 flex items-center justify-center">
-        <div className="absolute inset-0 rounded-full border-4 border-red-100 border-t-red-800 animate-spin"></div>
-        <div className="w-11 h-11 bg-red-50 rounded-full flex items-center justify-center text-2xl shadow-inner">
-          {(() => {
-            const rol = usuarioLogueado?.rol?.toLowerCase();
-            if (['medico', 'médico'].includes(rol)) return '🩺';
-            if (['tecnico', 'técnico', 'tecnico_radiologico'].includes(rol)) return '📸';
-            return '📋';
-          })()}
+      {/* OVERLAY ANIMADO CON EL LOGO DE LA EMPRESA */}
+      {cargandoEnvio && (
+        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md flex flex-col items-center justify-center p-4 z-[100] font-sans">
+          <div className="bg-white rounded-3xl p-8 shadow-2xl flex flex-col items-center max-w-sm w-full text-center border border-slate-100">
+            
+            {/* CONTENEDOR DEL LOGO CON ANILLO GIRATORIO */}
+            <div className="relative w-28 h-28 mb-5 flex items-center justify-center">
+              {/* Anillo giratorio rojo */}
+              <div className="absolute inset-0 rounded-full border-4 border-red-100 border-t-red-800 animate-spin"></div>
+              
+              {/* Logo con animación de pulso */}
+              <img 
+                src="/logo.png" 
+                alt="Logo Unidad de Imágenes" 
+                className="w-20 h-20 object-contain animate-pulse drop-shadow-sm" 
+              />
+            </div>
+
+            <h3 className="text-base font-bold text-slate-900 mb-1">
+              Unidad de Imágenes Del Este
+            </h3>
+            
+            <p className="text-xs text-slate-600 font-medium leading-relaxed animate-pulse">
+              {mensajeCargando}
+            </p>
+
+            <div className="mt-5 pt-4 border-t border-slate-100 w-full flex items-center justify-center gap-2 text-[10px] text-slate-400">
+              <span className="w-1.5 h-1.5 bg-red-800 rounded-full animate-ping"></span>
+              Por favor, espere un momento...
+            </div>
+          </div>
         </div>
-      </div>
-
-      <h3 className="text-base font-bold text-slate-900 mb-1">
-        Procesando Archivos
-      </h3>
-      
-      <p className="text-xs text-slate-600 font-medium leading-relaxed animate-pulse">
-        {mensajeCargando}
-      </p>
-
-      <div className="mt-5 pt-4 border-t border-slate-100 w-full flex items-center justify-center gap-2 text-[10px] text-slate-400">
-        <span className="w-1.5 h-1.5 bg-red-800 rounded-full animate-ping"></span>
-        Por favor, espere un momento sin cerrar la ventana...
-      </div>
-    </div>
-  </div>
-)}
+      )}
 
     </div>
   );
