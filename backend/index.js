@@ -118,8 +118,8 @@ export const enviarCorreoPaciente = async (
               </p>
             </div>
 
-            <p style="font-size: 12px; color: #611B1E; line-height: 1.5; text-align: center; margin-bottom: 0; font-weight: 500;">
-              Para acceder, ingresa con tu <strong>número de cédula </strong> y tu clave registrada (Tu Cédula).
+            <p style="font-size: 15px; color: #611B1E; line-height: 1.5; text-align: center; margin-bottom: 0; font-weight: 500;">
+              Para acceder, tu contraseña<strong> ES el NÚMERO DE CÉDULA REGISTRADO</strong> en nuestro sistema .
             </p>
 
             <div style="text-align: center; margin: 30px 0;">

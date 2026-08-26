@@ -1153,7 +1153,7 @@ export default function PanelPersonal() {
                       onClick={handleSubirEstudioConArchivos}
                       className={`w-full ${!estudioPendienteSeleccionado ? 'sm:w-1/2' : 'w-full'} py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shadow-md transition-all cursor-pointer`}
                     >
-                      📤 Subir y Notificar
+                      📤 Subir Archivo
                     </button>
                   </div>
                 ) : (

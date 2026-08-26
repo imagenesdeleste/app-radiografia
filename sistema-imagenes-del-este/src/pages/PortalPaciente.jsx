@@ -65,7 +65,7 @@ export default function PortalPaciente() {
 
       if (res.ok) {
         setDatosPaciente(data.paciente);
-        setEstudios(data.estudios);
+        setEstudios(data.estudios || []);
       } else {
         setError(data.error || 'Cédula o contraseña incorrectas');
       }
@@ -250,8 +250,7 @@ export default function PortalPaciente() {
                                       const claveSub = `${fecha}-${catNombre}-${subNombre}`;
                                       const estaSubAbierta = subcarpetaAbierta === claveSub;
 
-                                      // Ícono según el tipo de sub-carpeta
-                                      const iconoSub = subNombre === 'Tomografías / Radiografías' ? '🧠' : subNombre === 'Informes' ? '' : '📄';
+                                      const iconoSub = subNombre === 'Tomografías' ? '🧠' : subNombre === 'Radiografías' ? '🦴' : subNombre === 'Informes Médicos' ? '📄' : '📁';
 
                                       return (
                                         <div key={subNombre} className="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-2xs">
@@ -272,34 +271,60 @@ export default function PortalPaciente() {
                                             </span>
                                           </button>
 
-                                          {/* ARCHIVOS */}
+                                          {/* DESGLOSE DE ARCHIVOS MULTIPLES DENTRO DEL ESTUDIO */}
                                           {estaSubAbierta && (
-                                            <div className="p-2 border-t border-slate-100 space-y-1.5 bg-white">
-                                              {listaEstudios.map((e) => (
-                                                <div key={e.id} className="p-2 border border-slate-100 bg-slate-50 rounded-lg flex items-center justify-between hover:border-slate-200 transition-all">
-                                                  <div className="pr-2 truncate">
-                                                    <h6 className="text-xs font-semibold text-slate-800 leading-tight truncate">{e.titulo}</h6>
-                                                  </div>
+                                            <div className="p-2 border-t border-slate-100 space-y-2 bg-white">
+                                              {listaEstudios.map((e) => {
+                                                const archivosLista = e.archivo_path 
+                                                  ? e.archivo_path.split(',').map(a => a.trim()).filter(Boolean) 
+                                                  : [];
 
-                                                  <div className="flex items-center gap-1.5 shrink-0">
-                                                    <button
-                                                      type="button"
-                                                      onClick={() => setArchivoPreview(`https://app-radiografia-production.up.railway.app/api/descargar/${e.id}`)}
-                                                      className="px-2.5 py-1 bg-slate-200 hover:bg-slate-300 text-slate-700 text-[11px] font-medium rounded-lg transition-colors cursor-pointer"
-                                                    >
-                                                      👁️ Ver
-                                                    </button>
+                                                return (
+                                                  <div key={e.id} className="p-2.5 border border-slate-200 bg-slate-50 rounded-xl space-y-2">
+                                                    <h6 className="text-xs font-bold text-slate-800 leading-tight">{e.titulo}</h6>
+                                                    
+                                                    {archivosLista.length > 0 ? (
+                                                      <div className="space-y-1.5">
+                                                        {archivosLista.map((arch, idx) => {
+                                                          const urlArchivo = `https://app-radiografia-production.up.railway.app/api/descargar-archivo/${encodeURIComponent(arch)}`;
+                                                          
+                                                          return (
+                                                            <div key={idx} className="p-2 bg-white border border-slate-200 rounded-lg flex items-center justify-between text-xs hover:border-slate-300 transition-colors">
+                                                              <span className="truncate max-w-[150px] sm:max-w-[200px] text-slate-700 font-medium">
+                                                                📄 {arch}
+                                                              </span>
 
-                                                    <a 
-                                                      href={`https://app-radiografia-production.up.railway.app/api/descargar/${e.id}`} 
-                                                      download
-                                                      className="px-2.5 py-1 bg-red-950 hover:bg-red-800 text-white text-[11px] font-semibold rounded-lg transition-colors cursor-pointer"
-                                                    >
-                                                      ⬇️
-                                                    </a>
+                                                              <div className="flex items-center gap-1.5 shrink-0">
+                                                                <button
+                                                                  type="button"
+                                                                  onClick={() => setArchivoPreview(urlArchivo)}
+                                                                  className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-medium rounded-lg transition-colors cursor-pointer"
+                                                                >
+                                                                  👁️ Ver
+                                                                </button>
+
+                                                                <a 
+                                                                  href={urlArchivo} 
+                                                                  target="_blank"
+                                                                  rel="noopener noreferrer"
+                                                                  download
+                                                                  className="px-2 py-1 bg-red-950 hover:bg-red-800 text-white text-[11px] font-semibold rounded-lg transition-colors cursor-pointer"
+                                                                >
+                                                                  ⬇️
+                                                                </a>
+                                                              </div>
+                                                            </div>
+                                                          );
+                                                        })}
+                                                      </div>
+                                                    ) : (
+                                                      <p className="text-[11px] text-amber-700 bg-amber-50 p-2 rounded-lg border border-amber-100 italic">
+                                                        ⏳ Resultado en proceso de publicación.
+                                                      </p>
+                                                    )}
                                                   </div>
-                                                </div>
-                                              ))}
+                                                );
+                                              })}
                                             </div>
                                           )}
 
@@ -366,7 +391,7 @@ export default function PortalPaciente() {
 
       {/* FOOTER */}
       <footer className="py-4 text-center text-[11px] text-slate-400">
-        © {new Date().getFullYear()} Unidad de imagenes del Este - By Axell Peraza
+        © {new Date().getFullYear()} Unidad de Imágenes del Este - By Axell Peraza
       </footer>
     </div>
   );
