@@ -1084,36 +1084,7 @@ export default function PanelPersonal() {
                         </div>
 
                         <div className="flex items-center gap-2">
-                          {(esMiTurnoTecnico || esSuperAdmin) && (
-                            <button
-                              onClick={() => {
-                                const input = document.createElement('input');
-                                input.type = 'file';
-                                input.multiple = true;
-                                input.onchange = async (e) => {
-                                  const files = Array.from(e.target.files);
-                                  if (files.length === 0) return;
-                                  
-                                  const formData = new FormData();
-                                  files.forEach(f => formData.append('archivos', f));
-
-                                  const res = await fetch(`https://app-radiografia-production.up.railway.app/api/estudios/${est.id}/cargar-imagenes`, {
-                                    method: 'PUT',
-                                    body: formData
-                                  });
-
-                                  if (res.ok) {
-                                    alert('¡Imágenes subidas! Orden enviada al médico.');
-                                    cargarEstudiosPendientes();
-                                  }
-                                };
-                                input.click();
-                              }}
-                              className="px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-xl shadow-sm transition-all cursor-pointer"
-                            >
-                              📸 Subir Placas / Radiografía
-                            </button>
-                          )}
+                          
 
                           {/* ACCIONES SEGÚN EL ROL */}
                           <div className="flex items-center gap-2">
