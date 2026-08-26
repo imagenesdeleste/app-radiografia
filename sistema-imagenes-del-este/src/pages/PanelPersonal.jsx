@@ -1027,7 +1027,7 @@ const handleSubirEstudioConArchivos = async () => {
                 </div>
 
                 {/* BOTONES DE ACCIÓN */}
-                {(usuarioLogueado?.rol === 'secretaria' || esSuperAdmin) ? (
+                {(usuarioLogueado?.rol === 'secretaria', 'medico' || esSuperAdmin ) ? (
                   <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
                     <button 
                       type="button" 
@@ -1144,7 +1144,7 @@ const handleSubirEstudioConArchivos = async () => {
                               }}
                               className="px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-xl shadow-sm transition-all cursor-pointer"
                             >
-                              📸 Cargar Placas
+                              📸 Subir Estudios
                             </button>
                           )}
 
