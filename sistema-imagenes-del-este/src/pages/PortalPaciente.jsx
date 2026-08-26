@@ -250,7 +250,7 @@ export default function PortalPaciente() {
                                       const claveSub = `${fecha}-${catNombre}-${subNombre}`;
                                       const estaSubAbierta = subcarpetaAbierta === claveSub;
 
-                                      const iconoSub = subNombre === 'Tomografías' ? '🧠' : subNombre === 'Radiografías' ? '🦴' : subNombre === 'Informes Médicos' ? '📄' : '📁';
+                                      const iconoSub = subNombre === 'Estudios' ? '🧠' : subNombre === 'Radiografías' ? '🦴' : subNombre === 'Informes Médicos' ? '📄' : '📁';
 
                                       return (
                                         <div key={subNombre} className="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-2xs">
