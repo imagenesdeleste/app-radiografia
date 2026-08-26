@@ -317,6 +317,27 @@ export default function PanelPersonal() {
     }
   };
 
+  // CANCELAR / ELIMINAR ORDEN PENDIENTE
+  const handleCancelarOrdenPendiente = async (estudioId) => {
+    if (!confirm('¿Seguro que deseas cancelar y eliminar esta orden pendiente?')) return;
+
+    try {
+      const res = await fetch(`https://app-radiografia-production.up.railway.app/api/estudios/${estudioId}`, {
+        method: 'DELETE'
+      });
+
+      if (res.ok) {
+        alert('¡Orden cancelada y eliminada con éxito!');
+        cargarEstudiosPendientes(); // Recarga la lista en vivo
+      } else {
+        alert('Error al eliminar la orden');
+      }
+    } catch (e) {
+      console.error('Error:', e);
+      alert('Error de conexión con el servidor');
+    }
+  };
+
   const handleGuardarEstudio = (e) => {
     e.preventDefault();
     if (archivos.length > 0) {
@@ -1094,35 +1115,84 @@ export default function PanelPersonal() {
                             </button>
                           )}
 
-                          {(esMiTurnoMedico || esSuperAdmin) && (
-                            <button
-                              onClick={() => {
-                                const input = document.createElement('input');
-                                input.type = 'file';
-                                input.onchange = async (e) => {
-                                  const file = e.target.files[0];
-                                  if (!file) return;
+                          {/* ACCIONES SEGÚN EL ROL */}
+                          <div className="flex items-center gap-2">
+                            
+                            {/* 1. CANCELAR / BORRAR ORDEN (Secretaría o SuperAdmin) */}
+                            {(usuarioLogueado?.rol === 'secretaria' || esSuperAdmin) && (
+                              <button
+                                onClick={() => handleCancelarOrdenPendiente(est.id)}
+                                className="px-3 py-2 bg-red-100 hover:bg-red-200 text-red-700 text-xs font-semibold rounded-xl transition-all cursor-pointer"
+                                title="Cancelar esta orden"
+                              >
+                                🗑️ Cancelar
+                              </button>
+                            )}
 
-                                  const formData = new FormData();
-                                  formData.append('archivos', file);
+                            {/* 2. SUBIR PLACAS (Técnico o SuperAdmin) */}
+                            {(esMiTurnoTecnico || esSuperAdmin) && (
+                              <button
+                                onClick={() => {
+                                  const input = document.createElement('input');
+                                  input.type = 'file';
+                                  input.multiple = true;
+                                  input.onchange = async (e) => {
+                                    const files = Array.from(e.target.files);
+                                    if (files.length === 0) return;
+                                    
+                                    const formData = new FormData();
+                                    files.forEach(f => formData.append('archivos', f));
 
-                                  const res = await fetch(`https://app-radiografia-production.up.railway.app/api/estudios/${est.id}/cargar-informe`, {
-                                    method: 'PUT',
-                                    body: formData
-                                  });
+                                    const res = await fetch(`https://app-radiografia-production.up.railway.app/api/estudios/${est.id}/cargar-imagenes`, {
+                                      method: 'PUT',
+                                      body: formData
+                                    });
 
-                                  if (res.ok) {
-                                    alert('¡Informe adjuntado! Examen finalizado.');
-                                    cargarEstudiosPendientes();
-                                  }
-                                };
-                                input.click();
-                              }}
-                              className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl shadow-sm transition-all cursor-pointer"
-                            >
-                              📝 Adjuntar Informe Médico
-                            </button>
-                          )}
+                                    if (res.ok) {
+                                      alert('¡Imágenes subidas! Orden enviada al médico.');
+                                      cargarEstudiosPendientes();
+                                    }
+                                  };
+                                  input.click();
+                                }}
+                                className="px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-xl shadow-sm transition-all cursor-pointer"
+                              >
+                                📸 Subir Placas / Radiografía
+                              </button>
+                            )}
+
+                            {/* 3. ADJUNTAR INFORME (Médico o SuperAdmin) */}
+                            {(esMiTurnoMedico || esSuperAdmin) && (
+                              <button
+                                onClick={() => {
+                                  const input = document.createElement('input');
+                                  input.type = 'file';
+                                  input.onchange = async (e) => {
+                                    const file = e.target.files[0];
+                                    if (!file) return;
+
+                                    const formData = new FormData();
+                                    formData.append('archivos', file);
+
+                                    const res = await fetch(`https://app-radiografia-production.up.railway.app/api/estudios/${est.id}/cargar-informe`, {
+                                      method: 'PUT',
+                                      body: formData
+                                    });
+
+                                    if (res.ok) {
+                                      alert('¡Informe adjuntado! Examen finalizado.');
+                                      cargarEstudiosPendientes();
+                                    }
+                                  };
+                                  input.click();
+                                }}
+                                className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl shadow-sm transition-all cursor-pointer"
+                              >
+                                📝 Adjuntar Informe Médico
+                              </button>
+                            )}
+
+                          </div>
                         </div>
                       </div>
                     );

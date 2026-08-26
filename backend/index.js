@@ -644,6 +644,18 @@ app.put('/api/estudios/:id/cargar-informe', upload.array('archivos'), async (req
   }
 });
 
+// ELIMINAR / CANCELAR ORDEN O ESTUDIO
+app.delete('/api/estudios/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await pool.query('DELETE FROM estudios WHERE id = $1', [id]);
+    res.json({ mensaje: 'Orden eliminada correctamente' });
+  } catch (error) {
+    console.error('Error al borrar la orden:', error);
+    res.status(500).json({ error: 'Error al eliminar la orden de la base de datos' });
+  }
+});
+
 // =============================================================
 // 5. INICIAR SERVIDOR
 // =============================================================
