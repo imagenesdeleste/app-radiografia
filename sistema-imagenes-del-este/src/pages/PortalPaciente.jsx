@@ -251,7 +251,7 @@ export default function PortalPaciente() {
                                       const estaSubAbierta = subcarpetaAbierta === claveSub;
 
                                       // Ícono según el tipo de sub-carpeta
-                                      const iconoSub = subNombre === 'Tomografías' ? '🧠' : subNombre === 'Radiografías' ? '🩻' : '📄';
+                                      const iconoSub = subNombre === 'Tomografías / Radiografías' ? '🧠' : subNombre === 'Informes' ? '' : '📄';
 
                                       return (
                                         <div key={subNombre} className="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-2xs">

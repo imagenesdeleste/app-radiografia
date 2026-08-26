@@ -556,29 +556,11 @@ app.put('/api/admin/usuarios/:id/rol', async (req, res) => {
 });
 
 // 1. SECRETARÍA / SUPERADMIN: Crear orden de estudio pendiente
-app.get('/api/estudios/pendientes', async (req, res) => {
-  try {
-    const result = await pool.query(`
-      SELECT e.id, e.tipo_examen, e.titulo, e.fecha_estudio, e.estado, e.ruta_archivo,
-             p.nombre_completo AS paciente_nombre, p.cedula AS paciente_cedula
-      FROM estudios e
-      JOIN pacientes p ON e.paciente_id = p.id
-      WHERE e.estado IN ('pendiente_tecnico', 'pendiente_medico')
-      ORDER BY e.fecha_estudio DESC
-    `);
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error al obtener pendientes:', error);
-    res.status(500).json({ error: 'Error en base de datos: ' + error.message });
-  }
-});
-
-// 2. TÉCNICOS / MÉDICOS: Obtener lista de estudios pendientes
 // 1. OBTENER ESTUDIOS PENDIENTES (Con información del paciente)
 app.get('/api/estudios/pendientes', async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT e.id, e.tipo_examen, e.titulo, e.fecha_estudio, e.estado, e.ruta_archivo,
+      SELECT e.id, e.tipo_examen, e.titulo, e.fecha_estudio, e.estado, e.archivo_path,
              p.nombre_completo AS paciente_nombre, p.cedula AS paciente_cedula
       FROM estudios e
       JOIN pacientes p ON e.paciente_id = p.id
@@ -588,7 +570,7 @@ app.get('/api/estudios/pendientes', async (req, res) => {
     res.json(result.rows);
   } catch (error) {
     console.error('Error al obtener pendientes:', error);
-    res.status(500).json({ error: 'Error al consultar pendientes' });
+    res.status(500).json({ error: 'Error al consultar pendientes: ' + error.message });
   }
 });
 
@@ -624,14 +606,14 @@ app.put('/api/estudios/:id/cargar-imagenes', upload.array('archivos'), async (re
     const rutas = req.files.map(f => f.filename || f.path).join(',');
 
     await pool.query(
-      'UPDATE estudios SET ruta_archivo = $1, estado = $2 WHERE id = $3',
+      'UPDATE estudios SET archivo_path = $1, estado = $2 WHERE id = $3',
       [rutas, 'pendiente_medico', id]
     );
 
     res.json({ mensaje: 'Imágenes cargadas. Orden enviada al médico.' });
   } catch (error) {
     console.error('Error al cargar imágenes:', error);
-    res.status(500).json({ error: 'Error al actualizar estudio' });
+    res.status(500).json({ error: 'Error al actualizar estudio: ' + error.message });
   }
 });
 
@@ -644,77 +626,21 @@ app.put('/api/estudios/:id/cargar-informe', upload.array('archivos'), async (req
     }
 
     // Obtenemos archivos previos (imágenes del técnico) para conservar todo en la columna
-    const estudioActual = await pool.query('SELECT ruta_archivo FROM estudios WHERE id = $1', [id]);
-    const archivosPrevios = estudioActual.rows[0]?.ruta_archivo || '';
+    const estudioActual = await pool.query('SELECT archivo_path FROM estudios WHERE id = $1', [id]);
+    const archivosPrevios = estudioActual.rows[0]?.archivo_path || '';
     
     const nuevasRutas = req.files.map(f => f.filename || f.path).join(',');
     const rutasTotales = archivosPrevios ? `${archivosPrevios},${nuevasRutas}` : nuevasRutas;
 
     await pool.query(
-      'UPDATE estudios SET ruta_archivo = $1, estado = $2 WHERE id = $3',
+      'UPDATE estudios SET archivo_path = $1, estado = $2 WHERE id = $3',
       [rutasTotales, 'completado', id]
     );
 
     res.json({ mensaje: 'Informe médico adjuntado. Examen completado.' });
   } catch (error) {
     console.error('Error al cargar informe:', error);
-    res.status(500).json({ error: 'Error al finalizar estudio' });
-  }
-});
-
-// 3. TÉCNICO / MÉDICO / SUPERADMIN: Adjuntar resultados y completar la orden
-app.put('/api/estudios/:id/completar', upload.array('archivos'), async (req, res) => {
-  const { id } = req.params;
-  const { notificar_correo } = req.body;
-
-  if (!req.files || req.files.length === 0) {
-    return res.status(400).json({ error: 'Debes adjuntar al menos un archivo' });
-  }
-
-  try {
-    // Actualiza la orden pendiente asignando el archivo y cambiando el estado a completado
-    for (let i = 0; i < req.files.length; i++) {
-      const file = req.files[i];
-
-      if (i === 0) {
-        await pool.query(
-          `UPDATE estudios 
-           SET archivo_path = $1, estado = 'completado', fecha_estudio = NOW() 
-           WHERE id = $2`,
-          [file.filename, id]
-        );
-      } else {
-        // Si subió más de un archivo para la misma orden, creamos registros completados adicionales
-        const ordenBase = await pool.query('SELECT paciente_id, tipo_examen FROM estudios WHERE id = $1', [id]);
-        const { paciente_id, tipo_examen } = ordenBase.rows[0];
-
-        await pool.query(
-          `INSERT INTO estudios (paciente_id, tipo_examen, titulo, archivo_path, estado) 
-           VALUES ($1, $2, $3, $4, 'completado')`,
-          [paciente_id, tipo_examen, file.originalname, file.filename]
-        );
-      }
-    }
-
-    res.json({ mensaje: 'Resultados cargados y orden completada con éxito' });
-
-    // Notificación en segundo plano si aplica
-    if (String(notificar_correo) === 'true') {
-      const pacienteQuery = await pool.query(
-        `SELECT p.correo, p.nombre_completo, e.tipo_examen, e.titulo 
-         FROM estudios e JOIN pacientes p ON e.paciente_id = p.id WHERE e.id = $1`,
-        [id]
-      );
-
-      if (pacienteQuery.rows.length > 0 && pacienteQuery.rows[0].correo) {
-        const { correo, nombre_completo, tipo_examen, titulo } = pacienteQuery.rows[0];
-        enviarCorreoPaciente(correo, nombre_completo, tipo_examen, titulo).catch(console.error);
-      }
-    }
-
-  } catch (err) {
-    console.error('🔥 Error al completar estudio:', err.message);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Error al finalizar estudio: ' + error.message });
   }
 });
 
