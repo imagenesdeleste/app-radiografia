@@ -112,7 +112,7 @@ export default function PanelPersonal() {
   // CARGAR PACIENTES
   const cargarPacientes = async () => {
     try {
-      const res = await fetch('https://app-radiografia-production.up.railway.app/api/pacientes');
+      const res = await fetch('/api/pacientes');
       const data = await res.json();
       if (Array.isArray(data)) setPacientes(data);
     } catch (e) {
@@ -124,7 +124,7 @@ export default function PanelPersonal() {
   const cargarUsuariosPersonal = async () => {
     setCargandoUsuarios(true);
     try {
-      const res = await fetch('https://app-radiografia-production.up.railway.app/api/admin/usuarios');
+      const res = await fetch('/api/admin/usuarios');
       const data = await res.json();
       if (Array.isArray(data)) setUsuariosPersonal(data);
     } catch (e) {
@@ -137,7 +137,7 @@ export default function PanelPersonal() {
   // CARGAR ESTUDIOS PENDIENTES
   const cargarEstudiosPendientes = async () => {
     try {
-      const res = await fetch('https://app-radiografia-production.up.railway.app/api/estudios/pendientes');
+      const res = await fetch('/api/estudios/pendientes');
       const data = await res.json();
       if (Array.isArray(data)) setEstudiosPendientes(data);
     } catch (e) {
@@ -199,43 +199,43 @@ export default function PanelPersonal() {
 
   // Login del Personal
   const handleAdminLogin = async (e) => {
-  e.preventDefault();
-  setErrorLogin('');
+    e.preventDefault();
+    setErrorLogin('');
 
-  // Activa la animación con el logo
-  setCargandoEnvio(true);
-  setMensajeCargando('Verificando credenciales e iniciando sesión...');
+    // Activa la animación con el logo
+    setCargandoEnvio(true);
+    setMensajeCargando('Verificando credenciales e iniciando sesión...');
 
-  try {
-    const res = await fetch('https://app-radiografia-production.up.railway.app/api/admin/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ cedula: adminCedula, clave: adminClave })
-    });
+    try {
+      const res = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cedula: adminCedula, clave: adminClave })
+      });
 
-    const data = await res.json();
+      const data = await res.json();
 
-    if (res.ok) {
-      localStorage.setItem('usuarioLogueado', JSON.stringify(data.usuario));
-      setAutenticado(true);
-      setUsuarioLogueado(data.usuario);
-      setAdminCedula('');
-      setAdminClave('');
+      if (res.ok) {
+        localStorage.setItem('usuarioLogueado', JSON.stringify(data.usuario));
+        setAutenticado(true);
+        setUsuarioLogueado(data.usuario);
+        setAdminCedula('');
+        setAdminClave('');
 
-      if (data.usuario?.rol === 'medico' || data.usuario?.rol === 'tecnico') {
-        setSeccion('estudios-pendientes');
+        if (data.usuario?.rol === 'medico' || data.usuario?.rol === 'tecnico') {
+          setSeccion('estudios-pendientes');
+        } else {
+          setSeccion('pacientes-lista');
+        }
       } else {
-        setSeccion('pacientes-lista');
+        setErrorLogin(data.error || 'Credenciales inválidas');
       }
-    } else {
-      setErrorLogin(data.error || 'Credenciales inválidas');
+    } catch {
+      setErrorLogin('Error de conexión con el servidor');
+    } finally {
+      setCargandoEnvio(false); // Apaga la animación al terminar
     }
-  } catch {
-    setErrorLogin('Error de conexión con el servidor');
-  } finally {
-    setCargandoEnvio(false); // Apaga la animación al terminar
-  }
-};
+  };
 
   // Cerrar Sesión
   const handleCerrarSesion = () => {
@@ -257,7 +257,7 @@ export default function PanelPersonal() {
     }
 
     try {
-      const res = await fetch(`https://app-radiografia-production.up.railway.app/api/estudios/${estudioId}/notificar-correo`, {
+      const res = await fetch(`/api/estudios/${estudioId}/notificar-correo`, {
         method: 'POST'
       });
       const data = await res.json();
@@ -306,7 +306,7 @@ export default function PanelPersonal() {
   const handleActualizarPaciente = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch(`https://app-radiografia-production.up.railway.app/api/pacientes/${pacienteAEditar.id}`, {
+      const res = await fetch(`/api/pacientes/${pacienteAEditar.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formEditPaciente)
@@ -330,7 +330,7 @@ export default function PanelPersonal() {
     setEstudiosPaciente([]);
 
     try {
-      const res = await fetch(`https://app-radiografia-production.up.railway.app/api/estudios/paciente/${paciente.id}`);
+      const res = await fetch(`/api/estudios/paciente/${paciente.id}`);
       if (res.ok) {
         const data = await res.json();
         setEstudiosPaciente(data);
@@ -348,7 +348,7 @@ export default function PanelPersonal() {
   const handleGuardarPaciente = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch('https://app-radiografia-production.up.railway.app/api/pacientes', {
+      const res = await fetch('/api/pacientes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formPaciente)
@@ -383,135 +383,135 @@ export default function PanelPersonal() {
   };
 
   const handleCrearOrdenSinArchivos = async () => {
-  if (!pacienteSeleccionadoSubida) return alert('Selecciona un paciente de la lista');
-  if (!titulo.trim()) return alert('Ingresa el título del estudio');
+    if (!pacienteSeleccionadoSubida) return alert('Selecciona un paciente de la lista');
+    if (!titulo.trim()) return alert('Ingresa el título del estudio');
 
-  // Activa la animación para la orden
-  setCargandoEnvio(true);
-  setMensajeCargando('Creando orden de examen para el técnico...');
+    // Activa la animación para la orden
+    setCargandoEnvio(true);
+    setMensajeCargando('Creando orden de examen para el técnico...');
 
-  try {
-    const res = await fetch('https://app-radiografia-production.up.railway.app/api/estudios/crear-orden', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        paciente_id: pacienteSeleccionadoSubida.id,
-        tipo_examen: tipoExamen,
-        titulo: titulo
-      })
-    });
+    try {
+      const res = await fetch('/api/estudios/crear-orden', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          paciente_id: pacienteSeleccionadoSubida.id,
+          tipo_examen: tipoExamen,
+          titulo: titulo
+        })
+      });
 
-    if (res.ok) {
-      alert('¡Orden de examen creada! Ya le aparece al técnico en sus pendientes.');
-      setTitulo('');
-      setPacienteSeleccionadoSubida(null);
-      setBusquedaPacienteSubida('');
-      cargarEstudiosPendientes();
-    } else {
-      alert('Error al crear la orden');
+      if (res.ok) {
+        alert('¡Orden de examen creada! Ya le aparece al técnico en sus pendientes.');
+        setTitulo('');
+        setPacienteSeleccionadoSubida(null);
+        setBusquedaPacienteSubida('');
+        cargarEstudiosPendientes();
+      } else {
+        alert('Error al crear la orden');
+      }
+    } catch (e) {
+      console.error('Error:', e);
+      alert('Error de conexión con el servidor');
+    } finally {
+      setCargandoEnvio(false); // Desactiva la animación
     }
-  } catch (e) {
-    console.error('Error:', e);
-    alert('Error de conexión con el servidor');
-  } finally {
-    setCargandoEnvio(false); // Desactiva la animación
-  }
-};
+  };
 
   const handleSubirEstudioConArchivos = async () => {
-  if (!pacienteSeleccionadoSubida) return alert('Selecciona un paciente de la lista.');
-  if (!titulo.trim()) return alert('Ingresa el título del estudio.');
-  if (archivos.length === 0) return alert('Debes adjuntar al menos un archivo para subir.');
+    if (!pacienteSeleccionadoSubida) return alert('Selecciona un paciente de la lista.');
+    if (!titulo.trim()) return alert('Ingresa el título del estudio.');
+    if (archivos.length === 0) return alert('Debes adjuntar al menos un archivo para subir.');
 
-  const formData = new FormData();
-  archivos.forEach((file) => {
-    formData.append('archivos', file);
-  });
+    const formData = new FormData();
+    archivos.forEach((file) => {
+      formData.append('archivos', file);
+    });
 
-  const rolUser = usuarioLogueado?.rol?.toLowerCase();
-  const esMedico = ['medico', 'médico'].includes(rolUser);
-  const esTecnico = ['tecnico', 'técnico', 'tecnico_radiologico'].includes(rolUser) || estudioPendienteSeleccionado?.estado === 'pendiente_tecnico';
+    const rolUser = usuarioLogueado?.rol?.toLowerCase();
+    const esMedico = ['medico', 'médico'].includes(rolUser);
+    const esTecnico = ['tecnico', 'técnico', 'tecnico_radiologico'].includes(rolUser) || estudioPendienteSeleccionado?.estado === 'pendiente_tecnico';
 
-  // Activa la animación con mensaje dinámico
-  setCargandoEnvio(true);
-  setMensajeCargando(getMensajeCargandoSubida());
+    // Activa la animación con mensaje dinámico
+    setCargandoEnvio(true);
+    setMensajeCargando(getMensajeCargandoSubida());
 
-  try {
-    let res;
-    let estudioIdProcesado = estudioPendienteSeleccionado?.id;
+    try {
+      let res;
+      let estudioIdProcesado = estudioPendienteSeleccionado?.id;
 
-    if (estudioPendienteSeleccionado) {
-      const endpoint = esTecnico
-        ? `https://app-radiografia-production.up.railway.app/api/estudios/${estudioPendienteSeleccionado.id}/cargar-imagenes`
-        : `https://app-radiografia-production.up.railway.app/api/estudios/${estudioPendienteSeleccionado.id}/cargar-informe`;
+      if (estudioPendienteSeleccionado) {
+        const endpoint = esTecnico
+          ? `/api/estudios/${estudioPendienteSeleccionado.id}/cargar-imagenes`
+          : `/api/estudios/${estudioPendienteSeleccionado.id}/cargar-informe`;
 
-      res = await fetch(endpoint, {
-        method: 'PUT',
-        body: formData
-      });
-    } else {
-      formData.append('paciente_id', pacienteSeleccionadoSubida.id);
-      formData.append('tipo_examen', tipoExamen);
-      formData.append('titulo', titulo);
-      formData.append('notificar_correo', esMedico);
-
-      res = await fetch('https://app-radiografia-production.up.railway.app/api/estudios', {
-        method: 'POST',
-        body: formData
-      });
-    }
-
-    if (res.ok) {
-      const responseData = await res.json().catch(() => ({}));
-      if (!estudioIdProcesado) {
-        estudioIdProcesado = responseData.id || responseData.estudioId;
-      }
-
-      let correoEnviado = false;
-      if (esMedico && pacienteSeleccionadoSubida?.correo && estudioIdProcesado) {
-        try {
-          const resCorreo = await fetch(`https://app-radiografia-production.up.railway.app/api/estudios/${estudioIdProcesado}/notificar-correo`, {
-            method: 'POST'
-          });
-          if (resCorreo.ok) correoEnviado = true;
-        } catch (errCorreo) {
-          console.error('Error al notificar correo automáticamente:', errCorreo);
-        }
-      }
-
-      if (esMedico) {
-        alert(
-          correoEnviado
-            ? '📧 ¡Informe cargado con éxito y correo enviado al paciente!'
-            : '✅ ¡Informe cargado con éxito! (Verifica si el paciente tiene un correo válido).'
-        );
+        res = await fetch(endpoint, {
+          method: 'PUT',
+          body: formData
+        });
       } else {
-        alert(estudioPendienteSeleccionado ? '¡Orden actualizada y procesada con éxito!' : '¡Estudio cargado con éxito!');
+        formData.append('paciente_id', pacienteSeleccionadoSubida.id);
+        formData.append('tipo_examen', tipoExamen);
+        formData.append('titulo', titulo);
+        formData.append('notificar_correo', esMedico);
+
+        res = await fetch('/api/estudios', {
+          method: 'POST',
+          body: formData
+        });
       }
 
-      setTitulo('');
-      handleLimpiarArchivos();
-      setPacienteSeleccionadoSubida(null);
-      setBusquedaPacienteSubida('');
-      setEstudioPendienteSeleccionado(null);
-      cargarEstudiosPendientes();
-      setSeccion('estudios-pendientes');
-    } else {
-      alert('Error al subir los archivos al servidor.');
+      if (res.ok) {
+        const responseData = await res.json().catch(() => ({}));
+        if (!estudioIdProcesado) {
+          estudioIdProcesado = responseData.id || responseData.estudioId;
+        }
+
+        let correoEnviado = false;
+        if (esMedico && pacienteSeleccionadoSubida?.correo && estudioIdProcesado) {
+          try {
+            const resCorreo = await fetch(`/api/estudios/${estudioIdProcesado}/notificar-correo`, {
+              method: 'POST'
+            });
+            if (resCorreo.ok) correoEnviado = true;
+          } catch (errCorreo) {
+            console.error('Error al notificar correo automáticamente:', errCorreo);
+          }
+        }
+
+        if (esMedico) {
+          alert(
+            correoEnviado
+              ? '📧 ¡Informe cargado con éxito y correo enviado al paciente!'
+              : '✅ ¡Informe cargado con éxito! (Verifica si el paciente tiene un correo válido).'
+          );
+        } else {
+          alert(estudioPendienteSeleccionado ? '¡Orden actualizada y procesada con éxito!' : '¡Estudio cargado con éxito!');
+        }
+
+        setTitulo('');
+        handleLimpiarArchivos();
+        setPacienteSeleccionadoSubida(null);
+        setBusquedaPacienteSubida('');
+        setEstudioPendienteSeleccionado(null);
+        cargarEstudiosPendientes();
+        setSeccion('estudios-pendientes');
+      } else {
+        alert('Error al subir los archivos al servidor.');
+      }
+    } catch (error) {
+      console.error('Error al conectar:', error);
+      alert('Error de conexión con el servidor.');
+    } finally {
+      setCargandoEnvio(false); // Desactiva la animación al terminar
     }
-  } catch (error) {
-    console.error('Error al conectar:', error);
-    alert('Error de conexión con el servidor.');
-  } finally {
-    setCargandoEnvio(false); // Desactiva la animación al terminar
-  }
-};
+  };
 
   const handleCancelarOrdenPendiente = async (estudioId) => {
     if (!confirm('¿Seguro que deseas cancelar y eliminar esta orden pendiente?')) return;
 
     try {
-      const res = await fetch(`https://app-radiografia-production.up.railway.app/api/estudios/${estudioId}`, {
+      const res = await fetch(`/api/estudios/${estudioId}`, {
         method: 'DELETE'
       });
 
@@ -539,7 +539,7 @@ export default function PanelPersonal() {
   const handleCrearUsuarioPersonal = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch('https://app-radiografia-production.up.railway.app/api/admin/usuarios', {
+      const res = await fetch('/api/admin/usuarios', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formNuevoUsuario)
@@ -562,7 +562,7 @@ export default function PanelPersonal() {
 
   const handleCambiarRol = async (usuarioId, nuevoRol) => {
     try {
-      const res = await fetch(`https://app-radiografia-production.up.railway.app/api/admin/usuarios/${usuarioId}/rol`, {
+      const res = await fetch(`/api/admin/usuarios/${usuarioId}/rol`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ rol: nuevoRol })
@@ -585,7 +585,7 @@ export default function PanelPersonal() {
     if (!nuevaClave || nuevaClave.trim() === '') return;
 
     try {
-      const res = await fetch(`https://app-radiografia-production.up.railway.app/api/admin/usuarios/${usuarioId}/clave`, {
+      const res = await fetch(`/api/admin/usuarios/${usuarioId}/clave`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ clave: nuevaClave })
@@ -606,7 +606,7 @@ export default function PanelPersonal() {
     if (!confirm('¿Seguro que deseas eliminar este usuario? Perderá el acceso al sistema.')) return;
 
     try {
-      const res = await fetch(`https://app-radiografia-production.up.railway.app/api/admin/usuarios/${usuarioId}`, {
+      const res = await fetch(`/api/admin/usuarios/${usuarioId}`, {
         method: 'DELETE'
       });
 
@@ -625,7 +625,7 @@ export default function PanelPersonal() {
   const handleEliminarEstudio = async (estudioId) => {
     if (!confirm('¿Estás seguro de eliminar este estudio de la base de datos?')) return;
     
-    const res = await fetch(`https://app-radiografia-production.up.railway.app/api/estudios/${estudioId}`, {
+    const res = await fetch(`/api/estudios/${estudioId}`, {
       method: 'DELETE'
     });
 
@@ -638,7 +638,7 @@ export default function PanelPersonal() {
   const handleEliminarPaciente = async (pacienteId) => {
     if (!confirm('¿Seguro que deseas borrar este paciente y TODOS sus estudios asociados?')) return;
 
-    const res = await fetch(`https://app-radiografia-production.up.railway.app/api/pacientes/${pacienteId}`, {
+    const res = await fetch(`/api/pacientes/${pacienteId}`, {
       method: 'DELETE'
     });
 
@@ -1658,7 +1658,7 @@ export default function PanelPersonal() {
                         </div>
                       )}
 
-                      {/* LISTA INDIVIDUAL DE CADA ARCHIVO ADJUNTO */}
+                      {/* LISTA INDIVIDUAL DE CADAH ARCHIVO ADJUNTO */}
                       {archivosLista.length > 0 ? (
                         <div className="pt-2 border-t border-slate-200/60 space-y-1.5">
                           <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Archivos del estudio:</p>
@@ -1669,7 +1669,7 @@ export default function PanelPersonal() {
                                   📄 {arch}
                                 </span>
                                 <a 
-                                  href={`https://app-radiografia-production.up.railway.app/api/descargar-archivo/${encodeURIComponent(arch)}`} 
+                                  href={`/api/descargar-archivo/${encodeURIComponent(arch)}`} 
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="px-2.5 py-1 bg-red-950 hover:bg-red-800 text-white text-[11px] font-semibold rounded-lg transition-colors inline-block shrink-0"
