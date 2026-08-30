@@ -63,7 +63,7 @@ export default function PortalPaciente() {
   setMensajeCargandoModal('Iniciando sesión y buscando tus estudios...');
 
   try {
-    const res = await fetch('https://app-radiografia-production.up.railway.app/api/paciente/login', {
+      const res = await fetch('/api/paciente/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ cedula, clave })
