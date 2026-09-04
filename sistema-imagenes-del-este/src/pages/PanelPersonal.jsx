@@ -86,10 +86,9 @@ export default function PanelPersonal() {
     titulo: ''
   });
 
-  // Función para cambiar de sección en el Sidebar limpiando bloqueos si aplica
+  // Función para cambiar de sección en el Sidebar limpiando bloqueos
   const cambiarSeccion = (nuevaSeccion) => {
     if (nuevaSeccion === 'subir-estudio') {
-      // Al hacer clic en el menú lateral para crear orden, limpiamos cualquier estado de orden pendiente previo
       setEstudioPendienteSeleccionado(null);
       setPacienteSeleccionadoSubida(null);
       setBusquedaPacienteSubida('');
@@ -283,10 +282,6 @@ export default function PanelPersonal() {
 
   // 📧 NOTIFICAR POR CORREO
   const handleNotificarCorreo = async (estudioId, correoPaciente) => {
-    if (!correoPaciente || !correoPaciente.trim()) {
-      return alert('El paciente no tiene un correo electrónico registrado.');
-    }
-
     if (!estudioId) {
       return alert('Selecciona o crea un estudio previamente para notificar al paciente.');
     }
@@ -500,29 +495,45 @@ export default function PanelPersonal() {
       if (res.ok) {
         const responseData = await res.json().catch(() => ({}));
         if (!estudioIdProcesado) {
-          estudioIdProcesado = responseData.id || responseData.estudioId;
+          estudioIdProcesado = responseData.id || responseData.estudioId || responseData.id_estudio || responseData.estudio?.id;
         }
 
         let correoEnviado = false;
-        if (esCargaInforme && pacienteSeleccionadoSubida?.correo && estudioIdProcesado) {
+        let mensajeCorreoError = '';
+
+        // INTENTA NOTIFICAR POR CORREO SIEMPRE QUE SEA UN INFORME O CARGA DE INFORME
+        if (estudioIdProcesado && (tipoExamen === 'Informe Médico' || esCargaInforme)) {
           try {
             const resCorreo = await fetch(`/api/estudios/${estudioIdProcesado}/notificar-correo`, {
               method: 'POST'
             });
-            if (resCorreo.ok) correoEnviado = true;
+            const dataCorreo = await resCorreo.json().catch(() => ({}));
+
+            if (resCorreo.ok) {
+              correoEnviado = true;
+            } else {
+              mensajeCorreoError = dataCorreo.error || 'El paciente no posee correo registrado o falló el envío';
+            }
           } catch (errCorreo) {
             console.error('Error al notificar correo automáticamente:', errCorreo);
+            mensajeCorreoError = 'Error de conexión con el servidor de correos';
           }
         }
 
-        if (esCargaInforme) {
-          alert(
-            correoEnviado
-              ? '📧 ¡Informe cargado con éxito y correo enviado al paciente!'
-              : '✅ ¡Informe cargado con éxito!'
-          );
+        if (tipoExamen === 'Informe Médico' || esMedico) {
+          if (correoEnviado) {
+            alert('📧 ¡Informe cargado con éxito y correo enviado al paciente!');
+          } else if (mensajeCorreoError) {
+            alert(`✅ Informe cargado con éxito.\n⚠️ Nota del correo: ${mensajeCorreoError}`);
+          } else {
+            alert('✅ ¡Informe cargado con éxito!');
+          }
         } else {
-          alert(estudioPendienteSeleccionado ? '¡Orden actualizada y procesada con éxito!' : '¡Estudio cargado con éxito!');
+          if (correoEnviado) {
+            alert('📧 ¡Estudio cargado con éxito y notificado por correo!');
+          } else {
+            alert(estudioPendienteSeleccionado ? '¡Orden actualizada y procesada con éxito!' : '¡Estudio cargado con éxito!');
+          }
         }
 
         setTitulo('');
@@ -696,7 +707,6 @@ export default function PanelPersonal() {
 
   // FILTRO INTELIGENTE DE PENDIENTES SEGÚN EL ROL
   const pendientesFiltradosPorRol = estudiosPendientes.filter((est) => {
-    // Si el usuario es Técnico puro, NUNCA se le muestran órdenes de "Informe Médico"
     if (esTecnico && !esSecretaria && est.tipo_examen === 'Informe Médico') {
       return false;
     }
@@ -1157,6 +1167,9 @@ export default function PanelPersonal() {
                         <div>
                           <strong className="text-xs text-sky-900 block">{pacienteSeleccionadoSubida.nombre_completo}</strong>
                           <span className="text-[11px] text-sky-600">C.I: {pacienteSeleccionadoSubida.cedula}</span>
+                          {pacienteSeleccionadoSubida.correo && (
+                            <span className="text-[10px] text-slate-500 block">✉️ {pacienteSeleccionadoSubida.correo}</span>
+                          )}
                         </div>
                         {!estudioPendienteSeleccionado && (
                           <button 
@@ -1247,7 +1260,7 @@ export default function PanelPersonal() {
                       <option value="Informe Médico">Informe Médico</option>
                     )}
 
-                    {/* SECRETARÍA Y ADMINS: ACCESO TOTAL */}
+                    {/* SECRETARÍA Y ADMINS */}
                     {esSecretaria && (
                       <>
                         <option value="Radiografía">Radiografía (Para Técnico)</option>
@@ -1401,10 +1414,7 @@ export default function PanelPersonal() {
                   {pendientesFiltradosPorRol.map((est) => {
                     const esInformeMedico = est.tipo_examen === 'Informe Médico';
                     
-                    // Si es "Informe Médico", NUNCA es turno del técnico ni requiere placas
                     const esMiTurnoTecnico = (esTecnico || esSuperAdmin) && est.estado === 'pendiente_tecnico' && !esInformeMedico;
-                    
-                    // Corresponde a Médico, Secretaría o SuperAdmin
                     const esMiTurnoMedico = (esMedico || esSecretaria || esSuperAdmin);
 
                     return (
@@ -1436,7 +1446,7 @@ export default function PanelPersonal() {
                         {/* ACCIONES SEGÚN EL ROL */}
                         <div className="flex items-center gap-2">
                           
-                          {/* 1. CANCELAR / BORRAR ORDEN (Secretaría o SuperAdmin) */}
+                          {/* 1. CANCELAR / BORRAR ORDEN */}
                           {esSecretaria && (
                             <button
                               onClick={() => handleCancelarOrdenPendiente(est.id)}
@@ -1454,7 +1464,8 @@ export default function PanelPersonal() {
                                 setPacienteSeleccionadoSubida({
                                   id: est.paciente_id,
                                   nombre_completo: est.paciente_nombre,
-                                  cedula: est.paciente_cedula
+                                  cedula: est.paciente_cedula,
+                                  correo: est.paciente_correo || est.correo || ''
                                 });
                                 setTipoExamen(est.tipo_examen);
                                 setTitulo(est.titulo);
@@ -1468,14 +1479,15 @@ export default function PanelPersonal() {
                             </button>
                           )}
 
-                          {/* 3. ADJUNTAR INFORME */}
+                          {/* 3. ADJUNTAR INFORME (Médico / Secretaría) */}
                           {esMiTurnoMedico && (
                             <button
                               onClick={() => {
                                 setPacienteSeleccionadoSubida({
                                   id: est.paciente_id,
                                   nombre_completo: est.paciente_nombre,
-                                  cedula: est.paciente_cedula
+                                  cedula: est.paciente_cedula,
+                                  correo: est.paciente_correo || est.correo || ''
                                 });
                                 setTipoExamen('Informe Médico');
                                 setTitulo(est.titulo);
