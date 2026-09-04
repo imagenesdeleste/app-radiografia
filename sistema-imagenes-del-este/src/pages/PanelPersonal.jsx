@@ -15,6 +15,9 @@ export default function PanelPersonal() {
   const [cargandoEnvio, setCargandoEnvio] = useState(false);
   const [mensajeCargando, setMensajeCargando] = useState('');
 
+  // Estado para la animación del botón "Actualizar Pendientes"
+  const [cargandoPendientes, setCargandoPendientes] = useState(false);
+
   const [autenticado, setAutenticado] = useState(() => {
     return !!localStorage.getItem('usuarioLogueado');
   });
@@ -66,6 +69,7 @@ export default function PanelPersonal() {
   const esSuperAdmin = usuarioLogueado?.rol === 'superadmin' || usuarioLogueado?.rol === 'admin';
 
   // 6. Formulario Crear Paciente
+  const [mostrarClavePaciente, setMostrarClavePaciente] = useState(true);
   const [formPaciente, setFormPaciente] = useState({
     cedula: '',
     nombre_completo: '',
@@ -134,25 +138,42 @@ export default function PanelPersonal() {
     }
   };
 
-  // CARGAR ESTUDIOS PENDIENTES
-  const cargarEstudiosPendientes = async () => {
+  // CARGAR ESTUDIOS PENDIENTES CON ANIMACIÓN OPCIONAL
+  const cargarEstudiosPendientes = async (mostrarAnimacion = false) => {
+    if (mostrarAnimacion) setCargandoPendientes(true);
     try {
       const res = await fetch('/api/estudios/pendientes');
       const data = await res.json();
       if (Array.isArray(data)) setEstudiosPendientes(data);
     } catch (e) {
       console.error("Error al obtener pendientes", e);
+    } finally {
+      if (mostrarAnimacion) setCargandoPendientes(false);
     }
   };
 
+  // SINCRONIZACIÓN AUTOMÁTICA EN TIEMPO REAL (Cada 5 segundos)
+  useEffect(() => {
+    if (!autenticado) return;
+
+    // Refresco inicial
+    cargarPacientes();
+
+    // Consultar el servidor cada 5 segundos en segundo plano (sin parpadear la pantalla)
+    const intervalo = setInterval(() => {
+      cargarEstudiosPendientes(false);
+    }, 5000);
+
+    return () => clearInterval(intervalo);
+  }, [autenticado]);
+
   useEffect(() => {
     if (autenticado) {
-      cargarPacientes();
       if (seccion === 'gestion-usuarios' && esSuperAdmin) {
         cargarUsuariosPersonal();
       }
       if (seccion === 'estudios-pendientes') {
-        cargarEstudiosPendientes();
+        cargarEstudiosPendientes(true);
       }
     }
   }, [autenticado, seccion]);
@@ -188,7 +209,7 @@ export default function PanelPersonal() {
   const getMensajeCargandoSubida = () => {
     const rol = usuarioLogueado?.rol?.toLowerCase();
 
-    if (['medico', 'médico'].includes(rol)) {
+    if (['medico', 'médico', 'secretaria'].includes(rol) && tipoExamen === 'Informe Médico') {
       return 'Subiendo informe médico y enviando notificación al paciente...';
     }
     if (['tecnico', 'técnico', 'tecnico_radiologico'].includes(rol)) {
@@ -202,7 +223,6 @@ export default function PanelPersonal() {
     e.preventDefault();
     setErrorLogin('');
 
-    // Activa la animación con el logo
     setCargandoEnvio(true);
     setMensajeCargando('Verificando credenciales e iniciando sesión...');
 
@@ -233,7 +253,7 @@ export default function PanelPersonal() {
     } catch {
       setErrorLogin('Error de conexión con el servidor');
     } finally {
-      setCargandoEnvio(false); // Apaga la animación al terminar
+      setCargandoEnvio(false);
     }
   };
 
@@ -357,7 +377,7 @@ export default function PanelPersonal() {
       if (res.ok) {
         alert(
           formPaciente.crear_orden 
-            ? '¡Paciente registrado y orden enviada al Técnico!' 
+            ? '¡Paciente registrado y orden enviada!' 
             : '¡Paciente registrado con éxito!'
         );
         setFormPaciente({
@@ -371,7 +391,7 @@ export default function PanelPersonal() {
           titulo: ''
         });
         cargarPacientes();
-        cargarEstudiosPendientes();
+        cargarEstudiosPendientes(false);
         setSeccion('pacientes-lista');
       } else {
         alert('Error al registrar paciente');
@@ -386,9 +406,12 @@ export default function PanelPersonal() {
     if (!pacienteSeleccionadoSubida) return alert('Selecciona un paciente de la lista');
     if (!titulo.trim()) return alert('Ingresa el título del estudio');
 
-    // Activa la animación para la orden
     setCargandoEnvio(true);
-    setMensajeCargando('Creando orden de examen para el técnico...');
+    setMensajeCargando(
+      tipoExamen === 'Informe Médico'
+        ? 'Creando orden de informe médico...'
+        : 'Creando orden de examen para el técnico...'
+    );
 
     try {
       const res = await fetch('/api/estudios/crear-orden', {
@@ -402,11 +425,11 @@ export default function PanelPersonal() {
       });
 
       if (res.ok) {
-        alert('¡Orden de examen creada! Ya le aparece al técnico en sus pendientes.');
+        alert('¡Orden creada con éxito! Ya le aparece a todo el personal.');
         setTitulo('');
         setPacienteSeleccionadoSubida(null);
         setBusquedaPacienteSubida('');
-        cargarEstudiosPendientes();
+        cargarEstudiosPendientes(false);
       } else {
         alert('Error al crear la orden');
       }
@@ -414,7 +437,7 @@ export default function PanelPersonal() {
       console.error('Error:', e);
       alert('Error de conexión con el servidor');
     } finally {
-      setCargandoEnvio(false); // Desactiva la animación
+      setCargandoEnvio(false);
     }
   };
 
@@ -429,10 +452,9 @@ export default function PanelPersonal() {
     });
 
     const rolUser = usuarioLogueado?.rol?.toLowerCase();
-    const esMedico = ['medico', 'médico'].includes(rolUser);
+    const esMedico = ['medico', 'médico', 'secretaria'].includes(rolUser) || tipoExamen === 'Informe Médico';
     const esTecnico = ['tecnico', 'técnico', 'tecnico_radiologico'].includes(rolUser) || estudioPendienteSeleccionado?.estado === 'pendiente_tecnico';
 
-    // Activa la animación con mensaje dinámico
     setCargandoEnvio(true);
     setMensajeCargando(getMensajeCargandoSubida());
 
@@ -441,7 +463,7 @@ export default function PanelPersonal() {
       let estudioIdProcesado = estudioPendienteSeleccionado?.id;
 
       if (estudioPendienteSeleccionado) {
-        const endpoint = esTecnico
+        const endpoint = esTecnico && estudioPendienteSeleccionado.estado === 'pendiente_tecnico'
           ? `/api/estudios/${estudioPendienteSeleccionado.id}/cargar-imagenes`
           : `/api/estudios/${estudioPendienteSeleccionado.id}/cargar-informe`;
 
@@ -483,7 +505,7 @@ export default function PanelPersonal() {
           alert(
             correoEnviado
               ? '📧 ¡Informe cargado con éxito y correo enviado al paciente!'
-              : '✅ ¡Informe cargado con éxito! (Verifica si el paciente tiene un correo válido).'
+              : '✅ ¡Informe cargado con éxito!'
           );
         } else {
           alert(estudioPendienteSeleccionado ? '¡Orden actualizada y procesada con éxito!' : '¡Estudio cargado con éxito!');
@@ -494,7 +516,7 @@ export default function PanelPersonal() {
         setPacienteSeleccionadoSubida(null);
         setBusquedaPacienteSubida('');
         setEstudioPendienteSeleccionado(null);
-        cargarEstudiosPendientes();
+        cargarEstudiosPendientes(false);
         setSeccion('estudios-pendientes');
       } else {
         alert('Error al subir los archivos al servidor.');
@@ -503,7 +525,7 @@ export default function PanelPersonal() {
       console.error('Error al conectar:', error);
       alert('Error de conexión con el servidor.');
     } finally {
-      setCargandoEnvio(false); // Desactiva la animación al terminar
+      setCargandoEnvio(false);
     }
   };
 
@@ -517,7 +539,7 @@ export default function PanelPersonal() {
 
       if (res.ok) {
         alert('¡Orden cancelada y eliminada con éxito!');
-        cargarEstudiosPendientes();
+        cargarEstudiosPendientes(false);
       } else {
         alert('Error al eliminar la orden');
       }
@@ -986,16 +1008,27 @@ export default function PanelPersonal() {
                   </div>
                 </div>
 
+                {/* CONTRASEÑA VISIBLE PARA SECRETARÍA */}
                 <div>
                   <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Contraseña Asignada</label>
-                  <input 
-                    type="password" 
-                    placeholder="••••••••" 
-                    value={formPaciente.clave}
-                    onChange={e => setFormPaciente({...formPaciente, clave: e.target.value})}
-                    className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
-                    required 
-                  />
+                  <div className="relative">
+                    <input 
+                      type={mostrarClavePaciente ? 'text' : 'password'} 
+                      placeholder="Ingrese la contraseña" 
+                      value={formPaciente.clave}
+                      onChange={e => setFormPaciente({...formPaciente, clave: e.target.value})}
+                      className="w-full pl-4 pr-10 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 font-medium text-slate-800"
+                      required 
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setMostrarClavePaciente(!mostrarClavePaciente)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer text-sm select-none"
+                      title={mostrarClavePaciente ? 'Ocultar clave' : 'Mostrar clave'}
+                    >
+                      {mostrarClavePaciente ? '🙈' : '👁️'}
+                    </button>
+                  </div>
                 </div>
 
                 <div className="pt-3 border-t border-slate-100">
@@ -1016,10 +1049,10 @@ export default function PanelPersonal() {
                         <select 
                           value={formPaciente.tipo_examen}
                           onChange={e => setFormPaciente({...formPaciente, tipo_examen: e.target.value})}
-                          className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-lg cursor-pointer"
+                          className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-lg cursor-pointer font-medium"
                         >
-                          <option value="Tomografías y/o Radiografías">Tomografías y/o Radiografías</option>
-                          <option value="Informe Médico">Informe Médico</option>
+                          <option value="Tomografías y/o Radiografías">Tomografías y/o Radiografías (Para Técnico)</option>
+                          <option value="Informe Médico">Informe Médico (Para Médico / Secretaría)</option>
                         </select>
                       </div>
 
@@ -1027,7 +1060,7 @@ export default function PanelPersonal() {
                         <label className="block text-xs font-semibold text-slate-600 uppercase mb-1">Título / Estudio Solicitado</label>
                         <input 
                           type="text" 
-                          placeholder="Ej: Radiografía Panorámica / Tórax AP" 
+                          placeholder="Ej: Radiografía Panorámica / Informe Tórax AP" 
                           value={formPaciente.titulo}
                           onChange={e => setFormPaciente({...formPaciente, titulo: e.target.value})}
                           className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-lg"
@@ -1169,8 +1202,8 @@ export default function PanelPersonal() {
                         {/* SECRETARÍA Y ADMINS: Ven ambas opciones */}
                         {!esTecnico && !esMedico && (
                           <>
-                            <option value="Tomografías y/o Radiografías">Tomografías y/o Radiografías</option>
                             <option value="Informe Médico">Informe Médico</option>
+                            <option value="Tomografías y/o Radiografías">Tomografías y/o Radiografías</option>
                           </>
                         )}
                       </select>
@@ -1184,7 +1217,7 @@ export default function PanelPersonal() {
                   </label>
                   <input 
                     type="text" 
-                    placeholder="Ej: Radiografía de Tórax AP" 
+                    placeholder="Ej: Informe Radiológico / Tomografía de Tórax" 
                     value={titulo}
                     onChange={e => setTitulo(e.target.value)}
                     readOnly={!!estudioPendienteSeleccionado}
@@ -1193,9 +1226,13 @@ export default function PanelPersonal() {
                   />
                 </div>
 
+                {/* ARCHIVOS CONDICIONALES SEGÚN EL TIPO DE EXAMEN */}
                 <div>
                   <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
-                    Archivos de Examen <span className="text-[10px] text-slate-400 font-normal">(Opcional si solo deseas enviar la orden al técnico)</span>
+                    {tipoExamen === 'Informe Médico' ? 'Archivo del Informe Médico (PDF/Doc)' : 'Archivos de Examen / Placas'} 
+                    <span className="text-[10px] text-slate-400 font-normal ml-1">
+                      (Opcional si solo deseas crear la orden pendiente)
+                    </span>
                   </label>
                   
                   <div className="flex items-center gap-2">
@@ -1247,7 +1284,7 @@ export default function PanelPersonal() {
                   )}
                 </div>
 
-                {/* BOTONES DE ACCIÓN */}
+                {/* BOTONES DE ACCIÓN DINÁMICOS */}
                 {(['secretaria', 'admin', 'superadmin'].includes(usuarioLogueado?.rol?.toLowerCase()) || esSuperAdmin) ? (
                   <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
                     {!estudioPendienteSeleccionado && (
@@ -1256,7 +1293,7 @@ export default function PanelPersonal() {
                         onClick={handleCrearOrdenSinArchivos}
                         className="w-full sm:w-1/2 py-3 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-xl shadow-md transition-all cursor-pointer"
                       >
-                        📋 Crear Orden (Para el Técnico)
+                        {tipoExamen === 'Informe Médico' ? '📋 Crear Orden (Para Informe Médico)' : '📋 Crear Orden (Para el Técnico)'}
                       </button>
                     )}
 
@@ -1275,7 +1312,7 @@ export default function PanelPersonal() {
                       onClick={handleSubirEstudioConArchivos}
                       className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-2"
                     >
-                      {['medico', 'médico'].includes(usuarioLogueado?.rol?.toLowerCase()) ? (
+                      {['medico', 'médico'].includes(usuarioLogueado?.rol?.toLowerCase()) || tipoExamen === 'Informe Médico' ? (
                         <>📧 Subir Informe y Notificar por Correo</>
                       ) : (
                         <>📤 Subir y Procesar Estudio</>
@@ -1296,11 +1333,15 @@ export default function PanelPersonal() {
                   <h2 className="text-lg font-bold text-slate-900">Bandeja de Estudios Pendientes</h2>
                   <p className="text-xs text-slate-500 mt-0.5">Seguimiento de exámenes por procesar o informar.</p>
                 </div>
+                
+                {/* BOTÓN ACTUALIZAR CON ANIMACIÓN GIRATORIA */}
                 <button 
-                  onClick={cargarEstudiosPendientes}
-                  className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition-all cursor-pointer"
+                  onClick={() => cargarEstudiosPendientes(true)}
+                  disabled={cargandoPendientes}
+                  className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-60 select-none"
                 >
-                  🔄 Actualizar
+                  <span className={`inline-block ${cargandoPendientes ? 'animate-spin' : ''}`}>🔄</span>
+                  <span>{cargandoPendientes ? 'Actualizando...' : 'Actualizar'}</span>
                 </button>
               </div>
 
@@ -1315,7 +1356,7 @@ export default function PanelPersonal() {
                     
                     // Validación de turnos
                     const esMiTurnoTecnico = (rolUser === 'tecnico' || esSuperAdmin) && est.estado === 'pendiente_tecnico';
-                    const esMiTurnoMedico = (rolUser === 'medico' || rolUser === 'médico' || esSuperAdmin);
+                    const esMiTurnoMedico = (['medico', 'médico', 'secretaria'].includes(rolUser) || esSuperAdmin);
 
                     return (
                       <div key={est.id} className="p-4 border border-slate-200 rounded-2xl bg-slate-50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -1386,7 +1427,7 @@ export default function PanelPersonal() {
                                   nombre_completo: est.paciente_nombre,
                                   cedula: est.paciente_cedula
                                 });
-                                setTipoExamen(est.tipo_examen);
+                                setTipoExamen('Informe Médico');
                                 setTitulo(est.titulo);
                                 setEstudioPendienteSeleccionado(est);
                                 setArchivos([]);
@@ -1658,7 +1699,7 @@ export default function PanelPersonal() {
                         </div>
                       )}
 
-                      {/* LISTA INDIVIDUAL DE CADAH ARCHIVO ADJUNTO */}
+                      {/* LISTA INDIVIDUAL DE CADA ARCHIVO ADJUNTO */}
                       {archivosLista.length > 0 ? (
                         <div className="pt-2 border-t border-slate-200/60 space-y-1.5">
                           <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Archivos del estudio:</p>
@@ -1867,10 +1908,7 @@ export default function PanelPersonal() {
             
             {/* CONTENEDOR DEL LOGO CON ANILLO GIRATORIO */}
             <div className="relative w-28 h-28 mb-5 flex items-center justify-center">
-              {/* Anillo giratorio rojo */}
               <div className="absolute inset-0 rounded-full border-4 border-red-100 border-t-red-800 animate-spin"></div>
-              
-              {/* Logo con animación de pulso */}
               <img 
                 src="/logo.png" 
                 alt="Logo Unidad de Imágenes" 
