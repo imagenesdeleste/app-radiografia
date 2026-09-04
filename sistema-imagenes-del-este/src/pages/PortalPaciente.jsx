@@ -18,32 +18,28 @@ export default function PortalPaciente() {
   const [cargandoModal, setCargandoModal] = useState(false);
   const [mensajeCargandoModal, setMensajeCargandoModal] = useState('');
 
-  // Función para clasificar cada archivo en su sub-carpeta específica
+  // Función para clasificar cada archivo en su sub-carpeta específica de forma exacta
   const obtenerSubcarpeta = (est) => {
-    const texto = `${est.tipo_examen || ''} ${est.titulo || ''} ${est.archivo_path || ''}`.toLowerCase();
+    const tipo = est.tipo_examen || '';
+    const texto = `${tipo} ${est.titulo || ''} ${est.archivo_path || ''}`.toLowerCase();
 
-    if (texto.includes('tomograf') || texto.includes('tac') || texto.includes('ct')) {
-      return 'Tomografías';
-    }
-    if (texto.includes('radiograf') || texto.includes('rx') || texto.includes('rayos')) {
-      return 'Radiografías';
-    }
-    if (texto.includes('informe') || est.tipo_examen === 'Informe Médico') {
+    if (tipo === 'Informe Médico' || texto.includes('informe')) {
       return 'Informes Médicos';
     }
-
-    return 'Otros Archivos';
-  };
-
-  // AGRUPACIÓN NIVELES: Fecha ➔ Categoría ➔ Sub-carpeta (Radiografías / Tomografías / Informes)
-  const estudiosAgrupados = estudios.reduce((acc, est) => {
-    const fecha = new Date(est.fecha_estudio).toLocaleDateString();
-    let catPrincipal = est.tipo_examen || 'Informe Médico';
-
-    if (catPrincipal === 'Radiografía' || catPrincipal === 'Tomografía') {
-      catPrincipal = 'Tomografías y/o Radiografías';
+    if (tipo === 'Tomografía' || texto.includes('tomograf') || texto.includes('tac') || texto.includes('ct')) {
+      return 'Tomografías';
+    }
+    if (tipo === 'Radiografía' || texto.includes('radiograf') || texto.includes('rx') || texto.includes('rayos')) {
+      return 'Radiografías';
     }
 
+    return 'Estudios e Imágenes';
+  };
+
+  // AGRUPACIÓN NIVELES: Fecha ➔ Categoría Principal (Radiografía / Tomografía / Combinado / Informe) ➔ Sub-carpeta
+  const estudiosAgrupados = estudios.reduce((acc, est) => {
+    const fecha = new Date(est.fecha_estudio).toLocaleDateString();
+    const catPrincipal = est.tipo_examen || 'Informe Médico';
     const sub = obtenerSubcarpeta(est);
 
     if (!acc[fecha]) acc[fecha] = {};
@@ -55,53 +51,52 @@ export default function PortalPaciente() {
   }, {});
 
   const handleLogin = async (e) => {
-  e.preventDefault();
-  setError('');
+    e.preventDefault();
+    setError('');
 
-  // Activa el modal animado con el logo
-  setCargandoModal(true);
-  setMensajeCargandoModal('Iniciando sesión y buscando tus estudios...');
+    setCargandoModal(true);
+    setMensajeCargandoModal('Iniciando sesión y buscando tus estudios...');
 
-  try {
+    try {
       const res = await fetch('/api/paciente/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ cedula, clave })
-    });
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cedula, clave })
+      });
 
-    const data = await res.json();
-
-    if (res.ok) {
-      setDatosPaciente(data.paciente);
-      setEstudios(data.estudios || []);
-    } else {
-      setError(data.error || 'Cédula o contraseña incorrectas');
-    }
-  } catch {
-    setError('Error al conectar con el servidor');
-  } finally {
-    setCargandoModal(false); // Apaga la animación al terminar
-  }
-};
-
-const handleActualizarEstudios = async () => {
-  if (!datosPaciente?.id) return;
-  
-  setCargandoModal(true);
-  setMensajeCargandoModal('Actualizando tu historial de estudios...');
-
-  try {
-    const res = await fetch(`https://app-radiografia-production.up.railway.app/api/estudios/paciente/${datosPaciente.id}`);
-    if (res.ok) {
       const data = await res.json();
-      setEstudios(Array.isArray(data) ? data : []);
+
+      if (res.ok) {
+        setDatosPaciente(data.paciente);
+        setEstudios(data.estudios || []);
+      } else {
+        setError(data.error || 'Cédula o contraseña incorrectas');
+      }
+    } catch {
+      setError('Error al conectar con el servidor');
+    } finally {
+      setCargandoModal(false);
     }
-  } catch (e) {
-    console.error('Error actualizando:', e);
-  } finally {
-    setCargandoModal(false);
-  }
-};
+  };
+
+  const handleActualizarEstudios = async () => {
+    if (!datosPaciente?.id) return;
+    
+    setCargandoModal(true);
+    setMensajeCargandoModal('Actualizando tu historial de estudios...');
+
+    try {
+      const res = await fetch(`/api/estudios/paciente/${datosPaciente.id}`);
+      if (res.ok) {
+        const data = await res.json();
+        setEstudios(Array.isArray(data) ? data : []);
+      }
+    } catch (e) {
+      console.error('Error actualizando:', e);
+    } finally {
+      setCargandoModal(false);
+    }
+  };
 
   const mensajeWhatsApp = datosPaciente
     ? `Hola, soy ${datosPaciente.nombre_completo} (C.I: ${datosPaciente.cedula}) y necesito ayuda con mis resultados médicos.`
@@ -196,12 +191,21 @@ const handleActualizarEstudios = async () => {
                 </div>
               </div>
               
-              <button 
-                onClick={() => setDatosPaciente(null)} 
-                className="text-xs text-slate-400 hover:text-red-500 transition-colors px-2 py-1 cursor-pointer"
-              >
-                Salir
-              </button>
+              <div className="flex items-center gap-1">
+                <button 
+                  onClick={handleActualizarEstudios}
+                  className="text-xs text-slate-500 hover:text-slate-800 transition-colors px-2 py-1 cursor-pointer font-medium"
+                  title="Actualizar la lista"
+                >
+                  🔄
+                </button>
+                <button 
+                  onClick={() => setDatosPaciente(null)} 
+                  className="text-xs text-slate-400 hover:text-red-500 transition-colors px-2 py-1 cursor-pointer"
+                >
+                  Salir
+                </button>
+              </div>
             </div>
 
             <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">
@@ -279,7 +283,7 @@ const handleActualizarEstudios = async () => {
                                       const claveSub = `${fecha}-${catNombre}-${subNombre}`;
                                       const estaSubAbierta = subcarpetaAbierta === claveSub;
 
-                                      const iconoSub = subNombre === 'Estudios' ? '🧠' : subNombre === 'Radiografías' ? '🦴' : subNombre === 'Informes Médicos' ? '📄' : '📁';
+                                      const iconoSub = subNombre === 'Tomografías' ? '🧠' : subNombre === 'Radiografías' ? '🦴' : subNombre === 'Informes Médicos' ? '📄' : '📁';
 
                                       return (
                                         <div key={subNombre} className="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-2xs">
@@ -300,7 +304,7 @@ const handleActualizarEstudios = async () => {
                                             </span>
                                           </button>
 
-                                          {/* DESGLOSE DE ARCHIVOS MULTIPLES DENTRO DEL ESTUDIO */}
+                                          {/* DESGLOSE DE ARCHIVOS MÚLTIPLES DENTRO DEL ESTUDIO */}
                                           {estaSubAbierta && (
                                             <div className="p-2 border-t border-slate-100 space-y-2 bg-white">
                                               {listaEstudios.map((e) => {
@@ -315,7 +319,7 @@ const handleActualizarEstudios = async () => {
                                                     {archivosLista.length > 0 ? (
                                                       <div className="space-y-1.5">
                                                         {archivosLista.map((arch, idx) => {
-                                                          const urlArchivo = `https://app-radiografia-production.up.railway.app/api/descargar-archivo/${encodeURIComponent(arch)}`;
+                                                          const urlArchivo = `/api/descargar-archivo/${encodeURIComponent(arch)}`;
                                                           
                                                           return (
                                                             <div key={idx} className="p-2 bg-white border border-slate-200 rounded-lg flex items-center justify-between text-xs hover:border-slate-300 transition-colors">
@@ -424,38 +428,35 @@ const handleActualizarEstudios = async () => {
       </footer>
 
       {/* OVERLAY ANIMADO CON EL LOGO DE LA EMPRESA */}
-{cargandoModal && (
-  <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md flex flex-col items-center justify-center p-4 z-[100] font-sans">
-    <div className="bg-white rounded-3xl p-8 shadow-2xl flex flex-col items-center max-w-sm w-full text-center border border-slate-100">
-      
-      {/* CONTENEDOR DEL LOGO CON ANILLO GIRATORIO */}
-      <div className="relative w-28 h-28 mb-5 flex items-center justify-center">
-        {/* Círculo giratorio borgoña/rojo */}
-        <div className="absolute inset-0 rounded-full border-4 border-red-100 border-t-red-900 animate-spin"></div>
-        
-        {/* Logo con efecto de pulso suave */}
-        <img 
-          src="/logo.png" 
-          alt="Logo Unidad de Imágenes" 
-          className="w-20 h-20 object-contain animate-pulse drop-shadow-sm" 
-        />
-      </div>
+      {cargandoModal && (
+        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md flex flex-col items-center justify-center p-4 z-[100] font-sans">
+          <div className="bg-white rounded-3xl p-8 shadow-2xl flex flex-col items-center max-w-sm w-full text-center border border-slate-100">
+            
+            {/* CONTENEDOR DEL LOGO CON ANILLO GIRATORIO */}
+            <div className="relative w-28 h-28 mb-5 flex items-center justify-center">
+              <div className="absolute inset-0 rounded-full border-4 border-red-100 border-t-red-900 animate-spin"></div>
+              <img 
+                src="/logo.png" 
+                alt="Logo Unidad de Imágenes" 
+                className="w-20 h-20 object-contain animate-pulse drop-shadow-sm" 
+              />
+            </div>
 
-      <h3 className="text-base font-bold text-slate-900 mb-1">
-        Unidad de Imágenes Del Este
-      </h3>
-      
-      <p className="text-xs text-slate-600 font-medium leading-relaxed animate-pulse">
-        {mensajeCargandoModal}
-      </p>
+            <h3 className="text-base font-bold text-slate-900 mb-1">
+              Unidad de Imágenes Del Este
+            </h3>
+            
+            <p className="text-xs text-slate-600 font-medium leading-relaxed animate-pulse">
+              {mensajeCargandoModal}
+            </p>
 
-      <div className="mt-5 pt-4 border-t border-slate-100 w-full flex items-center justify-center gap-2 text-[10px] text-slate-400">
-        <span className="w-1.5 h-1.5 bg-red-800 rounded-full animate-ping"></span>
-        Cargando tu expediente médico seguro...
-      </div>
-    </div>
-  </div>
-)}
+            <div className="mt-5 pt-4 border-t border-slate-100 w-full flex items-center justify-center gap-2 text-[10px] text-slate-400">
+              <span className="w-1.5 h-1.5 bg-red-800 rounded-full animate-ping"></span>
+              Cargando tu expediente médico seguro...
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

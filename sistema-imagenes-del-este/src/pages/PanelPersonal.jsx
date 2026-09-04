@@ -77,7 +77,7 @@ export default function PanelPersonal() {
     correo: '',
     clave: '',
     crear_orden: false,
-    tipo_examen: 'Tomografías y/o Radiografías',
+    tipo_examen: 'Radiografía',
     titulo: ''
   });
 
@@ -99,7 +99,7 @@ export default function PanelPersonal() {
   // 7. Formulario Crear Orden / Subir Estudio
   const [busquedaPacienteSubida, setBusquedaPacienteSubida] = useState('');
   const [pacienteSeleccionadoSubida, setPacienteSeleccionadoSubida] = useState(null);
-  const [tipoExamen, setTipoExamen] = useState('Informe Médico');
+  const [tipoExamen, setTipoExamen] = useState('Radiografía');
   const [titulo, setTitulo] = useState('');
   const [archivos, setArchivos] = useState([]);
 
@@ -138,7 +138,7 @@ export default function PanelPersonal() {
     }
   };
 
-  // CARGAR ESTUDIOS PENDIENTES CON ANIMACIÓN OPCIONAL
+  // CARGAR ESTUDIOS PENDIENTES
   const cargarEstudiosPendientes = async (mostrarAnimacion = false) => {
     if (mostrarAnimacion) setCargandoPendientes(true);
     try {
@@ -156,10 +156,8 @@ export default function PanelPersonal() {
   useEffect(() => {
     if (!autenticado) return;
 
-    // Refresco inicial
     cargarPacientes();
 
-    // Consultar el servidor cada 5 segundos en segundo plano (sin parpadear la pantalla)
     const intervalo = setInterval(() => {
       cargarEstudiosPendientes(false);
     }, 5000);
@@ -387,7 +385,7 @@ export default function PanelPersonal() {
           correo: '',
           clave: '',
           crear_orden: false,
-          tipo_examen: 'Tomografías y/o Radiografías',
+          tipo_examen: 'Radiografía',
           titulo: ''
         });
         cargarPacientes();
@@ -425,7 +423,7 @@ export default function PanelPersonal() {
       });
 
       if (res.ok) {
-        alert('¡Orden creada con éxito! Ya le aparece a todo el personal.');
+        alert('¡Orden creada con éxito! Ya le aparece a los encargados.');
         setTitulo('');
         setPacienteSeleccionadoSubida(null);
         setBusquedaPacienteSubida('');
@@ -463,7 +461,7 @@ export default function PanelPersonal() {
       let estudioIdProcesado = estudioPendienteSeleccionado?.id;
 
       if (estudioPendienteSeleccionado) {
-        const endpoint = esTecnico && estudioPendienteSeleccionado.estado === 'pendiente_tecnico'
+        const endpoint = esTecnico && estudioPendienteSeleccionado.estado === 'pendiente_tecnico' && tipoExamen !== 'Informe Médico'
           ? `/api/estudios/${estudioPendienteSeleccionado.id}/cargar-imagenes`
           : `/api/estudios/${estudioPendienteSeleccionado.id}/cargar-informe`;
 
@@ -646,7 +644,7 @@ export default function PanelPersonal() {
 
   const handleEliminarEstudio = async (estudioId) => {
     if (!confirm('¿Estás seguro de eliminar este estudio de la base de datos?')) return;
-    
+
     const res = await fetch(`/api/estudios/${estudioId}`, {
       method: 'DELETE'
     });
@@ -679,6 +677,17 @@ export default function PanelPersonal() {
     p.cedula.toLowerCase().includes(busquedaPacienteSubida.toLowerCase()) ||
     p.nombre_completo.toLowerCase().includes(busquedaPacienteSubida.toLowerCase())
   );
+
+  // FILTRO INTELIGENTE DE PENDIENTES SEGÚN EL ROL
+  const esTecnicoPuro = ['tecnico', 'técnico', 'tecnico_radiologico'].includes(usuarioLogueado?.rol?.toLowerCase());
+
+  const pendientesFiltradosPorRol = estudiosPendientes.filter((est) => {
+    // Si el usuario es Técnico, NUNCA se le muestran órdenes de "Informe Médico"
+    if (esTecnicoPuro && est.tipo_examen === 'Informe Médico') {
+      return false;
+    }
+    return true;
+  });
 
   /* LOGIN ADMINISTRATIVO */
   if (!autenticado) {
@@ -839,9 +848,9 @@ export default function PanelPersonal() {
                 <span>Estudios Pendientes</span>
               </div>
 
-              {estudiosPendientes.length > 0 && (
+              {pendientesFiltradosPorRol.length > 0 && (
                 <span className="px-2 py-0.5 text-[10px] font-bold bg-amber-500 text-white rounded-full">
-                  {estudiosPendientes.length}
+                  {pendientesFiltradosPorRol.length}
                 </span>
               )}
             </button>
@@ -1051,7 +1060,9 @@ export default function PanelPersonal() {
                           onChange={e => setFormPaciente({...formPaciente, tipo_examen: e.target.value})}
                           className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-lg cursor-pointer font-medium"
                         >
-                          <option value="Tomografías y/o Radiografías">Tomografías y/o Radiografías (Para Técnico)</option>
+                          <option value="Radiografía">Radiografía (Para Técnico)</option>
+                          <option value="Tomografía">Tomografía (Para Técnico)</option>
+                          <option value="Tomografías y/o Radiografías">Tomografías y Radiografías (Ambas)</option>
                           <option value="Informe Médico">Informe Médico (Para Médico / Secretaría)</option>
                         </select>
                       </div>
@@ -1060,7 +1071,7 @@ export default function PanelPersonal() {
                         <label className="block text-xs font-semibold text-slate-600 uppercase mb-1">Título / Estudio Solicitado</label>
                         <input 
                           type="text" 
-                          placeholder="Ej: Radiografía Panorámica / Informe Tórax AP" 
+                          placeholder="Ej: Radiografía Panorámica / Tomografía de Tórax" 
                           value={formPaciente.titulo}
                           onChange={e => setFormPaciente({...formPaciente, titulo: e.target.value})}
                           className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-lg"
@@ -1189,9 +1200,13 @@ export default function PanelPersonal() {
                         disabled={!!estudioPendienteSeleccionado || esMedico || esTecnico}
                         className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 cursor-pointer disabled:opacity-75 disabled:bg-slate-100"
                       >
-                        {/* TÉCNICOS: Solo ven la opción de imágenes */}
+                        {/* TÉCNICOS: Solo ven opciones de capturas de imágenes */}
                         {esTecnico && (
-                          <option value="Tomografías y/o Radiografías">Tomografías y/o Radiografías</option>
+                          <>
+                            <option value="Radiografía">Radiografía</option>
+                            <option value="Tomografía">Tomografía</option>
+                            <option value="Tomografías y/o Radiografías">Tomografías y/o Radiografías</option>
+                          </>
                         )}
 
                         {/* MÉDICOS: Solo ven la opción de informe médico */}
@@ -1199,11 +1214,13 @@ export default function PanelPersonal() {
                           <option value="Informe Médico">Informe Médico</option>
                         )}
 
-                        {/* SECRETARÍA Y ADMINS: Ven ambas opciones */}
+                        {/* SECRETARÍA Y ADMINS: Ven todas las opciones disponibles */}
                         {!esTecnico && !esMedico && (
                           <>
-                            <option value="Informe Médico">Informe Médico</option>
+                            <option value="Radiografía">Radiografía</option>
+                            <option value="Tomografía">Tomografía</option>
                             <option value="Tomografías y/o Radiografías">Tomografías y/o Radiografías</option>
+                            <option value="Informe Médico">Informe Médico</option>
                           </>
                         )}
                       </select>
@@ -1345,17 +1362,20 @@ export default function PanelPersonal() {
                 </button>
               </div>
 
-              {estudiosPendientes.length === 0 ? (
+              {pendientesFiltradosPorRol.length === 0 ? (
                 <div className="text-center py-12 text-slate-400">
                   <p className="text-xs">🎉 ¡Todo al día! No hay estudios pendientes.</p>
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {estudiosPendientes.map((est) => {
+                  {pendientesFiltradosPorRol.map((est) => {
                     const rolUser = usuarioLogueado?.rol?.toLowerCase();
+                    const esInformeMedico = est.tipo_examen === 'Informe Médico';
                     
-                    // Validación de turnos
-                    const esMiTurnoTecnico = (rolUser === 'tecnico' || esSuperAdmin) && est.estado === 'pendiente_tecnico';
+                    // Si es "Informe Médico", NUNCA es turno del técnico ni requiere placas
+                    const esMiTurnoTecnico = (rolUser === 'tecnico' || esSuperAdmin) && est.estado === 'pendiente_tecnico' && !esInformeMedico;
+                    
+                    // Corresponde a Médico, Secretaría o SuperAdmin
                     const esMiTurnoMedico = (['medico', 'médico', 'secretaria'].includes(rolUser) || esSuperAdmin);
 
                     return (
@@ -1366,14 +1386,15 @@ export default function PanelPersonal() {
                               {est.tipo_examen}
                             </span>
                             
-                            {est.estado === 'pendiente_tecnico' && (
+                            {!esInformeMedico && est.estado === 'pendiente_tecnico' && (
                               <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-amber-100 text-amber-800">
                                 ⌛ Esperando Placas (Técnico)
                               </span>
                             )}
-                            {est.estado === 'pendiente_medico' && (
+                            
+                            {(est.estado === 'pendiente_medico' || esInformeMedico) && (
                               <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-blue-100 text-blue-800">
-                                🩺 Esperando Informe (Médico)
+                                🩺 Esperando Informe (Médico / Secretaría)
                               </span>
                             )}
                           </div>
@@ -1397,7 +1418,7 @@ export default function PanelPersonal() {
                             </button>
                           )}
 
-                          {/* 2. SUBIR PLACAS */}
+                          {/* 2. SUBIR PLACAS (Solo si no es informe médico) */}
                           {esMiTurnoTecnico && (
                             <button
                               onClick={() => {
@@ -1864,9 +1885,9 @@ export default function PanelPersonal() {
             seccion === 'estudios-pendientes' ? 'text-red-900 font-bold' : 'text-slate-400'
           }`}
         >
-          {estudiosPendientes.length > 0 && (
+          {pendientesFiltradosPorRol.length > 0 && (
             <span className="absolute top-0 right-3 w-4 h-4 bg-amber-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
-              {estudiosPendientes.length}
+              {pendientesFiltradosPorRol.length}
             </span>
           )}
           <svg className="w-5 h-5 mb-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
