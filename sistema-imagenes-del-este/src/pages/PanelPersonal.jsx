@@ -912,7 +912,7 @@ export default function PanelPersonal() {
         </div>
 
         <div className="pt-4 border-t border-slate-800 flex items-center justify-between">
-          <span className="text-[11px] text-white">MedicsWeb v1.0</span>
+          <span className="text-[11px] text-white">MedicsWebs v1.0.1</span>
           <button 
             onClick={handleCerrarSesion} 
             className="text-xs text-red-400 hover:text-red-300 transition-colors font-medium cursor-pointer"

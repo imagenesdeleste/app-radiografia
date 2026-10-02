@@ -1,0 +1,21 @@
+{
+  "short_name": "Imágenes Del Este",
+  "name": "Unidad de Imágenes Del Este",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "start_url": "/pacientes",
+  "background_color": "#ffffff",
+  "theme_color": "#881337",
+  "display": "standalone",
+  "orientation": "portrait"
+}
