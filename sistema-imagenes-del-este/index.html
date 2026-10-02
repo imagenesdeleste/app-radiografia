@@ -12,7 +12,7 @@
   <meta name="theme-color" content="#881337" />
 
   <!-- Soporte para iPhone / iOS -->
-  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Imágenes Del Este" />
   <link rel="apple-touch-icon" href="/logo.png" />
@@ -21,6 +21,15 @@
     rel="stylesheet" 
     href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" 
   />
+  <script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js').catch((err) => {
+        console.log('Error al registrar Service Worker:', err);
+      });
+    });
+  }
+</script>
 <body>
   <div id="root"></div>
   <script type="module" src="/src/main.jsx"></script>
