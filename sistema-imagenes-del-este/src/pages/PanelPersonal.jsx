@@ -302,13 +302,25 @@ export default function PanelPersonal() {
     }
   };
 
-  // 💬 NOTIFICAR POR WHATSAPP
+  // 💬 NOTIFICAR POR WHATSAPP (Con búsqueda de respaldo)
   const handleNotificarWhatsApp = (pacienteNombre, pacienteTelefono, pacienteCedula, tituloEstudio) => {
-    if (!pacienteTelefono || !pacienteTelefono.trim()) {
-      return alert('El paciente no tiene un número de teléfono registrado.');
+    let tel = pacienteTelefono;
+
+    // Respaldo por si el teléfono no vino en las variables directas
+    if (!tel && (pacienteCedula || pacienteSeleccionadoSubida?.id)) {
+      const pacienteEncontrado = pacientes.find(
+        (p) => p.cedula === pacienteCedula || p.id === pacienteSeleccionadoSubida?.id
+      );
+      if (pacienteEncontrado && pacienteEncontrado.telefono) {
+        tel = pacienteEncontrado.telefono;
+      }
     }
 
-    let num = pacienteTelefono.replace(/\D/g, ''); 
+    if (!tel || !tel.trim()) {
+      return alert('El paciente no tiene un número de teléfono registrado en el sistema.');
+    }
+
+    let num = tel.replace(/\D/g, ''); 
     if (num.startsWith('0')) {
       num = '58' + num.substring(1); 
     } else if (!num.startsWith('58') && num.length === 10) {
@@ -1170,6 +1182,9 @@ export default function PanelPersonal() {
                           {pacienteSeleccionadoSubida.correo && (
                             <span className="text-[10px] text-slate-500 block">✉️ {pacienteSeleccionadoSubida.correo}</span>
                           )}
+                          {pacienteSeleccionadoSubida.telefono && (
+                            <span className="text-[10px] text-slate-500 block">📞 {pacienteSeleccionadoSubida.telefono}</span>
+                          )}
                         </div>
                         {!estudioPendienteSeleccionado && (
                           <button 
@@ -1461,11 +1476,13 @@ export default function PanelPersonal() {
                           {esMiTurnoTecnico && (
                             <button
                               onClick={() => {
+                                const pacienteInfo = pacientes.find(p => p.id === est.paciente_id || p.cedula === est.paciente_cedula);
                                 setPacienteSeleccionadoSubida({
                                   id: est.paciente_id,
                                   nombre_completo: est.paciente_nombre,
                                   cedula: est.paciente_cedula,
-                                  correo: est.paciente_correo || est.correo || ''
+                                  correo: est.paciente_correo || est.correo || pacienteInfo?.correo || '',
+                                  telefono: est.paciente_telefono || est.telefono || pacienteInfo?.telefono || ''
                                 });
                                 setTipoExamen(est.tipo_examen);
                                 setTitulo(est.titulo);
@@ -1483,11 +1500,13 @@ export default function PanelPersonal() {
                           {esMiTurnoMedico && (
                             <button
                               onClick={() => {
+                                const pacienteInfo = pacientes.find(p => p.id === est.paciente_id || p.cedula === est.paciente_cedula);
                                 setPacienteSeleccionadoSubida({
                                   id: est.paciente_id,
                                   nombre_completo: est.paciente_nombre,
                                   cedula: est.paciente_cedula,
-                                  correo: est.paciente_correo || est.correo || ''
+                                  correo: est.paciente_correo || est.correo || pacienteInfo?.correo || '',
+                                  telefono: est.paciente_telefono || est.telefono || pacienteInfo?.telefono || ''
                                 });
                                 setTipoExamen('Informe Médico');
                                 setTitulo(est.titulo);
