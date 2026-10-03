@@ -11,6 +11,39 @@ export default function PanelPersonal() {
     }
   });
 
+  // SISTEMA DE NOTIFICACIONES TOAST (Reemplaza alert())
+  const [toast, setToast] = useState({ mostrar: false, tipo: 'exito', mensaje: '' });
+
+  const mostrarToast = (mensaje, tipo = 'exito') => {
+    setToast({ mostrar: true, tipo, mensaje });
+    setTimeout(() => {
+      setToast((prev) => ({ ...prev, mostrar: false }));
+    }, 3500);
+  };
+
+  // MODAL DE CONFIRMACIÓN PERSONALIZADO (Reemplaza confirm())
+  const [modalConfirm, setModalConfirm] = useState({ 
+    mostrar: false, 
+    titulo: '', 
+    mensaje: '', 
+    onConfirm: null 
+  });
+
+  const solicitarConfirmacion = (titulo, mensaje, accionConfirmar) => {
+    setModalConfirm({
+      mostrar: true,
+      titulo,
+      mensaje,
+      onConfirm: () => {
+        accionConfirmar();
+        setModalConfirm({ mostrar: false, titulo: '', mensaje: '', onConfirm: null });
+      }
+    });
+  };
+
+  // MODAL CAMBIAR CONTRASEÑA PERSONALIZADO (Reemplaza prompt())
+  const [modalClave, setModalClave] = useState({ mostrar: false, usuarioId: null, clave: '' });
+
   // Estados para la animación global de carga
   const [cargandoEnvio, setCargandoEnvio] = useState(false);
   const [mensajeCargando, setMensajeCargando] = useState('');
@@ -31,7 +64,7 @@ export default function PanelPersonal() {
   // 2. Estado de Estudios Pendientes
   const [estudiosPendientes, setEstudiosPendientes] = useState([]);
 
-  // Normalización de roles para evitar bloqueos por mayúsculas/minúsculas
+  // Normalización de roles
   const rolActual = usuarioLogueado?.rol?.toLowerCase() || '';
   const esSuperAdmin = ['superadmin', 'admin'].includes(rolActual);
   const esSecretaria = ['secretaria', 'secretario'].includes(rolActual) || esSuperAdmin;
@@ -90,7 +123,7 @@ export default function PanelPersonal() {
     titulo: ''
   });
 
-  // Función para cambiar de sección en el Sidebar limpiando bloqueos
+  // Función para cambiar de sección en el Sidebar
   const cambiarSeccion = (nuevaSeccion) => {
     if (nuevaSeccion === 'subir-estudio') {
       setEstudioPendienteSeleccionado(null);
@@ -105,7 +138,6 @@ export default function PanelPersonal() {
     setSeccion(nuevaSeccion);
   };
 
-  // Nombres dinámicos para el Sidebar y Barra Móvil
   const getLabelSubir = () => {
     if (esMedico) return 'Subir Informes';
     if (esTecnico) return 'Subir Estudios';
@@ -154,7 +186,7 @@ export default function PanelPersonal() {
       const data = await res.json();
       if (Array.isArray(data)) setUsuariosPersonal(data);
     } catch (e) {
-      console.error("Error al cargar usuarios de persona", e);
+      console.error("Error al cargar usuarios", e);
     } finally {
       setCargandoUsuarios(false);
     }
@@ -174,7 +206,6 @@ export default function PanelPersonal() {
     }
   };
 
-  // SINCRONIZACIÓN AUTOMÁTICA EN TIEMPO REAL (Cada 5 segundos)
   useEffect(() => {
     if (!autenticado) return;
 
@@ -198,14 +229,12 @@ export default function PanelPersonal() {
     }
   }, [autenticado, seccion]);
 
-  // FORZAR AUTOMÁTICAMENTE 'Informe Médico' PARA EL ROL DE MÉDICO
   useEffect(() => {
     if (esMedico) {
       setTipoExamen('Informe Médico');
     }
   }, [seccion, usuarioLogueado]);
 
-  // Selección Acumulativa de Archivos
   const handleArchivosChange = (e) => {
     if (e.target.files.length > 0) {
       const nuevosArchivos = Array.from(e.target.files);
@@ -224,7 +253,6 @@ export default function PanelPersonal() {
     if (fileInput) fileInput.value = '';
   };
 
-  // Genera el mensaje dinámico para la animación de carga
   const getMensajeCargandoSubida = () => {
     if ((esMedico || esSecretaria) && tipoExamen === 'Informe Médico') {
       return 'Subiendo informe médico y enviando notificación al paciente...';
@@ -265,6 +293,7 @@ export default function PanelPersonal() {
         } else {
           setSeccion('pacientes-lista');
         }
+        mostrarToast(`¡Bienvenido/a, ${data.usuario.nombre_completo}!`, 'exito');
       } else {
         setErrorLogin(data.error || 'Credenciales inválidas');
       }
@@ -275,19 +304,19 @@ export default function PanelPersonal() {
     }
   };
 
-  // Cerrar Sesión
   const handleCerrarSesion = () => {
     localStorage.removeItem('usuarioLogueado');
     setAutenticado(false);
     setUsuarioLogueado(null);
     setAdminCedula('');
     setAdminClave('');
+    mostrarToast('Sesión cerrada correctamente', 'info');
   };
 
-  // 📧 NOTIFICAR POR CORREO
+  // NOTIFICAR POR CORREO
   const handleNotificarCorreo = async (estudioId, correoPaciente) => {
     if (!estudioId) {
-      return alert('Selecciona o crea un estudio previamente para notificar al paciente.');
+      return mostrarToast('Selecciona o crea un estudio previamente para notificar al paciente.', 'advertencia');
     }
 
     try {
@@ -297,16 +326,16 @@ export default function PanelPersonal() {
       const data = await res.json();
 
       if (res.ok) {
-        alert('📧 ¡Correo enviado con éxito al paciente!');
+        mostrarToast('📧 ¡Correo enviado con éxito al paciente!', 'exito');
       } else {
-        alert(`⚠️ ${data.error || 'No se pudo enviar el correo'}`);
+        mostrarToast(`⚠️ ${data.error || 'No se pudo enviar el correo'}`, 'advertencia');
       }
     } catch (error) {
-      alert('Error de conexión al intentar enviar el correo');
+      mostrarToast('Error de conexión al intentar enviar el correo', 'error');
     }
   };
 
-  // 💬 NOTIFICAR POR WHATSAPP (Con búsqueda de respaldo)
+  // NOTIFICAR POR WHATSAPP
   const handleNotificarWhatsApp = (pacienteNombre, pacienteTelefono, pacienteCedula, tituloEstudio) => {
     let tel = pacienteTelefono;
 
@@ -320,7 +349,7 @@ export default function PanelPersonal() {
     }
 
     if (!tel || !tel.trim()) {
-      return alert('El paciente no tiene un número de teléfono registrado en el sistema.');
+      return mostrarToast('El paciente no tiene un número de teléfono registrado.', 'advertencia');
     }
 
     let num = tel.replace(/\D/g, ''); 
@@ -358,14 +387,15 @@ export default function PanelPersonal() {
       });
 
       if (res.ok) {
-        alert('¡Paciente actualizado correctamente!');
+        mostrarToast('¡Paciente actualizado correctamente!', 'exito');
         setPacienteAEditar(null);
         cargarPacientes();
       } else {
-        alert('Error al actualizar datos');
+        mostrarToast('Error al actualizar datos del paciente', 'error');
       }
     } catch (e) {
       console.error('Error:', e);
+      mostrarToast('Error de conexión', 'error');
     }
   };
 
@@ -420,7 +450,12 @@ export default function PanelPersonal() {
         cargarPacientes();
         cargarEstudiosPendientes(false);
         
-        alert(formPaciente.crear_orden ? '¡Paciente registrado y orden enviada!' : '¡Paciente registrado con éxito!');
+        mostrarToast(
+          formPaciente.crear_orden 
+            ? '¡Paciente registrado y orden enviada!' 
+            : '¡Paciente registrado con éxito!',
+          'exito'
+        );
         setSeccion('pacientes-lista');
       } else {
         setMensajeFormPaciente({ 
@@ -438,8 +473,8 @@ export default function PanelPersonal() {
   };
 
   const handleCrearOrdenSinArchivos = async () => {
-    if (!pacienteSeleccionadoSubida) return alert('Selecciona un paciente de la lista');
-    if (!titulo.trim()) return alert('Ingresa el título del estudio');
+    if (!pacienteSeleccionadoSubida) return mostrarToast('Selecciona un paciente de la lista', 'advertencia');
+    if (!titulo.trim()) return mostrarToast('Ingresa el título del estudio', 'advertencia');
 
     setCargandoEnvio(true);
     setMensajeCargando(
@@ -460,26 +495,26 @@ export default function PanelPersonal() {
       });
 
       if (res.ok) {
-        alert('¡Orden creada con éxito! Ya le aparece a los encargados.');
+        mostrarToast('¡Orden creada con éxito! Ya le aparece a los encargados.', 'exito');
         setTitulo('');
         setPacienteSeleccionadoSubida(null);
         setBusquedaPacienteSubida('');
         cargarEstudiosPendientes(false);
       } else {
-        alert('Error al crear la orden');
+        mostrarToast('Error al crear la orden de examen', 'error');
       }
     } catch (e) {
       console.error('Error:', e);
-      alert('Error de conexión con el servidor');
+      mostrarToast('Error de conexión con el servidor', 'error');
     } finally {
       setCargandoEnvio(false);
     }
   };
 
   const handleSubirEstudioConArchivos = async () => {
-    if (!pacienteSeleccionadoSubida) return alert('Selecciona un paciente de la lista.');
-    if (!titulo.trim()) return alert('Ingresa el título del estudio.');
-    if (archivos.length === 0) return alert('Debes adjuntar al menos un archivo para subir.');
+    if (!pacienteSeleccionadoSubida) return mostrarToast('Selecciona un paciente de la lista.', 'advertencia');
+    if (!titulo.trim()) return mostrarToast('Ingresa el título del estudio.', 'advertencia');
+    if (archivos.length === 0) return mostrarToast('Debes adjuntar al menos un archivo para subir.', 'advertencia');
 
     const formData = new FormData();
     archivos.forEach((file) => {
@@ -536,27 +571,32 @@ export default function PanelPersonal() {
             if (resCorreo.ok) {
               correoEnviado = true;
             } else {
-              mensajeCorreoError = dataCorreo.error || 'El paciente no posee correo registrado o falló el envío';
+              mensajeCorreoError = dataCorreo.error || 'El paciente no posee correo registrado';
             }
           } catch (errCorreo) {
-            console.error('Error al notificar correo automáticamente:', errCorreo);
-            mensajeCorreoError = 'Error de conexión con el servidor de correos';
+            console.error('Error al notificar correo:', errCorreo);
+            mensajeCorreoError = 'Error de conexión con servidor de correos';
           }
         }
 
         if (tipoExamen === 'Informe Médico' || esMedico) {
           if (correoEnviado) {
-            alert('📧 ¡Informe cargado con éxito y correo enviado al paciente!');
+            mostrarToast('📧 ¡Informe cargado con éxito y correo enviado al paciente!', 'exito');
           } else if (mensajeCorreoError) {
-            alert(`✅ Informe cargado con éxito.\n⚠️ Nota del correo: ${mensajeCorreoError}`);
+            mostrarToast(`✅ Informe cargado. (Correo: ${mensajeCorreoError})`, 'advertencia');
           } else {
-            alert('✅ ¡Informe cargado con éxito!');
+            mostrarToast('✅ ¡Informe cargado con éxito!', 'exito');
           }
         } else {
           if (correoEnviado) {
-            alert('📧 ¡Estudio cargado con éxito y notificado por correo!');
+            mostrarToast('📧 ¡Estudio cargado con éxito y notificado por correo!', 'exito');
           } else {
-            alert(estudioPendienteSeleccionado ? '¡Orden actualizada y procesada con éxito!' : '¡Estudio cargado con éxito!');
+            mostrarToast(
+              estudioPendienteSeleccionado 
+                ? '¡Orden actualizada y procesada con éxito!' 
+                : '¡Estudio cargado con éxito!',
+              'exito'
+            );
           }
         }
 
@@ -568,34 +608,38 @@ export default function PanelPersonal() {
         cargarEstudiosPendientes(false);
         setSeccion('estudios-pendientes');
       } else {
-        alert('Error al subir los archivos al servidor.');
+        mostrarToast('Error al subir los archivos al servidor.', 'error');
       }
     } catch (error) {
       console.error('Error al conectar:', error);
-      alert('Error de conexión con el servidor.');
+      mostrarToast('Error de conexión con el servidor.', 'error');
     } finally {
       setCargandoEnvio(false);
     }
   };
 
-  const handleCancelarOrdenPendiente = async (estudioId) => {
-    if (!confirm('¿Seguro que deseas cancelar y eliminar esta orden pendiente?')) return;
+  const handleCancelarOrdenPendiente = (estudioId) => {
+    solicitarConfirmacion(
+      '¿Cancelar Orden?',
+      '¿Estás seguro de que deseas cancelar y eliminar esta orden pendiente?',
+      async () => {
+        try {
+          const res = await fetch(`/api/estudios/${estudioId}`, {
+            method: 'DELETE'
+          });
 
-    try {
-      const res = await fetch(`/api/estudios/${estudioId}`, {
-        method: 'DELETE'
-      });
-
-      if (res.ok) {
-        alert('¡Orden cancelada y eliminada con éxito!');
-        cargarEstudiosPendientes(false);
-      } else {
-        alert('Error al eliminar la orden');
+          if (res.ok) {
+            mostrarToast('¡Orden cancelada y eliminada con éxito!', 'exito');
+            cargarEstudiosPendientes(false);
+          } else {
+            mostrarToast('Error al eliminar la orden', 'error');
+          }
+        } catch (e) {
+          console.error('Error:', e);
+          mostrarToast('Error de conexión con el servidor', 'error');
+        }
       }
-    } catch (e) {
-      console.error('Error:', e);
-      alert('Error de conexión con el servidor');
-    }
+    );
   };
 
   const handleGuardarEstudio = (e) => {
@@ -619,15 +663,15 @@ export default function PanelPersonal() {
       const data = await res.json();
 
       if (res.ok) {
-        alert('¡Usuario registrado con éxito!');
+        mostrarToast('¡Usuario registrado con éxito!', 'exito');
         setFormNuevoUsuario({ cedula: '', nombre_completo: '', clave: '', rol: 'tecnico' });
         cargarUsuariosPersonal();
       } else {
-        alert(data.error || 'Error al registrar usuario');
+        mostrarToast(data.error || 'Error al registrar usuario', 'error');
       }
     } catch (e) {
       console.error('Error:', e);
-      alert('Error de conexión con el servidor');
+      mostrarToast('Error de conexión con el servidor', 'error');
     }
   };
 
@@ -640,83 +684,106 @@ export default function PanelPersonal() {
       });
 
       if (res.ok) {
-        alert('¡Rol actualizado con éxito!');
+        mostrarToast('¡Rol actualizado con éxito!', 'exito');
         cargarUsuariosPersonal();
       } else {
-        alert('Error al actualizar el rol');
+        mostrarToast('Error al actualizar el rol', 'error');
       }
     } catch (e) {
       console.error('Error:', e);
-      alert('Error de conexión');
+      mostrarToast('Error de conexión', 'error');
     }
   };
 
-  const handleCambiarClaveUsuarioPersonal = async (usuarioId) => {
-    const nuevaClave = prompt('Ingresa la nueva contraseña para este usuario:');
-    if (!nuevaClave || nuevaClave.trim() === '') return;
+  const handleAbrirModalCambiarClave = (usuarioId) => {
+    setModalClave({ mostrar: true, usuarioId, clave: '' });
+  };
+
+  const handleEjecutarCambioClave = async (e) => {
+    e.preventDefault();
+    if (!modalClave.clave || modalClave.clave.trim() === '') {
+      return mostrarToast('Ingresa una contraseña válida', 'advertencia');
+    }
 
     try {
-      const res = await fetch(`/api/admin/usuarios/${usuarioId}/clave`, {
+      const res = await fetch(`/api/admin/usuarios/${modalClave.usuarioId}/clave`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clave: nuevaClave })
+        body: JSON.stringify({ clave: modalClave.clave })
       });
 
       if (res.ok) {
-        alert('¡Contraseña actualizada con éxito!');
+        mostrarToast('¡Contraseña actualizada con éxito!', 'exito');
+        setModalClave({ mostrar: false, usuarioId: null, clave: '' });
       } else {
-        alert('Error al actualizar la contraseña');
+        mostrarToast('Error al actualizar la contraseña', 'error');
       }
     } catch (e) {
       console.error('Error:', e);
-      alert('Error de conexión con el servidor');
+      mostrarToast('Error de conexión con el servidor', 'error');
     }
   };
 
-  const handleEliminarUsuarioPersonal = async (usuarioId) => {
-    if (!confirm('¿Seguro que deseas eliminar este usuario? Perderá el acceso al sistema.')) return;
+  const handleEliminarUsuarioPersonal = (usuarioId) => {
+    solicitarConfirmacion(
+      '¿Eliminar Usuario?',
+      '¿Seguro que deseas eliminar este usuario del personal? Perderá el acceso de inmediato.',
+      async () => {
+        try {
+          const res = await fetch(`/api/admin/usuarios/${usuarioId}`, {
+            method: 'DELETE'
+          });
 
-    try {
-      const res = await fetch(`/api/admin/usuarios/${usuarioId}`, {
-        method: 'DELETE'
-      });
-
-      if (res.ok) {
-        alert('¡Usuario eliminado correctamente!');
-        cargarUsuariosPersonal();
-      } else {
-        alert('Error al eliminar el usuario');
+          if (res.ok) {
+            mostrarToast('¡Usuario eliminado correctamente!', 'exito');
+            cargarUsuariosPersonal();
+          } else {
+            mostrarToast('Error al eliminar el usuario', 'error');
+          }
+        } catch (e) {
+          console.error('Error:', e);
+          mostrarToast('Error de conexión con el servidor', 'error');
+        }
       }
-    } catch (e) {
-      console.error('Error:', e);
-      alert('Error de conexión con el servidor');
-    }
+    );
   };
 
-  const handleEliminarEstudio = async (estudioId) => {
-    if (!confirm('¿Estás seguro de eliminar este estudio de la base de datos?')) return;
+  const handleEliminarEstudio = (estudioId) => {
+    solicitarConfirmacion(
+      '¿Eliminar Estudio?',
+      '¿Estás seguro de eliminar este estudio de la base de datos de forma permanente?',
+      async () => {
+        const res = await fetch(`/api/estudios/${estudioId}`, {
+          method: 'DELETE'
+        });
 
-    const res = await fetch(`/api/estudios/${estudioId}`, {
-      method: 'DELETE'
-    });
-
-    if (res.ok) {
-      alert('Estudio eliminado');
-      setEstudiosPaciente(prev => prev.filter(e => e.id !== estudioId));
-    }
+        if (res.ok) {
+          mostrarToast('Estudio eliminado con éxito', 'exito');
+          setEstudiosPaciente(prev => prev.filter(e => e.id !== estudioId));
+        } else {
+          mostrarToast('Error al eliminar el estudio', 'error');
+        }
+      }
+    );
   };
 
-  const handleEliminarPaciente = async (pacienteId) => {
-    if (!confirm('¿Seguro que deseas borrar este paciente y TODOS sus estudios asociados?')) return;
+  const handleEliminarPaciente = (pacienteId) => {
+    solicitarConfirmacion(
+      '¿Borrar Paciente Completo?',
+      '¿Seguro que deseas borrar este paciente y TODOS sus estudios asociados?',
+      async () => {
+        const res = await fetch(`/api/pacientes/${pacienteId}`, {
+          method: 'DELETE'
+        });
 
-    const res = await fetch(`/api/pacientes/${pacienteId}`, {
-      method: 'DELETE'
-    });
-
-    if (res.ok) {
-      alert('Paciente eliminado');
-      cargarPacientes();
-    }
+        if (res.ok) {
+          mostrarToast('Paciente eliminado del sistema', 'exito');
+          cargarPacientes();
+        } else {
+          mostrarToast('Error al eliminar el paciente', 'error');
+        }
+      }
+    );
   };
 
   const pacientesFiltradosLista = pacientes.filter(p => 
@@ -810,10 +877,120 @@ export default function PanelPersonal() {
 
   /* PANEL PRINCIPAL */
   return (
-    <div className="flex min-h-screen bg-slate-100 font-sans text-slate-800">
+    <div className="flex h-screen overflow-hidden bg-slate-100 font-sans text-slate-800 relative">
+
+      {/* NOTIFICACIÓN TOAST FLOTANTE Y ANIMADA */}
+      {toast.mostrar && (
+        <div className="fixed top-5 right-5 z-[120] max-w-sm w-full animate-bounce-short transition-all duration-300">
+          <div className={`p-4 rounded-2xl shadow-2xl border flex items-center justify-between gap-3 ${
+            toast.tipo === 'exito' 
+              ? 'bg-emerald-900 text-white border-emerald-700' 
+              : toast.tipo === 'error'
+              ? 'bg-red-900 text-white border-red-700'
+              : toast.tipo === 'advertencia'
+              ? 'bg-amber-800 text-white border-amber-600'
+              : 'bg-slate-900 text-white border-slate-700'
+          }`}>
+            <div className="flex items-center gap-2.5">
+              <span className="text-base">
+                {toast.tipo === 'exito' && '✅'}
+                {toast.tipo === 'error' && '❌'}
+                {toast.tipo === 'advertencia' && '⚠️'}
+                {toast.tipo === 'info' && 'ℹ️'}
+              </span>
+              <p className="text-xs font-semibold leading-snug">{toast.mensaje}</p>
+            </div>
+            <button 
+              onClick={() => setToast({ ...toast, mostrar: false })}
+              className="text-xs opacity-70 hover:opacity-100 font-bold px-1"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DE CONFIRMACIÓN PERSONALIZADO */}
+      {modalConfirm.mostrar && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[110]">
+          <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-slate-100 text-center animate-fade-in">
+            <div className="w-14 h-14 bg-red-100 text-red-600 rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl font-bold">
+              ⚠️
+            </div>
+            <h3 className="text-base font-bold text-slate-900 mb-1">{modalConfirm.titulo}</h3>
+            <p className="text-xs text-slate-500 mb-6">{modalConfirm.mensaje}</p>
+
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setModalConfirm({ mostrar: false, titulo: '', mensaje: '', onConfirm: null })}
+                className="w-1/2 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition-colors cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={modalConfirm.onConfirm}
+                className="w-1/2 py-2.5 bg-red-600 hover:bg-red-700 text-white text-xs font-semibold rounded-xl transition-colors shadow-md cursor-pointer"
+              >
+                Confirmar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL PERSONALIZADO DE CAMBIO DE CONTRASEÑA DE USUARIO */}
+      {modalClave.mostrar && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[110]">
+          <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-slate-100 animate-fade-in">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+              <h3 className="text-base font-bold text-slate-900">🔑 Cambiar Contraseña</h3>
+              <button 
+                onClick={() => setModalClave({ mostrar: false, usuarioId: null, clave: '' })} 
+                className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleEjecutarCambioClave} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
+                  Nueva Contraseña
+                </label>
+                <input 
+                  type="password" 
+                  placeholder="••••••••"
+                  value={modalClave.clave}
+                  onChange={e => setModalClave({ ...modalClave, clave: e.target.value })}
+                  className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+                  required
+                />
+              </div>
+
+              <div className="flex items-center space-x-2 pt-2">
+                <button 
+                  type="button"
+                  onClick={() => setModalClave({ mostrar: false, usuarioId: null, clave: '' })}
+                  className="w-1/2 py-2.5 bg-slate-100 text-slate-600 text-xs font-semibold rounded-xl cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  type="submit" 
+                  className="w-1/2 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-xl shadow-md cursor-pointer"
+                >
+                  Guardar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
       
-      {/* SIDEBAR LATERAL COLOR FONDO CON LETRAS NEGRAS */}
-      <aside className="hidden md:flex w-64 bg-slate-100 text-slate-900 flex-col justify-between p-4 shrink-0 border-r border-slate-200/80">
+      {/* SIDEBAR LATERAL FIJO */}
+      <aside className="hidden md:flex w-64 h-full bg-slate-100 text-slate-900 flex-col justify-between p-4 shrink-0 border-r border-slate-200/80">
         <div>
           <div className="flex items-center space-x-3 px-2 py-4 mb-6 border-b border-slate-200">
             <div className="w-16 h-16 flex items-center justify-center shrink-0">
@@ -836,7 +1013,7 @@ export default function PanelPersonal() {
 
           <nav className="space-y-2">
 
-            {/* BOTÓN 1: PACIENTES (Icono Azul) */}
+            {/* BOTÓN 1: PACIENTES */}
             <button
               onClick={() => cambiarSeccion('pacientes-lista')}
               className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
@@ -853,7 +1030,7 @@ export default function PanelPersonal() {
               <span className="text-xs text-slate-900">Pacientes ({pacientes.length})</span>
             </button>
 
-            {/* BOTÓN 2: CREAR PACIENTE (Icono Verde) */}
+            {/* BOTÓN 2: CREAR PACIENTE */}
             {esSecretaria && (
               <button
                 onClick={() => cambiarSeccion('crear-paciente')}
@@ -872,7 +1049,7 @@ export default function PanelPersonal() {
               </button>
             )}
 
-            {/* BOTÓN 3: CREAR ORDEN / SUBIR (Icono Morado) */}
+            {/* BOTÓN 3: CREAR ORDEN / SUBIR */}
             <button
               onClick={() => cambiarSeccion('subir-estudio')}
               className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
@@ -889,7 +1066,7 @@ export default function PanelPersonal() {
               <span className="text-xs text-slate-900">{getLabelSubir()}</span>
             </button>
 
-            {/* BOTÓN 4: ESTUDIOS PENDIENTES (Icono Naranja/Ámbar) */}
+            {/* BOTÓN 4: ESTUDIOS PENDIENTES */}
             <button
               onClick={() => cambiarSeccion('estudios-pendientes')}
               className={`w-full flex items-center justify-between px-3 py-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
@@ -914,7 +1091,7 @@ export default function PanelPersonal() {
               )}
             </button>
 
-            {/* BOTÓN 5: GESTIÓN DE USUARIOS (Icono Índigo) */}
+            {/* BOTÓN 5: GESTIÓN DE USUARIOS */}
             {esSuperAdmin && (
               <button
                 onClick={() => cambiarSeccion('gestion-usuarios')}
@@ -949,7 +1126,7 @@ export default function PanelPersonal() {
       </aside>
 
       {/* ÁREA PRINCIPAL */}
-      <main className="flex-1 p-4 md:p-8 pb-24 md:pb-8 overflow-y-auto">
+      <main className="flex-1 h-full p-4 md:p-8 pb-24 md:pb-8 overflow-y-auto">
         <div className="max-w-4xl mx-auto">
           
           {/* VISTA: LISTA DE PACIENTES */}
@@ -1127,7 +1304,7 @@ export default function PanelPersonal() {
                     <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Edad</label>
                     <input 
                       type="text" 
-                      placeholder="Ej: 8 años / 6 meses" 
+                      placeholder="Introducir edad" 
                       value={formPaciente.edad}
                       onChange={e => setFormPaciente({...formPaciente, edad: e.target.value})}
                       className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
@@ -1174,7 +1351,7 @@ export default function PanelPersonal() {
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer text-sm select-none"
                       title={mostrarClavePaciente ? 'Ocultar clave' : 'Mostrar clave'}
                     >
-                      {mostrarClavePaciente ? '🙈' : '👁️️'}
+                      {mostrarClavePaciente ? '🙈' : '👁️'}
                     </button>
                   </div>
                 </div>
@@ -1748,7 +1925,7 @@ export default function PanelPersonal() {
 
                               <button
                                 type="button"
-                                onClick={() => handleCambiarClaveUsuarioPersonal(u.id)}
+                                onClick={() => handleAbrirModalCambiarClave(u.id)}
                                 className="px-2.5 py-1 bg-amber-100 hover:bg-amber-200 text-amber-800 text-xs font-semibold rounded-lg transition-colors cursor-pointer"
                                 title="Cambiar contraseña"
                               >
@@ -1761,7 +1938,7 @@ export default function PanelPersonal() {
                                 className="px-2.5 py-1 bg-red-100 hover:bg-red-200 text-red-700 text-xs font-semibold rounded-lg transition-colors cursor-pointer"
                                 title="Eliminar usuario"
                               >
-                                🗑️
+                                🗑️️
                               </button>
                             </td>
                           </tr>
