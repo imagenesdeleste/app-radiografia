@@ -232,11 +232,30 @@ app.post('/api/pacientes', async (req, res) => {
     }
 
     res.json({ mensaje: 'Paciente registrado correctamente' });
-  } catch (error) {
-    console.error('Error al crear paciente:', error);
-    res.status(500).json({ error: 'Error en base de datos: ' + error.message });
-  }
-});
+    } catch (error) {
+      console.error("Error al crear paciente:", error);
+
+      // Capturar el error 23505 de PostgreSQL (Clave o dato duplicado)
+      if (error.code === '23505') {
+        if (error.constraint && error.constraint.includes('correo')) {
+          return res.status(400).json({ 
+            error: 'Este correo electrónico ya está registrado para otro paciente.' 
+          });
+        }
+        if (error.constraint && error.constraint.includes('cedula')) {
+          return res.status(400).json({ 
+            error: 'Esta cédula ya se encuentra registrada en el sistema.' 
+          });
+        }
+        return res.status(400).json({ 
+          error: 'El paciente o los datos ingresados ya existen en el sistema.' 
+        });
+      }
+
+      // Error genérico si ocurre otra cosa
+      res.status(500).json({ error: 'Error interno del servidor al crear paciente.' });
+    }
+  });
 
 // Obtener pacientes
 app.get('/api/pacientes', async (req, res) => {
