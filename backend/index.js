@@ -233,7 +233,7 @@ app.post('/api/pacientes', async (req, res) => {
 
     res.json({ mensaje: 'Paciente registrado correctamente' });
     } catch (error) {
-      console.error("Error al crear paciente:", error);
+      console.error("Error al crear paciente, algún dato ya está registrado:", error);
 
       // Capturar el error 23505 de PostgreSQL (Clave o dato duplicado)
       if (error.code === '23505') {
