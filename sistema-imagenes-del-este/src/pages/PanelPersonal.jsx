@@ -82,6 +82,9 @@ export default function PanelPersonal() {
     telefono: '',
     correo: '',
     clave: '',
+    edad: '',                   // 👈 CAMPO EDAD
+    es_menor_sin_cedula: false, // 👈 CHECKBOX MENOR SIN CÉDULA
+    cedula_representante: '',  // 👈 CÉDULA DEL REPRESENTANTE
     crear_orden: false,
     tipo_examen: 'Radiografía',
     titulo: ''
@@ -307,7 +310,6 @@ export default function PanelPersonal() {
   const handleNotificarWhatsApp = (pacienteNombre, pacienteTelefono, pacienteCedula, tituloEstudio) => {
     let tel = pacienteTelefono;
 
-    // Respaldo por si el teléfono no vino en las variables directas
     if (!tel && (pacienteCedula || pacienteSeleccionadoSubida?.id)) {
       const pacienteEncontrado = pacientes.find(
         (p) => p.cedula === pacienteCedula || p.id === pacienteSeleccionadoSubida?.id
@@ -389,50 +391,51 @@ export default function PanelPersonal() {
   };
 
   const handleGuardarPaciente = async (e) => {
-  e.preventDefault();
-  setMensajeFormPaciente({ tipo: '', texto: '' }); // Limpia mensajes previos
+    e.preventDefault();
+    setMensajeFormPaciente({ tipo: '', texto: '' });
 
-  try {
-    const res = await fetch('/api/pacientes', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(formPaciente)
-    });
-
-    const data = await res.json().catch(() => ({}));
-
-    if (res.ok) {
-      setFormPaciente({
-        cedula: '',
-        nombre_completo: '',
-        telefono: '',
-        correo: '',
-        clave: '',
-        crear_orden: false,
-        tipo_examen: 'Radiografía',
-        titulo: ''
+    try {
+      const res = await fetch('/api/pacientes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formPaciente)
       });
-      cargarPacientes();
-      cargarEstudiosPendientes(false);
-      
-      // Muestra mensaje de éxito y luego cambia de pantalla
-      alert(formPaciente.crear_orden ? '¡Paciente registrado y orden enviada!' : '¡Paciente registrado con éxito!');
-      setSeccion('pacientes-lista');
-    } else {
-      // Muestra el error exacto arriba del formulario
+
+      const data = await res.json().catch(() => ({}));
+
+      if (res.ok) {
+        setFormPaciente({
+          cedula: '',
+          nombre_completo: '',
+          telefono: '',
+          correo: '',
+          clave: '',
+          edad: '',                   // Reset de campos nuevos
+          es_menor_sin_cedula: false,
+          cedula_representante: '',
+          crear_orden: false,
+          tipo_examen: 'Radiografía',
+          titulo: ''
+        });
+        cargarPacientes();
+        cargarEstudiosPendientes(false);
+        
+        alert(formPaciente.crear_orden ? '¡Paciente registrado y orden enviada!' : '¡Paciente registrado con éxito!');
+        setSeccion('pacientes-lista');
+      } else {
+        setMensajeFormPaciente({ 
+          tipo: 'error', 
+          texto: data.error || 'No se pudo registrar el paciente.' 
+        });
+      }
+    } catch (error) {
+      console.error('Error:', error);
       setMensajeFormPaciente({ 
         tipo: 'error', 
-        texto: data.error || 'No se pudo registrar el paciente.' 
+        texto: 'Error de conexión con el servidor. Intenta de nuevo.' 
       });
     }
-  } catch (error) {
-    console.error('Error:', error);
-    setMensajeFormPaciente({ 
-      tipo: 'error', 
-      texto: 'Error de conexión con el servidor. Intenta de nuevo.' 
-    });
-  }
-};
+  };
 
   const handleCrearOrdenSinArchivos = async () => {
     if (!pacienteSeleccionadoSubida) return alert('Selecciona un paciente de la lista');
@@ -523,7 +526,6 @@ export default function PanelPersonal() {
         let correoEnviado = false;
         let mensajeCorreoError = '';
 
-        // INTENTA NOTIFICAR POR CORREO SIEMPRE QUE SEA UN INFORME O CARGA DE INFORME
         if (estudioIdProcesado && (tipoExamen === 'Informe Médico' || esCargaInforme)) {
           try {
             const resCorreo = await fetch(`/api/estudios/${estudioIdProcesado}/notificar-correo`, {
@@ -727,7 +729,6 @@ export default function PanelPersonal() {
     p.nombre_completo.toLowerCase().includes(busquedaPacienteSubida.toLowerCase())
   );
 
-  // FILTRO INTELIGENTE DE PENDIENTES SEGÚN EL ROL
   const pendientesFiltradosPorRol = estudiosPendientes.filter((est) => {
     if (esTecnico && !esSecretaria && est.tipo_examen === 'Informe Médico') {
       return false;
@@ -811,7 +812,7 @@ export default function PanelPersonal() {
   return (
     <div className="flex min-h-screen bg-slate-100 font-sans text-slate-800">
       
-      {/* SIDEBAR LATERAL */}
+      {/* SIDEBAR LATERAL ESTILO FACEBOOK (Iconos más grandes, independientes y coloridos) */}
       <aside className="hidden md:flex w-64 bg-red-950 text-slate-300 flex-col justify-between p-4 shrink-0 shadow-xl">
         <div>
           <div className="flex items-center space-x-3 px-2 py-4 mb-6 border-b border-slate-800">
@@ -833,91 +834,106 @@ export default function PanelPersonal() {
             </div>
           </div>
 
-          <nav className="space-y-1.5">
+          <nav className="space-y-2">
+
+            {/* BOTÓN 1: PACIENTES (Icono Azul) */}
             <button
               onClick={() => cambiarSeccion('pacientes-lista')}
-              className={`w-full flex items-center space-x-3 px-3.5 py-3 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+              className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
                 seccion === 'pacientes-lista'
-                  ? 'bg-red-800 text-white shadow-lg shadow-red-600/30'
-                  : 'hover:bg-red-900 text-red-200 hover:text-slate-200'
+                  ? 'bg-red-900/80 text-white shadow-lg border border-red-800/60'
+                  : 'hover:bg-red-900/40 text-red-100/80 hover:text-white'
               }`}
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-              <span>Pacientes ({pacientes.length})</span>
+              <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-md shadow-blue-900/40 shrink-0">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+              </div>
+              <span className="text-xs">Pacientes ({pacientes.length})</span>
             </button>
 
+            {/* BOTÓN 2: CREAR PACIENTE (Icono Verde) */}
             {esSecretaria && (
               <button
                 onClick={() => cambiarSeccion('crear-paciente')}
-                className={`w-full flex items-center space-x-3 px-3.5 py-3 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
                   seccion === 'crear-paciente'
-                    ? 'bg-red-800 text-white shadow-lg shadow-red-600/30'
-                    : 'hover:bg-red-900 text-red-200 hover:text-slate-200'
+                    ? 'bg-red-900/80 text-white shadow-lg border border-red-800/60'
+                    : 'hover:bg-red-900/40 text-red-100/80 hover:text-white'
                 }`}
               >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                </svg>
-                <span>Crear Paciente</span>
+                <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-md shadow-emerald-900/40 shrink-0">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                  </svg>
+                </div>
+                <span className="text-xs">Crear Paciente</span>
               </button>
             )}
 
+            {/* BOTÓN 3: CREAR ORDEN / SUBIR (Icono Morado) */}
             <button
               onClick={() => cambiarSeccion('subir-estudio')}
-              className={`w-full flex items-center space-x-3 px-3.5 py-3 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+              className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
                 seccion === 'subir-estudio'
-                  ? 'bg-red-800 text-white shadow-lg shadow-red-600/30'
-                  : 'hover:bg-red-900 text-red-200 hover:text-slate-200'
+                  ? 'bg-red-900/80 text-white shadow-lg border border-red-800/60'
+                  : 'hover:bg-red-900/40 text-red-100/80 hover:text-white'
               }`}
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-              </svg>
-              <span>{getLabelSubir()}</span>
+              <div className="w-9 h-9 rounded-xl bg-purple-600 text-white flex items-center justify-center shadow-md shadow-purple-900/40 shrink-0">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
+                </svg>
+              </div>
+              <span className="text-xs">{getLabelSubir()}</span>
             </button>
 
-            {/* BOTÓN ESTUDIOS PENDIENTES */}
+            {/* BOTÓN 4: ESTUDIOS PENDIENTES (Icono Naranja/Ámbar) */}
             <button
               onClick={() => cambiarSeccion('estudios-pendientes')}
-              className={`w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
                 seccion === 'estudios-pendientes'
-                  ? 'bg-red-800 text-white shadow-lg shadow-red-600/30'
-                  : 'hover:bg-red-900 text-red-200 hover:text-slate-200'
+                  ? 'bg-red-900/80 text-white shadow-lg border border-red-800/60'
+                  : 'hover:bg-red-900/40 text-red-100/80 hover:text-white'
               }`}
             >
               <div className="flex items-center space-x-3">
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span>Estudios Pendientes</span>
+                <div className="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-md shadow-amber-900/40 shrink-0">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <span className="text-xs">Pendientes</span>
               </div>
 
               {pendientesFiltradosPorRol.length > 0 && (
-                <span className="px-2 py-0.5 text-[10px] font-bold bg-amber-500 text-white rounded-full">
+                <span className="px-2 py-0.5 text-[10px] font-extrabold bg-amber-500 text-white rounded-full shadow-sm">
                   {pendientesFiltradosPorRol.length}
                 </span>
               )}
             </button>
 
-            {/* BOTÓN SUPERADMIN */}
+            {/* BOTÓN 5: GESTIÓN DE USUARIOS (Icono Índigo) */}
             {esSuperAdmin && (
               <button
                 onClick={() => cambiarSeccion('gestion-usuarios')}
-                className={`w-full flex items-center space-x-3 px-3.5 py-3 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
                   seccion === 'gestion-usuarios'
-                    ? 'bg-red-800 text-white shadow-lg shadow-red-600/30'
-                    : 'hover:bg-red-900 text-red-200 hover:text-slate-200'
+                    ? 'bg-red-900/80 text-white shadow-lg border border-red-800/60'
+                    : 'hover:bg-red-900/40 text-red-100/80 hover:text-white'
                 }`}
               >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-                <span>Gestión de Usuarios</span>
+                <div className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-md shadow-indigo-900/40 shrink-0">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </div>
+                <span className="text-xs">Usuarios</span>
               </button>
             )}
+
           </nav>
         </div>
 
@@ -1006,7 +1022,7 @@ export default function PanelPersonal() {
             </div>
           )}
 
-          {/* VISTA: CREAR PACIENTES */}
+          {/* VISTA: CREAR PACIENTES (MODIFICADO CON MENOR DE EDAD Y EDAD) */}
           {seccion === 'crear-paciente' && esSecretaria && (
             <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm max-w-xl mx-auto">
               <div className="mb-6 pb-4 border-b border-slate-100">
@@ -1018,36 +1034,88 @@ export default function PanelPersonal() {
 
                 {/* ALERTA DE ERROR INTUITIVA */}
                 {mensajeFormPaciente.texto && (
-                  <div className={`p-3 rounded-xl text-xs font-semibold flex items-center justify-between mb-4 ${
+                  <div className={`p-3 rounded-xl text-xs font-semibold flex items-center justify-between ${
                     mensajeFormPaciente.tipo === 'error' 
                       ? 'bg-red-50 border border-red-200 text-red-700' 
                       : 'bg-emerald-50 border border-emerald-200 text-emerald-700'
                   }`}>
-                    <span>{mensajeFormPaciente.texto}</span>
+                    <span>⚠️ {mensajeFormPaciente.texto}</span>
                     <button 
                       type="button" 
                       onClick={() => setMensajeFormPaciente({ tipo: '', texto: '' })}
-                      className="font-bold text-sm px-1 cursor-pointer"
+                      className="font-bold text-sm px-1 cursor-pointer hover:text-slate-900"
                     >
                       ✕
                     </button>
                   </div>
                 )}
 
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Cédula / DNI (Usuario)</label>
-                  <input 
-                    type="text" 
-                    placeholder="Ej: 12345678" 
-                    value={formPaciente.cedula}
-                    onChange={e => setFormPaciente({...formPaciente, cedula: e.target.value})}
-                    className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
-                    required 
-                  />
+                {/* CASILLA: MENOR DE EDAD SIN CÉDULA */}
+                <div className="p-3.5 bg-amber-50/70 border border-amber-200 rounded-xl space-y-3">
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <input 
+                      type="checkbox" 
+                      checked={formPaciente.es_menor_sin_cedula}
+                      onChange={e => {
+                        const checked = e.target.checked;
+                        setFormPaciente(prev => ({
+                          ...prev,
+                          es_menor_sin_cedula: checked,
+                          cedula_representante: checked ? prev.cedula_representante : '',
+                          cedula: checked && prev.cedula_representante ? prev.cedula_representante : (checked ? '' : prev.cedula)
+                        }));
+                      }}
+                      className="w-4 h-4 text-red-800 rounded focus:ring-red-500 cursor-pointer"
+                    />
+                    <span className="text-xs font-bold text-amber-900">👶 Paciente menor de edad sin cédula</span>
+                  </label>
+
+                  {/* CAMPO CONDICIONAL: CÉDULA DEL REPRESENTANTE */}
+                  {formPaciente.es_menor_sin_cedula && (
+                    <div>
+                      <label className="block text-[11px] font-semibold text-amber-900 uppercase tracking-wider mb-1">
+                        Cédula del Representante / Padre
+                      </label>
+                      <input 
+                        type="text" 
+                        placeholder="Ej: 12345678" 
+                        value={formPaciente.cedula_representante}
+                        onChange={e => {
+                          const val = e.target.value;
+                          setFormPaciente(prev => ({
+                            ...prev,
+                            cedula_representante: val,
+                            cedula: val 
+                          }));
+                        }}
+                        className="w-full px-4 py-2.5 text-sm bg-white border border-amber-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 font-medium"
+                        required={formPaciente.es_menor_sin_cedula}
+                      />
+                      <p className="text-[10px] text-amber-700 mt-1">
+                        * Se usará esta cédula como identificador del paciente para consultar sus exámenes.
+                      </p>
+                    </div>
+                  )}
                 </div>
 
+                {/* CÉDULA DEL PACIENTES (Si NO es menor sin cédula) */}
+                {!formPaciente.es_menor_sin_cedula && (
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Cédula / DNI (Usuario)</label>
+                    <input 
+                      type="text" 
+                      placeholder="Ej: 12345678" 
+                      value={formPaciente.cedula}
+                      onChange={e => setFormPaciente({...formPaciente, cedula: e.target.value})}
+                      className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
+                      required={!formPaciente.es_menor_sin_cedula}
+                    />
+                  </div>
+                )}
+
+                {/* NOMBRE COMPLETO */}
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Nombre Completo</label>
+                  <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Nombre Completo del Paciente</label>
                   <input 
                     type="text" 
                     placeholder="Nombre y Apellidos del paciente" 
@@ -1058,7 +1126,19 @@ export default function PanelPersonal() {
                   />
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* RENGLÓN TRIPLE: EDAD, TELÉFONO Y CORREO */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Edad</label>
+                    <input 
+                      type="text" 
+                      placeholder="Ej: 8 años / 6 meses" 
+                      value={formPaciente.edad}
+                      onChange={e => setFormPaciente({...formPaciente, edad: e.target.value})}
+                      className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
+                    />
+                  </div>
+
                   <div>
                     <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Teléfono</label>
                     <input 
@@ -1082,7 +1162,7 @@ export default function PanelPersonal() {
                   </div>
                 </div>
 
-                {/* CONTRASEÑA VISIBLE PARA SECRETARÍA */}
+                {/* CONTRASEÑA */}
                 <div>
                   <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Contraseña Asignada</label>
                   <div className="relative">
