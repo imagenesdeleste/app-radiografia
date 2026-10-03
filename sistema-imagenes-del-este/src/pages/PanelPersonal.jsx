@@ -14,6 +14,7 @@ export default function PanelPersonal() {
   // Estados para la animación global de carga
   const [cargandoEnvio, setCargandoEnvio] = useState(false);
   const [mensajeCargando, setMensajeCargando] = useState('');
+  const [mensajeFormPaciente, setMensajeFormPaciente] = useState({ tipo: '', texto: '' });
 
   // Estado para la animación del botón "Actualizar Pendientes"
   const [cargandoPendientes, setCargandoPendientes] = useState(false);
@@ -388,41 +389,50 @@ export default function PanelPersonal() {
   };
 
   const handleGuardarPaciente = async (e) => {
-    e.preventDefault();
-    try {
-      const res = await fetch('/api/pacientes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formPaciente)
-      });
+  e.preventDefault();
+  setMensajeFormPaciente({ tipo: '', texto: '' }); // Limpia mensajes previos
 
-      if (res.ok) {
-        alert(
-          formPaciente.crear_orden 
-            ? '¡Paciente registrado y orden enviada!' 
-            : '¡Paciente registrado con éxito!'
-        );
-        setFormPaciente({
-          cedula: '',
-          nombre_completo: '',
-          telefono: '',
-          correo: '',
-          clave: '',
-          crear_orden: false,
-          tipo_examen: 'Radiografía',
-          titulo: ''
-        });
-        cargarPacientes();
-        cargarEstudiosPendientes(false);
-        setSeccion('pacientes-lista');
-      } else {
-        alert('Error al registrar paciente');
-      }
-    } catch (error) {
-      console.error('Error:', error);
-      alert('Error de conexión');
+  try {
+    const res = await fetch('/api/pacientes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(formPaciente)
+    });
+
+    const data = await res.json().catch(() => ({}));
+
+    if (res.ok) {
+      setFormPaciente({
+        cedula: '',
+        nombre_completo: '',
+        telefono: '',
+        correo: '',
+        clave: '',
+        crear_orden: false,
+        tipo_examen: 'Radiografía',
+        titulo: ''
+      });
+      cargarPacientes();
+      cargarEstudiosPendientes(false);
+      
+      // Muestra mensaje de éxito y luego cambia de pantalla
+      alert(formPaciente.crear_orden ? '¡Paciente registrado y orden enviada!' : '¡Paciente registrado con éxito!');
+      setSeccion('pacientes-lista');
+    } else {
+      // Muestra el error exacto arriba del formulario
+      setMensajeFormPaciente({ 
+        tipo: 'error', 
+        texto: data.error || 'No se pudo registrar el paciente.' 
+      });
     }
-  };
+  } catch (error) {
+    console.error('Error:', error);
+    setMensajeFormPaciente({ 
+      tipo: 'error', 
+      texto: 'Error de conexión con el servidor. Intenta de nuevo.' 
+    });
+  }
+};
 
   const handleCrearOrdenSinArchivos = async () => {
     if (!pacienteSeleccionadoSubida) return alert('Selecciona un paciente de la lista');
@@ -1005,6 +1015,25 @@ export default function PanelPersonal() {
               </div>
 
               <form onSubmit={handleGuardarPaciente} className="space-y-4">
+
+                {/* ALERTA DE ERROR INTUITIVA */}
+                {mensajeFormPaciente.texto && (
+                  <div className={`p-3 rounded-xl text-xs font-semibold flex items-center justify-between mb-4 ${
+                    mensajeFormPaciente.tipo === 'error' 
+                      ? 'bg-red-50 border border-red-200 text-red-700' 
+                      : 'bg-emerald-50 border border-emerald-200 text-emerald-700'
+                  }`}>
+                    <span>{mensajeFormPaciente.texto}</span>
+                    <button 
+                      type="button" 
+                      onClick={() => setMensajeFormPaciente({ tipo: '', texto: '' })}
+                      className="font-bold text-sm px-1 cursor-pointer"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                )}
+
                 <div>
                   <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Cédula / DNI (Usuario)</label>
                   <input 
