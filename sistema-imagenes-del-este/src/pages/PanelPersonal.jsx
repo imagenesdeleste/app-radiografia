@@ -1328,7 +1328,7 @@ export default function PanelPersonal() {
                     <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Correo Electrónico</label>
                     <input 
                       type="email" 
-                      placeholder="ejemplo@paciente.com" 
+                      placeholder="Obligatorio" 
                       value={formPaciente.correo}
                       onChange={e => setFormPaciente({...formPaciente, correo: e.target.value})}
                       className="w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
