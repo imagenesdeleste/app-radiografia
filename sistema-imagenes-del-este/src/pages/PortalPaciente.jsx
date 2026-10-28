@@ -384,30 +384,7 @@ export default function PortalPaciente() {
       </main>
 
       {/* MODAL VISTA PREVIA */}
-      {archivoPreview && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl p-4 max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl relative">
-            <div className="flex justify-between items-center pb-3 border-b border-slate-100 mb-3">
-              <h4 className="text-xs font-bold text-slate-700 uppercase">Vista Previa del Resultado</h4>
-              <button 
-                type="button"
-                onClick={() => setArchivoPreview(null)}
-                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 font-bold text-sm cursor-pointer"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-auto flex items-center justify-center bg-slate-900 rounded-xl min-h-[300px]">
-              <iframe 
-                src={archivoPreview} 
-                className="w-full h-[60vh] rounded-xl border-none"
-                title="Vista previa del resultado"
-              />
-            </div>
-          </div>
-        </div>
-      )}
+      
 
       {/* BOTÓN FLOTANTE WHATSAPP */}
       <a
