@@ -1675,127 +1675,166 @@ export default function PanelPersonal() {
           )}
 
           {/* VISTA: ESTUDIOS PENDIENTES */}
-          {seccion === 'estudios-pendientes' && (
-            <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-              <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-100">
+{seccion === 'estudios-pendientes' && (
+  <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-100">
+      <div>
+        <h2 className="text-lg font-bold text-slate-900">Bandeja de Estudios Pendientes</h2>
+        <p className="text-xs text-slate-500 mt-0.5">
+          Total pendientes: <strong className="text-amber-600">{pendientesFiltradosPorRol.length} órdenes</strong>
+        </p>
+      </div>
+
+      <div className="flex items-center gap-2">
+        {/* BARRA DE BÚSQUEDA */}
+        <div className="relative w-full sm:w-64">
+          <input 
+            type="text" 
+            placeholder="Buscar por paciente, cédula o título..." 
+            value={busquedaPendientes}
+            onChange={e => setBusquedaPendientes(e.target.value)}
+            className="w-full pl-9 pr-4 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
+          />
+          <svg className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </div>
+        
+        <button 
+          onClick={() => cargarEstudiosPendientes(true)}
+          disabled={cargandoPendientes}
+          className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-60 select-none shrink-0"
+        >
+          <span className={`inline-block ${cargandoPendientes ? 'animate-spin' : ''}`}>🔄</span>
+          <span className="hidden sm:inline">{cargandoPendientes ? 'Actualizando...' : 'Actualizar'}</span>
+        </button>
+      </div>
+    </div>
+
+    {/* FILTRADO DE PENDIENTES SEGÚN EL TEXTO ESCRITO */}
+    {(() => {
+      const listaFinalPendientes = pendientesFiltradosPorRol.filter((est) => {
+        const texto = busquedaPendientes.toLowerCase();
+        return (
+          (est.paciente_nombre && est.paciente_nombre.toLowerCase().includes(texto)) ||
+          (est.paciente_cedula && est.paciente_cedula.toLowerCase().includes(texto)) ||
+          (est.titulo && est.titulo.toLowerCase().includes(texto)) ||
+          (est.tipo_examen && est.tipo_examen.toLowerCase().includes(texto))
+        );
+      });
+
+      if (listaFinalPendientes.length === 0) {
+        return (
+          <div className="text-center py-12 text-slate-400">
+            <p className="text-xs">
+              {busquedaPendientes.trim() !== '' 
+                ? '🔍 No se encontraron órdenes pendientes con ese criterio de búsqueda.' 
+                : '🎉 ¡Todo al día! No hay estudios pendientes.'}
+            </p>
+          </div>
+        );
+      }
+
+      return (
+        <div className="space-y-3">
+          {listaFinalPendientes.map((est) => {
+            const esInformeMedico = est.tipo_examen === 'Informe Médico';
+            
+            const esMiTurnoTecnico = (esTecnico || esSuperAdmin) && est.estado === 'pendiente_tecnico' && !esInformeMedico;
+            const esMiTurnoMedico = (esMedico || esSecretaria || esSuperAdmin);
+
+            return (
+              <div key={est.id} className="p-4 border border-slate-200 rounded-2xl bg-slate-50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <h2 className="text-lg font-bold text-slate-900">Bandeja de Estudios Pendientes</h2>
-                  <p className="text-xs text-slate-500 mt-0.5">Seguimiento de exámenes por procesar o informar.</p>
-                </div>
-                
-                <button 
-                  onClick={() => cargarEstudiosPendientes(true)}
-                  disabled={cargandoPendientes}
-                  className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-60 select-none"
-                >
-                  <span className={`inline-block ${cargandoPendientes ? 'animate-spin' : ''}`}>🔄</span>
-                  <span>{cargandoPendientes ? 'Actualizando...' : 'Actualizar'}</span>
-                </button>
-              </div>
-
-              {pendientesFiltradosPorRol.length === 0 ? (
-                <div className="text-center py-12 text-slate-400">
-                  <p className="text-xs">🎉 ¡Todo al día! No hay estudios pendientes.</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {pendientesFiltradosPorRol.map((est) => {
-                    const esInformeMedico = est.tipo_examen === 'Informe Médico';
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-red-100 text-red-800">
+                      {est.tipo_examen}
+                    </span>
                     
-                    const esMiTurnoTecnico = (esTecnico || esSuperAdmin) && est.estado === 'pendiente_tecnico' && !esInformeMedico;
-                    const esMiTurnoMedico = (esMedico || esSecretaria || esSuperAdmin);
+                    {!esInformeMedico && est.estado === 'pendiente_tecnico' && (
+                      <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-amber-100 text-amber-800">
+                        ⌛ Esperando Placas (Técnico)
+                      </span>
+                    )}
+                    
+                    {(est.estado === 'pendiente_medico' || esInformeMedico) && (
+                      <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-blue-100 text-blue-800">
+                        🩺 Esperando Informe (Médico / Secretaría)
+                      </span>
+                    )}
+                  </div>
 
-                    return (
-                      <div key={est.id} className="p-4 border border-slate-200 rounded-2xl bg-slate-50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-red-100 text-red-800">
-                              {est.tipo_examen}
-                            </span>
-                            
-                            {!esInformeMedico && est.estado === 'pendiente_tecnico' && (
-                              <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-amber-100 text-amber-800">
-                                ⌛ Esperando Placas (Técnico)
-                              </span>
-                            )}
-                            
-                            {(est.estado === 'pendiente_medico' || esInformeMedico) && (
-                              <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-blue-100 text-blue-800">
-                                🩺 Esperando Informe (Médico / Secretaría)
-                              </span>
-                            )}
-                          </div>
-
-                          <h4 className="text-sm font-bold text-slate-900">{est.titulo}</h4>
-                          <p className="text-xs text-slate-600">Paciente: <strong>{est.paciente_nombre}</strong> (C.I: {est.paciente_cedula})</p>
-                          <span className="text-[10px] text-slate-400">Fecha de orden: {new Date(est.fecha_estudio).toLocaleDateString()}</span>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          {esSecretaria && (
-                            <button
-                              onClick={() => handleCancelarOrdenPendiente(est.id)}
-                              className="px-3 py-2 bg-red-100 hover:bg-red-200 text-red-700 text-xs font-semibold rounded-xl transition-all cursor-pointer"
-                              title="Cancelar esta orden"
-                            >
-                              🗑️ Cancelar
-                            </button>
-                          )}
-
-                          {esMiTurnoTecnico && (
-                            <button
-                              onClick={() => {
-                                const pacienteInfo = pacientes.find(p => p.id === est.paciente_id || p.cedula === est.paciente_cedula);
-                                setPacienteSeleccionadoSubida({
-                                  id: est.paciente_id,
-                                  nombre_completo: est.paciente_nombre,
-                                  cedula: est.paciente_cedula,
-                                  correo: est.paciente_correo || est.correo || pacienteInfo?.correo || '',
-                                  telefono: est.paciente_telefono || est.telefono || pacienteInfo?.telefono || ''
-                                });
-                                setTipoExamen(est.tipo_examen);
-                                setTitulo(est.titulo);
-                                setEstudioPendienteSeleccionado(est);
-                                setArchivos([]);
-                                setSeccion('subir-estudio');
-                              }}
-                              className="px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-xl shadow-sm transition-all cursor-pointer"
-                            >
-                              📸 Cargar Placas
-                            </button>
-                          )}
-
-                          {esMiTurnoMedico && (
-                            <button
-                              onClick={() => {
-                                const pacienteInfo = pacientes.find(p => p.id === est.paciente_id || p.cedula === est.paciente_cedula);
-                                setPacienteSeleccionadoSubida({
-                                  id: est.paciente_id,
-                                  nombre_completo: est.paciente_nombre,
-                                  cedula: est.paciente_cedula,
-                                  correo: est.paciente_correo || est.correo || pacienteInfo?.correo || '',
-                                  telefono: est.paciente_telefono || est.telefono || pacienteInfo?.telefono || ''
-                                });
-                                setTipoExamen('Informe Médico');
-                                setTitulo(est.titulo);
-                                setEstudioPendienteSeleccionado(est);
-                                setArchivos([]);
-                                setSeccion('subir-estudio');
-                              }}
-                              className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl shadow-sm transition-all cursor-pointer"
-                            >
-                              📝 Cargar Informe
-                            </button>
-                          )}
-
-                        </div>
-                      </div>
-                    );
-                  })}
+                  <h4 className="text-sm font-bold text-slate-900">{est.titulo}</h4>
+                  <p className="text-xs text-slate-600">Paciente: <strong>{est.paciente_nombre}</strong> (C.I: {est.paciente_cedula})</p>
+                  <span className="text-[10px] text-slate-400">Fecha de orden: {new Date(est.fecha_estudio).toLocaleDateString()}</span>
                 </div>
-              )}
-            </div>
-          )}
+
+                <div className="flex items-center gap-2">
+                  {esSecretaria && (
+                    <button
+                      onClick={() => handleCancelarOrdenPendiente(est.id)}
+                      className="px-3 py-2 bg-red-100 hover:bg-red-200 text-red-700 text-xs font-semibold rounded-xl transition-all cursor-pointer"
+                      title="Cancelar esta orden"
+                    >
+                      🗑️ Cancelar
+                    </button>
+                  )}
+
+                  {esMiTurnoTecnico && (
+                    <button
+                      onClick={() => {
+                        const pacienteInfo = pacientes.find(p => p.id === est.paciente_id || p.cedula === est.paciente_cedula);
+                        setPacienteSeleccionadoSubida({
+                          id: est.paciente_id,
+                          nombre_completo: est.paciente_nombre,
+                          cedula: est.paciente_cedula,
+                          correo: est.paciente_correo || est.correo || pacienteInfo?.correo || '',
+                          telefono: est.paciente_telefono || est.telefono || pacienteInfo?.telefono || ''
+                        });
+                        setTipoExamen(est.tipo_examen);
+                        setTitulo(est.titulo);
+                        setEstudioPendienteSeleccionado(est);
+                        setArchivos([]);
+                        setSeccion('subir-estudio');
+                      }}
+                      className="px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-xl shadow-sm transition-all cursor-pointer"
+                    >
+                      📸 Cargar Placas
+                    </button>
+                  )}
+
+                  {esMiTurnoMedico && (
+                    <button
+                      onClick={() => {
+                        const pacienteInfo = pacientes.find(p => p.id === est.paciente_id || p.cedula === est.paciente_cedula);
+                        setPacienteSeleccionadoSubida({
+                          id: est.paciente_id,
+                          nombre_completo: est.paciente_nombre,
+                          cedula: est.paciente_cedula,
+                          correo: est.paciente_correo || est.correo || pacienteInfo?.correo || '',
+                          telefono: est.paciente_telefono || est.telefono || pacienteInfo?.telefono || ''
+                        });
+                        setTipoExamen('Informe Médico');
+                        setTitulo(est.titulo);
+                        setEstudioPendienteSeleccionado(est);
+                        setArchivos([]);
+                        setSeccion('subir-estudio');
+                      }}
+                      className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl shadow-sm transition-all cursor-pointer"
+                    >
+                      📝 Cargar Informe
+                    </button>
+                  )}
+
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      );
+    })()}
+  </div>
+)}
 
           {/* VISTA: GESTIÓN DE USUARIOS */}
           {seccion === 'gestion-usuarios' && esSuperAdmin && (

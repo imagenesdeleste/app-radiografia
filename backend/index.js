@@ -44,20 +44,29 @@ if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-// Servir la carpeta estática públicamente
+// Servir la carpeta estática públicamente (Express sirve subcarpetas automáticamente)
 app.use('/uploads', express.static(uploadDir));
 
-// MULTER: Reemplaza espacios por guiones bajos SIN agregar timestamps o prefijos
+// MULTER: Carpeta dinámica por paciente y timestamp para evitar sobrescrituras
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
+    // Pillamos el ID o la cédula del paciente que viene en la petición
+    const pacienteId = req.body.paciente_id || req.body.cedula || 'general';
+    
+    // Carpeta específica: uploads/pacientes/ID_DEL_PACIENTE/
+    const dir = path.join(uploadDir, 'pacientes', String(pacienteId));
+    
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
     }
-    cb(null, uploadDir);
+    
+    cb(null, dir);
   },
   filename: (req, file, cb) => {
+    // Le metemos la fecha actual en milisegundos adelante para que el nombre sea único
+    const timestamp = Date.now();
     const nombreLimpio = file.originalname.replace(/\s+/g, '_');
-    cb(null, nombreLimpio);
+    cb(null, `${timestamp}-${nombreLimpio}`);
   }
 });
 
