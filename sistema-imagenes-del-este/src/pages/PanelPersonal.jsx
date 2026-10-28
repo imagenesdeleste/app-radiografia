@@ -10,6 +10,8 @@ export default function PanelPersonal() {
       return null;
     }
   });
+  
+  const [busquedaPendientes, setBusquedaPendientes] = useState('');
 
   // SISTEMA DE NOTIFICACIONES TOAST (Reemplaza alert())
   const [toast, setToast] = useState({ mostrar: false, tipo: 'exito', mensaje: '' });
