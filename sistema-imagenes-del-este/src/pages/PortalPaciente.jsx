@@ -378,7 +378,7 @@ export default function PortalPaciente() {
       </main>
 
       {/* MODAL VISTA PREVIA */}
-      /*{archivoPreview && (
+      {archivoPreview && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl p-4 max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl relative">
             <div className="flex justify-between items-center pb-3 border-b border-slate-100 mb-3">
