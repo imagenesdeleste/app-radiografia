@@ -651,17 +651,33 @@ app.get('/api/descargar/:id', async (req, res) => {
 });
 
 // Descargar un archivo individual por su nombre de archivo
-app.get('/api/descargar-archivo/:filename', async (req, res) => {
+// RUTA PARA DESCARGAR ARCHIVOS (Soporta subcarpetas de pacientes y archivos viejos)
+app.get('/api/descargar-archivo/:filePath(*)', async (req, res) => {
   try {
-    const { filename } = req.params;
-    const soloNombreArchivo = path.basename(filename);
-    const filePath = path.join(uploadDir, soloNombreArchivo);
+    const relativePath = req.params.filePath; // Recibe ej: pacientes/5/1793305997191-archivo.pdf
+    
+    // 1. Intentamos buscar en la ruta exacta (dentro de la carpeta del paciente)
+    let filePath = path.join(uploadDir, relativePath);
 
+    // 2. Si no existe ahí (porque es un archivo viejo), lo buscamos directo en la raíz de uploads
+    if (!fs.existsSync(filePath)) {
+      const soloNombre = path.basename(relativePath);
+      const filePathAlternativo = path.join(uploadDir, soloNombre);
+      
+      if (fs.existsSync(filePathAlternativo)) {
+        filePath = filePathAlternativo;
+      }
+    }
+
+    // 3. Verificamos si el archivo existe físicamente en el servidor
     if (!fs.existsSync(filePath)) {
       return res.status(404).json({ error: 'Archivo físico no encontrado en el servidor' });
     }
 
-    res.download(filePath, soloNombreArchivo);
+    // Obtenemos el nombre limpio para la descarga
+    const nombreDescarga = path.basename(filePath);
+    res.download(filePath, nombreDescarga);
+    
   } catch (err) {
     console.error('🔥 Error en descarga individual:', err.message);
     res.status(500).json({ error: 'Error al descargar el archivo' });
