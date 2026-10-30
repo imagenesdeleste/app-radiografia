@@ -650,31 +650,46 @@ app.get('/api/descargar/:id', async (req, res) => {
   }
 });
 
+const buscarArchivoRecursivo = (dir, nombreBuscado) => {
+  if (!fs.existsSync(dir)) return null;
+  const elementos = fs.readdirSync(dir, { withFileTypes: true });
+  
+  for (const el of elementos) {
+    const rutaCompleta = path.join(dir, el.name);
+    if (el.isDirectory()) {
+      const encontrado = buscarArchivoRecursivo(rutaCompleta, nombreBuscado);
+      if (encontrado) return encontrado;
+    } else if (el.name.toLowerCase() === nombreBuscado.toLowerCase()) {
+      return rutaCompleta;
+    }
+  }
+  return null;
+};
+
 // Descargar un archivo individual por su nombre de archivo
-// RUTA PARA DESCARGAR ARCHIVOS (Soporta subcarpetas de pacientes y archivos viejos)
 app.get('/api/descargar-archivo/:filePath(*)', async (req, res) => {
   try {
-    const relativePath = req.params.filePath; // Recibe ej: pacientes/5/1793305997191-archivo.pdf
+    const relativePath = req.params.filePath; 
     
-    // 1. Intentamos buscar en la ruta exacta (dentro de la carpeta del paciente)
+    // 1. Intentamos buscar en la ruta exacta que manda la petición
     let filePath = path.join(uploadDir, relativePath);
 
-    // 2. Si no existe ahí (porque es un archivo viejo), lo buscamos directo en la raíz de uploads
+    // 2. Si no existe ahí, barremos TODAS las carpetas de 'uploads' buscando el archivo por su nombre
     if (!fs.existsSync(filePath)) {
       const soloNombre = path.basename(relativePath);
-      const filePathAlternativo = path.join(uploadDir, soloNombre);
+      const archivoEncontrado = buscarArchivoRecursivo(uploadDir, soloNombre);
       
-      if (fs.existsSync(filePathAlternativo)) {
-        filePath = filePathAlternativo;
+      if (archivoEncontrado) {
+        filePath = archivoEncontrado;
       }
     }
 
-    // 3. Verificamos si el archivo existe físicamente en el servidor
+    // 3. Verificamos si apareció por fin en el servidor
     if (!fs.existsSync(filePath)) {
       return res.status(404).json({ error: 'Archivo físico no encontrado en el servidor' });
     }
 
-    // Obtenemos el nombre limpio para la descarga
+    // 4. Descargamos el archivo con su nombre original
     const nombreDescarga = path.basename(filePath);
     res.download(filePath, nombreDescarga);
     
