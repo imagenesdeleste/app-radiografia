@@ -50,10 +50,10 @@ app.use('/uploads', express.static(uploadDir));
 // MULTER: Carpeta dinámica por paciente y timestamp para evitar sobrescrituras
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    // Pillamos el ID o la cédula del paciente que viene en la petición
+    // Pillamos el ID o la cédula del paciente
     const pacienteId = req.body.paciente_id || req.body.cedula || 'general';
     
-    // Carpeta específica: uploads/pacientes/ID_DEL_PACIENTE/
+    // Carpeta específica del paciente: uploads/pacientes/ID_DEL_PACIENTE/
     const dir = path.join(uploadDir, 'pacientes', String(pacienteId));
     
     if (!fs.existsSync(dir)) {
@@ -63,10 +63,9 @@ const storage = multer.diskStorage({
     cb(null, dir);
   },
   filename: (req, file, cb) => {
-    // Le metemos la fecha actual en milisegundos adelante para que el nombre sea único
-    const timestamp = Date.now();
-    const nombreLimpio = file.originalname.replace(/\s+/g, '_');
-    cb(null, `${timestamp}-${nombreLimpio}`);
+    // Mantiene el nombre original tal cual (solo cambia espacios por guiones bajos)
+    const nombreOriginal = file.originalname.replace(/\s+/g, '_');
+    cb(null, nombreOriginal);
   }
 });
 
