@@ -334,10 +334,9 @@ export default function PortalPaciente() {
                                                                   href={urlArchivo} 
                                                                   target="_blank"
                                                                   rel="noopener noreferrer"
-                                                                  download
                                                                   className="px-2 py-1 bg-red-950 hover:bg-red-800 text-white text-[11px] font-semibold rounded-lg transition-colors cursor-pointer"
                                                                 >
-                                                                  ⬇️
+                                                                  📄 Ver PDF
                                                                 </a>
                                                               </div>
                                                             </div>

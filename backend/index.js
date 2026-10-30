@@ -666,14 +666,13 @@ const buscarArchivoRecursivo = (dir, nombreBuscado) => {
 };
 
 // Descargar un archivo individual por su nombre de archivo
+// RUTA PARA DESCARGAR O VISUALIZAR ARCHIVOS
 app.get('/api/descargar-archivo/:filePath(*)', async (req, res) => {
   try {
     const relativePath = req.params.filePath; 
     
-    // 1. Intentamos buscar en la ruta exacta que manda la petición
     let filePath = path.join(uploadDir, relativePath);
 
-    // 2. Si no existe ahí, barremos TODAS las carpetas de 'uploads' buscando el archivo por su nombre
     if (!fs.existsSync(filePath)) {
       const soloNombre = path.basename(relativePath);
       const archivoEncontrado = buscarArchivoRecursivo(uploadDir, soloNombre);
@@ -683,13 +682,21 @@ app.get('/api/descargar-archivo/:filePath(*)', async (req, res) => {
       }
     }
 
-    // 3. Verificamos si apareció por fin en el servidor
     if (!fs.existsSync(filePath)) {
       return res.status(404).json({ error: 'Archivo físico no encontrado en el servidor' });
     }
 
-    // 4. Descargamos el archivo con su nombre original
     const nombreDescarga = path.basename(filePath);
+    const ext = path.extname(filePath).toLowerCase();
+
+    // SI ES UN PDF: Se abre en el navegador en otra pestaña (inline)
+    if (ext === '.pdf') {
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `inline; filename="${nombreDescarga}"`);
+      return res.sendFile(filePath);
+    }
+
+    // Para cualquier otro archivo, se descarga normalmente
     res.download(filePath, nombreDescarga);
     
   } catch (err) {
