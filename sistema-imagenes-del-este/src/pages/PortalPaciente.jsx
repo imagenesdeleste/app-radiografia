@@ -8,45 +8,34 @@ export default function PortalPaciente() {
   const [estudios, setEstudios] = useState([]);
   const [error, setError] = useState('');
 
-  // Estados para acordeones anidados
+  // Estados para acordeones (Fecha y Categoría Principal)
   const [fechaAbierta, setFechaAbierta] = useState(null);
   const [categoriaAbierta, setCategoriaAbierta] = useState(null); // Formato: "Fecha-Categoria"
-  const [subcarpetaAbierta, setSubcarpetaAbierta] = useState(null); // Formato: "Fecha-Categoria-Sub"
   const [archivoPreview, setArchivoPreview] = useState(null);
 
   // Estado para la animación de carga con el logo
   const [cargandoModal, setCargandoModal] = useState(false);
   const [mensajeCargandoModal, setMensajeCargandoModal] = useState('');
 
-  // Función para clasificar cada archivo en su sub-carpeta específica de forma exacta
-  const obtenerSubcarpeta = (est) => {
-    const tipo = est.tipo_examen || '';
-    const texto = `${tipo} ${est.titulo || ''} ${est.archivo_path || ''}`.toLowerCase();
-
-    if (tipo === 'Informe Médico' || texto.includes('informe')) {
-      return 'Informes Médicos';
-    }
-    if (tipo === 'Tomografía' || texto.includes('tomograf') || texto.includes('tac') || texto.includes('ct')) {
-      return 'Tomografías';
-    }
-    if (tipo === 'Radiografía' || texto.includes('radiograf') || texto.includes('rx') || texto.includes('rayos')) {
-      return 'Radiografías';
-    }
-
-    return 'Estudios e Imágenes';
-  };
-
-  // AGRUPACIÓN NIVELES: Fecha ➔ Categoría Principal (Radiografía / Tomografía / Combinado / Informe) ➔ Sub-carpeta
+  // AGRUPACIÓN NIVELES: Fecha ➔ Categoría Principal ➔ Lista de Estudios (Sin subcarpetas)
   const estudiosAgrupados = estudios.reduce((acc, est) => {
-    const fecha = new Date(est.fecha_estudio).toLocaleDateString();
-    const catPrincipal = est.tipo_examen || 'Informe Médico';
-    const sub = obtenerSubcarpeta(est);
+    // Formatear la fecha evitando el desfase de zona horaria UTC
+    let fecha = 'Sin fecha';
+    if (est.fecha_estudio) {
+      const partes = est.fecha_estudio.split('T')[0].split('-');
+      if (partes.length === 3) {
+        fecha = `${partes[2]}/${partes[1]}/${partes[0]}`;
+      } else {
+        fecha = new Date(est.fecha_estudio).toLocaleDateString('es-VE', { timeZone: 'UTC' });
+      }
+    }
+
+    const catPrincipal = est.tipo_examen || 'Estudios Médicos';
 
     if (!acc[fecha]) acc[fecha] = {};
-    if (!acc[fecha][catPrincipal]) acc[fecha][catPrincipal] = {};
-    if (!acc[fecha][catPrincipal][sub]) acc[fecha][catPrincipal][sub] = [];
+    if (!acc[fecha][catPrincipal]) acc[fecha][catPrincipal] = [];
 
-    acc[fecha][catPrincipal][sub].push(est);
+    acc[fecha][catPrincipal].push(est);
     return acc;
   }, {});
 
@@ -175,7 +164,7 @@ export default function PortalPaciente() {
 
         ) : (
 
-          /* RESULTADOS CON SUB-CARPETAS */
+          /* RESULTADOS DIRECTOS (SIN SUBCARPETAS) */
           <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xl shadow-slate-200/40">
             
             <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
@@ -218,7 +207,7 @@ export default function PortalPaciente() {
               <div className="space-y-3">
                 {Object.entries(estudiosAgrupados).map(([fecha, categorias]) => {
                   const estaFechaAbierta = fechaAbierta === fecha;
-                  const totalEstudiosFecha = Object.values(categorias).flatMap(c => Object.values(c).flat()).length;
+                  const totalEstudiosFecha = Object.values(categorias).flat().length;
 
                   return (
                     <div key={fecha} className="border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-sm transition-all">
@@ -246,13 +235,13 @@ export default function PortalPaciente() {
                         </span>
                       </button>
 
-                      {/* NIVEL 2: CATEGORÍA PRINCIPAL */}
+                      {/* NIVEL 2: CATEGORÍA PRINCIPAL (Con sus archivos directos) */}
                       {estaFechaAbierta && (
                         <div className="p-3 border-t border-slate-100 space-y-2 bg-slate-50/50">
-                          {Object.entries(categorias).map(([catNombre, subcarpetas]) => {
+                          {Object.entries(categorias).map(([catNombre, listaEstudios]) => {
                             const claveCat = `${fecha}-${catNombre}`;
                             const estaCatAbierta = categoriaAbierta === claveCat;
-                            const totalEnCat = Object.values(subcarpetas).flat().length;
+                            const totalEnCat = listaEstudios.length;
 
                             return (
                               <div key={catNombre} className="border border-slate-200 rounded-xl overflow-hidden bg-white">
@@ -276,84 +265,48 @@ export default function PortalPaciente() {
                                   </span>
                                 </button>
 
-                                {/* NIVEL 3: SUB-CARPETAS (Radiografías / Tomografías / Informes) */}
+                                {/* LISTA DE ESTUDIOS DIRECTA DENTRO DE LA CATEGORÍA */}
                                 {estaCatAbierta && (
-                                  <div className="p-2 border-t border-slate-100 space-y-2 bg-slate-50">
-                                    {Object.entries(subcarpetas).map(([subNombre, listaEstudios]) => {
-                                      const claveSub = `${fecha}-${catNombre}-${subNombre}`;
-                                      const estaSubAbierta = subcarpetaAbierta === claveSub;
-
-                                      const iconoSub = subNombre === 'Tomografías' ? '🧠' : subNombre === 'Radiografías' ? '🦴' : subNombre === 'Informes Médicos' ? '📄' : '📁';
+                                  <div className="p-2 border-t border-slate-100 space-y-2 bg-white">
+                                    {listaEstudios.map((e) => {
+                                      const archivosLista = e.archivo_path 
+                                        ? e.archivo_path.split(',').map(a => a.trim()).filter(Boolean) 
+                                        : [];
 
                                       return (
-                                        <div key={subNombre} className="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-2xs">
+                                        <div key={e.id} className="p-2.5 border border-slate-200 bg-slate-50 rounded-xl space-y-2">
+                                          <h6 className="text-xs font-bold text-slate-800 leading-tight">{e.titulo}</h6>
                                           
-                                          <button
-                                            type="button"
-                                            onClick={() => setSubcarpetaAbierta(estaSubAbierta ? null : claveSub)}
-                                            className="w-full p-2 flex items-center justify-between hover:bg-slate-100 transition-colors cursor-pointer text-left"
-                                          >
-                                            <div className="flex items-center gap-2">
-                                              <span className="text-xs">{iconoSub}</span>
-                                              <span className="text-xs font-bold text-slate-700">{subNombre}</span>
-                                              <span className="text-[10px] text-slate-400 font-semibold">({listaEstudios.length})</span>
-                                            </div>
-
-                                            <span className={`text-slate-400 transform transition-transform duration-200 text-[9px] font-bold ${estaSubAbierta ? 'rotate-180' : ''}`}>
-                                              ▼
-                                            </span>
-                                          </button>
-
-                                          {/* DESGLOSE DE ARCHIVOS MÚLTIPLES DENTRO DEL ESTUDIO */}
-                                          {estaSubAbierta && (
-                                            <div className="p-2 border-t border-slate-100 space-y-2 bg-white">
-                                              {listaEstudios.map((e) => {
-                                                const archivosLista = e.archivo_path 
-                                                  ? e.archivo_path.split(',').map(a => a.trim()).filter(Boolean) 
-                                                  : [];
-
+                                          {archivosLista.length > 0 ? (
+                                            <div className="space-y-1.5">
+                                              {archivosLista.map((arch, idx) => {
+                                                const urlArchivo = `/api/descargar-archivo/${encodeURIComponent(arch)}`;
+                                                
                                                 return (
-                                                  <div key={e.id} className="p-2.5 border border-slate-200 bg-slate-50 rounded-xl space-y-2">
-                                                    <h6 className="text-xs font-bold text-slate-800 leading-tight">{e.titulo}</h6>
-                                                    
-                                                    {archivosLista.length > 0 ? (
-                                                      <div className="space-y-1.5">
-                                                        {archivosLista.map((arch, idx) => {
-                                                          const urlArchivo = `/api/descargar-archivo/${encodeURIComponent(arch)}`;
-                                                          
-                                                          return (
-                                                            <div key={idx} className="p-2 bg-white border border-slate-200 rounded-lg flex items-center justify-between text-xs hover:border-slate-300 transition-colors">
-                                                              <span className="truncate max-w-[150px] sm:max-w-[200px] text-slate-700 font-medium">
-                                                                📄 {arch}
-                                                              </span>
+                                                  <div key={idx} className="p-2 bg-white border border-slate-200 rounded-lg flex items-center justify-between text-xs hover:border-slate-300 transition-colors">
+                                                    <span className="truncate max-w-[150px] sm:max-w-[200px] text-slate-700 font-medium">
+                                                      📄 {arch}
+                                                    </span>
 
-                                                              <div className="flex items-center gap-1.5 shrink-0">
-                                                                
-
-                                                                <a 
-                                                                  href={urlArchivo} 
-                                                                  target="_blank"
-                                                                  rel="noopener noreferrer"
-                                                                  className="px-2 py-1 bg-red-950 hover:bg-red-800 text-white text-[11px] font-semibold rounded-lg transition-colors cursor-pointer"
-                                                                >
-                                                                  📄 Ver PDF
-                                                                </a>
-                                                              </div>
-                                                            </div>
-                                                          );
-                                                        })}
-                                                      </div>
-                                                    ) : (
-                                                      <p className="text-[11px] text-amber-700 bg-amber-50 p-2 rounded-lg border border-amber-100 italic">
-                                                        ⏳ Resultado en proceso de publicación.
-                                                      </p>
-                                                    )}
+                                                    <div className="flex items-center gap-1.5 shrink-0">
+                                                      <a 
+                                                        href={urlArchivo} 
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="px-2 py-1 bg-red-950 hover:bg-red-800 text-white text-[11px] font-semibold rounded-lg transition-colors cursor-pointer"
+                                                      >
+                                                        📄 Ver PDF
+                                                      </a>
+                                                    </div>
                                                   </div>
                                                 );
                                               })}
                                             </div>
+                                          ) : (
+                                            <p className="text-[11px] text-amber-700 bg-amber-50 p-2 rounded-lg border border-amber-100 italic">
+                                              ⏳ Resultado en proceso de publicación.
+                                            </p>
                                           )}
-
                                         </div>
                                       );
                                     })}
