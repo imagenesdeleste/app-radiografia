@@ -47,7 +47,7 @@ if (!fs.existsSync(uploadDir)) {
 // Servir la carpeta estática públicamente (Express sirve subcarpetas automáticamente)
 app.use('/uploads', express.static(uploadDir));
 
-// MULTER: Carpeta dinámica por paciente y timestamp para evitar sobrescrituras
+// MULTER: Carpeta dinámica por paciente manteniendo el nombre original con espacios
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     // Pillamos el ID o la cédula del paciente
@@ -63,9 +63,8 @@ const storage = multer.diskStorage({
     cb(null, dir);
   },
   filename: (req, file, cb) => {
-    // Mantiene el nombre original tal cual (solo cambia espacios por guiones bajos)
-    const nombreOriginal = file.originalname.replace(/\s+/g, '_');
-    cb(null, nombreOriginal);
+    // Mantiene el nombre original tal cual, respetando los espacios (ej: "Benito Freitas.pdf")
+    cb(null, file.originalname);
   }
 });
 
